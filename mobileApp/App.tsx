@@ -5,9 +5,13 @@ import * as _jsxRuntime from 'react/jsx-runtime';
 const _react = React;
 import {
   Animated,
+  Dimensions,
   Image,
   ImageBackground,
+  KeyboardAvoidingView,
   Modal,
+  PixelRatio,
+  Platform,
   SafeAreaView,
   ScrollView,
   StatusBar,
@@ -20,6 +24,16 @@ import {
 } from 'react-native';
 import { launchImageLibrary } from 'react-native-image-picker';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+const BASE_WIDTH = 390;
+const BASE_HEIGHT = 844;
+
+const scale = (size: number) => Math.round((SCREEN_WIDTH / BASE_WIDTH) * size);
+const verticalScale = (size: number) => Math.round((SCREEN_HEIGHT / BASE_HEIGHT) * size);
+const moderateScale = (size: number, factor: number = 0.5) => Math.round(size + (scale(size) - size) * factor);
+const wp = (percentage: number) => (SCREEN_WIDTH * percentage) / 100;
+const hp = (percentage: number) => (SCREEN_HEIGHT * percentage) / 100;
 
 const HunarGoLogo = require('./src/assets/logo.png');
 const HeroIllustration = require('./src/assets/hero_illustration.png');
@@ -109,6 +123,7 @@ const DefaultAvatar = require('./src/assets/default_avatar.png');
         }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.ScrollView, {
           contentContainerStyle: styles.onboardingContent,
           showsVerticalScrollIndicator: false,
+          scrollEnabled: false,
           children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.View, {
             style: styles.illustrationContainer,
             children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Image, {
@@ -186,7 +201,7 @@ const DefaultAvatar = require('./src/assets/default_avatar.png');
               style: styles.dot
             })]
           }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
-            style: styles.nextButton,
+            style: [styles.nextButton, { marginTop: scale(2), marginBottom: scale(24) }],
             onPress: onNext,
             activeOpacity: 0.85,
             children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
@@ -228,6 +243,7 @@ const DefaultAvatar = require('./src/assets/default_avatar.png');
         }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.ScrollView, {
           contentContainerStyle: styles.onboardingContent2,
           showsVerticalScrollIndicator: false,
+          scrollEnabled: false,
           children: [/*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
             style: styles.textSection2,
             children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
@@ -354,95 +370,100 @@ const DefaultAvatar = require('./src/assets/default_avatar.png');
       source: require("./src/assets/onboarding_bg.png"),
       style: styles.bgImage,
       resizeMode: "cover",
-      children: /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.SafeAreaView, {
+      children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.SafeAreaView, {
         style: styles.onboardingContainer,
-        children: [/*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
-          style: styles.topBarCentered,
-          children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
-            style: styles.backButtonAbsolute,
-            onPress: onBack,
-            activeOpacity: 0.7,
-            hitSlop: {
-              top: 20,
-              bottom: 20,
-              left: 20,
-              right: 20
-            },
-            children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-              style: styles.backArrowText,
-              children: "\u2190"
-            })
-          }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Image, {
-            source: require("./src/assets/logo.png"),
-            style: styles.topLogoCompact,
-            resizeMode: "contain"
-          })]
-        }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.ScrollView, {
-          contentContainerStyle: styles.loginContent,
-          showsVerticalScrollIndicator: false,
+        children: /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.KeyboardAvoidingView, {
+          style: { flex: 1 },
+          behavior: _reactNative.Platform.OS === 'ios' ? 'padding' : 'height',
           children: [/*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
-            style: styles.textSectionLogin,
-            children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-              style: styles.titleLine1,
-              children: "Enter Your"
-            }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-              style: styles.titleLine2,
-              children: "Mobile Number"
-            }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-              style: styles.descriptionText2,
-              children: "We'll send you a verification code to continue."
+            style: styles.topBarCentered,
+            children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
+              style: styles.backButtonAbsolute,
+              onPress: onBack,
+              activeOpacity: 0.7,
+              hitSlop: {
+                top: 20,
+                bottom: 20,
+                left: 20,
+                right: 20
+              },
+              children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                style: styles.backArrowText,
+                children: "\u2190"
+              })
+            }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Image, {
+              source: require("./src/assets/logo.png"),
+              style: styles.topLogoCompact,
+              resizeMode: "contain"
             })]
-          }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
-            style: styles.phoneInputCard,
+          }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.ScrollView, {
+            contentContainerStyle: styles.loginContent,
+            showsVerticalScrollIndicator: false,
+            keyboardShouldPersistTaps: "handled",
             children: [/*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
-              style: styles.countrySelector,
+              style: styles.textSectionLogin,
               children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-                style: styles.flagEmoji,
-                children: "\uD83C\uDDEE\uD83C\uDDF3"
+                style: styles.titleLine1,
+                children: "Enter Your"
               }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-                style: styles.dropdownArrow,
-                children: "\u2304"
+                style: styles.titleLine2,
+                children: "Mobile Number"
               }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-                style: styles.countryCode,
-                children: "+91"
+                style: styles.descriptionText2,
+                children: "We'll send you a verification code to continue."
               })]
-            }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.View, {
-              style: styles.verticalDivider
-            }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TextInput, {
-              style: styles.phoneTextInput,
-              placeholder: "Enter mobile number",
-              placeholderTextColor: "#94A3B8",
-              keyboardType: "phone-pad",
-              value: phoneNumber,
-              onChangeText: text => setPhoneNumber(text.replace(/[^0-9]/g, '')),
-              maxLength: 10
+            }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
+              style: styles.phoneInputCard,
+              children: [/*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
+                style: styles.countrySelector,
+                children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                  style: styles.flagEmoji,
+                  children: "\uD83C\uDDEE\uD83C\uDDF3"
+                }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                  style: styles.dropdownArrow,
+                  children: "\u2304"
+                }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                  style: styles.countryCode,
+                  children: "+91"
+                })]
+              }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.View, {
+                style: styles.verticalDivider
+              }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TextInput, {
+                style: styles.phoneTextInput,
+                placeholder: "Enter mobile number",
+                placeholderTextColor: "#94A3B8",
+                keyboardType: "phone-pad",
+                value: phoneNumber,
+                onChangeText: text => setPhoneNumber(text.replace(/[^0-9]/g, '')),
+                maxLength: 10
+              })]
+            }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
+              style: [styles.nextButton, !isPhoneValid && styles.disabledButton],
+              onPress: () => {
+                if (isPhoneValid) {
+                  onContinue(phoneNumber);
+                }
+              },
+              disabled: !isPhoneValid,
+              activeOpacity: 0.85,
+              children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                style: styles.nextButtonText,
+                children: "Continue  \u2794"
+              })
+            }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
+              style: styles.loginContainer,
+              onPress: () => isPhoneValid && onContinue(phoneNumber),
+              activeOpacity: 0.7,
+              children: /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.Text, {
+                style: styles.loginText,
+                children: ["Already have an account? ", /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                  style: styles.loginLink,
+                  children: "Login"
+                })]
+              })
             })]
-          }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
-            style: [styles.nextButton, !isPhoneValid && styles.disabledButton],
-            onPress: () => {
-              if (isPhoneValid) {
-                onContinue(phoneNumber);
-              }
-            },
-            disabled: !isPhoneValid,
-            activeOpacity: 0.85,
-            children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-              style: styles.nextButtonText,
-              children: "Continue  \u2794"
-            })
-          }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
-            style: styles.loginContainer,
-            onPress: () => isPhoneValid && onContinue(phoneNumber),
-            activeOpacity: 0.7,
-            children: /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.Text, {
-              style: styles.loginText,
-              children: ["Already have an account? ", /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-                style: styles.loginLink,
-                children: "Login"
-              })]
-            })
           })]
-        })]
+        })
       })
     });
   }
@@ -496,92 +517,94 @@ const DefaultAvatar = require('./src/assets/default_avatar.png');
       source: require("./src/assets/onboarding_bg.png"),
       style: styles.bgImage,
       resizeMode: "cover",
-      children: /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.SafeAreaView, {
+      children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.SafeAreaView, {
         style: styles.onboardingContainer,
-        children: [/*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
-          style: styles.topBarCentered,
-          children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
-            style: styles.backButtonAbsolute,
-            onPress: onBack,
-            activeOpacity: 0.7,
-            hitSlop: {
-              top: 20,
-              bottom: 20,
-              left: 20,
-              right: 20
-            },
-            children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-              style: styles.backArrowText,
-              children: "\u2190"
-            })
-          }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Image, {
-            source: require("./src/assets/logo.png"),
-            style: styles.topLogoCompact,
-            resizeMode: "contain"
-          })]
-        }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.ScrollView, {
-          contentContainerStyle: styles.otpContent,
-          showsVerticalScrollIndicator: false,
+        children: /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.KeyboardAvoidingView, {
+          style: { flex: 1 },
+          behavior: _reactNative.Platform.OS === 'ios' ? 'padding' : 'height',
           children: [/*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
-            style: styles.textSectionLogin,
-            children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-              style: styles.titleLine1,
-              children: "Verify Your"
-            }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-              style: styles.titleLine2,
-              children: "Mobile Number"
-            }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-              style: styles.descriptionText2,
-              children: "We've sent a 6-digit OTP to"
-            }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-              style: styles.phoneHighlight,
-              children: formattedPhone
-            }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-              style: styles.descriptionText2,
-              children: "Please enter the code below to continue."
-            })]
-          }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.View, {
-            style: styles.otpContainer,
-            children: otp.map((digit, index) => /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TextInput, {
-              ref: ref => {
-                inputRefs.current[index] = ref;
-              },
-              style: [styles.otpBox, digit !== '' && styles.otpBoxFilled, isOtpComplete && styles.otpBoxComplete],
-              keyboardType: "number-pad",
-              maxLength: 1,
-              value: digit,
-              onChangeText: text => handleOtpChange(text, index),
-              onKeyPress: e => handleKeyPress(e, index),
-              selectTextOnFocus: true
-            }, index))
-          }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
-            style: styles.resendContainer,
-            children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-              style: styles.resendLabel,
-              children: "Didn't receive the code? "
-            }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
-              disabled: timer > 0,
-              onPress: () => setTimer(45),
+            style: styles.topBarCentered,
+            children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
+              style: styles.backButtonAbsolute,
+              onPress: onBack,
               activeOpacity: 0.7,
+              hitSlop: {
+                top: 20,
+                bottom: 20,
+                left: 20,
+                right: 20
+              },
               children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-                style: [styles.resendLink, timer > 0 && styles.resendDisabled],
-                children: "Resend OTP"
+                style: styles.backArrowText,
+                children: "\u2190"
               })
-            }), timer > 0 && /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.Text, {
-              style: styles.timerText,
-              children: [" ", formatTimer(timer)]
+            }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Image, {
+              source: require("./src/assets/logo.png"),
+              style: styles.topLogoCompact,
+              resizeMode: "contain"
             })]
-          }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
-            style: [styles.nextButton, !isOtpComplete && styles.disabledButton],
-            onPress: onVerify,
-            disabled: !isOtpComplete,
-            activeOpacity: 0.85,
-            children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-              style: styles.nextButtonText,
-              children: "Verify & Continue  \u2794"
-            })
+          }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.ScrollView, {
+            contentContainerStyle: styles.otpContent,
+            showsVerticalScrollIndicator: false,
+            keyboardShouldPersistTaps: "handled",
+            children: [/*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
+              style: styles.textSectionLogin,
+              children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                style: styles.titleLine1,
+                children: "Verify Your"
+              }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                style: styles.titleLine2,
+                children: "Mobile Number"
+              }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                style: styles.descriptionText2,
+                children: "We've sent a 6-digit OTP to"
+              }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                style: styles.phoneHighlight,
+                children: formattedPhone
+              }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                style: styles.descriptionText2,
+                children: "Please enter the code below to continue."
+              })]
+            }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.View, {
+              style: styles.otpContainer,
+              children: otp.map((digit, index) => /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TextInput, {
+                ref: ref => {
+                  inputRefs.current[index] = ref;
+                },
+                style: [styles.otpBox, digit !== '' && styles.otpBoxFilled, isOtpComplete && styles.otpBoxComplete],
+                keyboardType: "number-pad",
+                maxLength: 1,
+                value: digit,
+                onChangeText: text => handleOtpChange(text, index),
+                onKeyPress: e => handleKeyPress(e, index),
+                selectTextOnFocus: true
+              }, index))
+            }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
+              style: styles.resendContainer,
+              children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                style: styles.resendLabel,
+                children: "Didn't receive the code? "
+              }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
+                disabled: timer > 0,
+                onPress: () => setTimer(45),
+                activeOpacity: 0.7,
+                children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                  style: [styles.resendLink, timer > 0 && styles.resendDisabledText],
+                  children: timer > 0 ? `Resend ${formatTimer(timer)}` : "Resend OTP"
+                })
+              })]
+            }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
+              style: [styles.nextButton, !isOtpComplete && styles.disabledButton],
+              onPress: () => isOtpComplete && onVerify(otp.join('')),
+              disabled: !isOtpComplete,
+              activeOpacity: 0.85,
+              children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                style: styles.nextButtonText,
+                children: "Verify & Proceed  \u2794"
+              })
+            })]
           })]
-        })]
+        })
       })
     });
   }
@@ -594,6 +617,38 @@ const DefaultAvatar = require('./src/assets/default_avatar.png');
     var [fullName, setFullName] = useState('');
     var [email, setEmail] = useState('');
     var [aadhaar, setAadhaar] = useState('');
+    var [isInputFocused, setIsInputFocused] = useState(false);
+    var [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+    var scrollViewRef = useRef(null);
+
+    var scrollBottom = () => {
+      if (scrollViewRef.current) {
+        scrollViewRef.current.scrollToEnd({ animated: true });
+      }
+    };
+
+    useEffect(() => {
+      var showSub = _reactNative.Keyboard.addListener(
+        Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+        () => {
+          setIsKeyboardVisible(true);
+          setTimeout(scrollBottom, 50);
+          setTimeout(scrollBottom, 200);
+          setTimeout(scrollBottom, 400);
+        }
+      );
+      var hideSub = _reactNative.Keyboard.addListener(
+        Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+        () => {
+          setIsKeyboardVisible(false);
+          setIsInputFocused(false);
+        }
+      );
+      return () => {
+        showSub.remove();
+        hideSub.remove();
+      };
+    }, []);
 
     var openGallery = async () => {
       try {
@@ -708,237 +763,255 @@ const DefaultAvatar = require('./src/assets/default_avatar.png');
               })
             })]
           })
-        }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
+        }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.View, {
           style: styles.topBarCentered,
-          children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
-            style: styles.backButtonAbsolute,
-            onPress: onBack,
-            activeOpacity: 0.7,
-            hitSlop: {
-              top: 20,
-              bottom: 20,
-              left: 20,
-              right: 20
-            },
-            children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-              style: styles.backArrowText,
-              children: "\u2190"
-            })
-          }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Image, {
+          children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Image, {
             source: require("./src/assets/logo.png"),
             style: styles.topLogoCompact,
             resizeMode: "contain"
-          })]
-        }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.ScrollView, {
-          contentContainerStyle: styles.profileContent,
-          showsVerticalScrollIndicator: false,
-          children: [/*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
-            style: [styles.textSectionLogin, {
-              marginBottom: 4
-            }],
-            children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-              style: styles.titleLine1,
-              children: "Complete Your Profile"
-            }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-              style: styles.descriptionText2,
-              children: "Help us get you verified and connect you with more customers."
-            })]
-          }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
-            style: [styles.sectionContainer, {
-              marginTop: 4
-            }],
-            children: [/*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.Text, {
-              style: styles.inputLabel,
-              children: ["Profile Image ", /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-                style: styles.requiredStar,
-                children: "*"
+          })
+        }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.KeyboardAvoidingView, {
+          style: { flex: 1, width: '100%' },
+          behavior: Platform.OS === 'ios' ? 'padding' : undefined,
+          children: /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.ScrollView, {
+            ref: scrollViewRef,
+            contentContainerStyle: [
+              styles.profileContent,
+              (isKeyboardVisible || isInputFocused) && { paddingBottom: 280 }
+            ],
+            showsVerticalScrollIndicator: false,
+            scrollEnabled: true,
+            keyboardShouldPersistTaps: "handled",
+            children: [/*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
+              style: [styles.textSectionLogin, {
+                marginBottom: 2
+              }],
+              children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                style: styles.titleLine1,
+                children: "Complete Your Profile"
+              }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                style: styles.descriptionText2,
+                children: "Help us get you verified and connect you with more customers."
               })]
             }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
-              style: styles.profileImageRow,
-              children: [/*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
-                style: [styles.avatarWrapper, imageError && styles.inputCardError],
-                children: [hasProfileImage ? /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Image, {
-                  source: profileImageUri ? { uri: profileImageUri } : require("./src/assets/default_avatar.png"),
-                  style: styles.avatarImage
-                }) : /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
-                  style: styles.avatarPlaceholder,
-                  children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-                    style: styles.placeholderIcon,
-                    children: "\uD83D\uDC64"
-                  }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-                    style: styles.placeholderText,
-                    children: "No Image"
+              style: [styles.sectionContainer, {
+                marginTop: 4
+              }],
+              children: [/*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.Text, {
+                style: styles.inputLabel,
+                children: ["Profile Image ", /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                  style: styles.requiredStar,
+                  children: "*"
+                })]
+              }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
+                style: styles.profileImageRow,
+                children: [/*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
+                  style: [styles.avatarWrapper, imageError && styles.inputCardError],
+                  children: [hasProfileImage ? /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Image, {
+                    source: profileImageUri ? { uri: profileImageUri } : require("./src/assets/default_avatar.png"),
+                    style: styles.avatarImage
+                  }) : /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
+                    style: styles.avatarPlaceholder,
+                    children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                      style: styles.placeholderIcon,
+                      children: "\uD83D\uDC64"
+                    }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                      style: styles.placeholderText,
+                      children: "No Image"
+                    })]
+                  }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
+                    style: styles.cameraBadge,
+                    activeOpacity: 0.8,
+                    onPress: () => {
+                      openGallery();
+                      setImageError(false);
+                    },
+                    children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                      style: styles.cameraBadgeIcon,
+                      children: "\uD83D\uDCF7"
+                    })
                   })]
-                }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
-                  style: styles.cameraBadge,
-                  activeOpacity: 0.8,
+                }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.TouchableOpacity, {
+                  style: [styles.uploadCard, hasProfileImage && styles.uploadCardUploaded, imageError && styles.inputCardError],
+                  activeOpacity: 0.85,
                   onPress: () => {
                     openGallery();
                     setImageError(false);
                   },
-                  children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-                    style: styles.cameraBadgeIcon,
-                    children: "\uD83D\uDCF7"
-                  })
-                })]
-              }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.TouchableOpacity, {
-                style: [styles.uploadCard, hasProfileImage && styles.uploadCardUploaded, imageError && styles.inputCardError],
-                activeOpacity: 0.85,
-                onPress: () => {
-                  openGallery();
-                  setImageError(false);
-                },
-                children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.View, {
-                  style: styles.uploadIconCircle,
-                  children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-                    style: styles.uploadIconText,
-                    children: hasProfileImage ? '✓' : '📷'
-                  })
-                }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
-                  style: styles.uploadTextContainer,
-                  children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-                    style: styles.uploadTitle,
-                    children: hasProfileImage ? 'Photo Uploaded!' : 'Upload your photo'
-                  }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-                    style: styles.uploadSubtitle,
-                    children: hasProfileImage ? 'Tap to choose another photo from phone gallery' : 'Choose photo directly from phone gallery'
+                  children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.View, {
+                    style: styles.uploadIconCircle,
+                    children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                      style: styles.uploadIconText,
+                      children: hasProfileImage ? '✓' : '📷'
+                    })
+                  }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
+                    style: styles.uploadTextContainer,
+                    children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                      style: styles.uploadTitle,
+                      children: hasProfileImage ? 'Photo Uploaded!' : 'Upload your photo'
+                    }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                      style: styles.uploadSubtitle,
+                      children: hasProfileImage ? 'Tap to choose another photo' : 'Choose photo directly from phone gallery'
+                    })]
                   })]
                 })]
               })]
-            })]
-          }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
-            style: styles.sectionContainer,
-            children: [/*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.Text, {
-              style: styles.inputLabel,
-              children: ["Full Name ", /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-                style: styles.requiredStar,
-                children: "*"
+            }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
+              style: styles.sectionContainer,
+              children: [/*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.Text, {
+                style: styles.inputLabel,
+                children: ["Full Name ", /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                  style: styles.requiredStar,
+                  children: "*"
+                })]
+              }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
+                style: [styles.formInputCard, nameError && styles.inputCardError],
+                children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                  style: styles.fieldIcon,
+                  children: "\uD83D\uDC64"
+                }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TextInput, {
+                  style: styles.formTextInput,
+                  placeholder: "Enter full name",
+                  placeholderTextColor: "#94A3B8",
+                  value: fullName,
+                  onFocus: () => {
+                    setIsInputFocused(true);
+                  },
+                  onBlur: () => setIsInputFocused(false),
+                  onChangeText: text => {
+                    setFullName(text);
+                    if (text.trim()) setNameError(false);
+                  }
+                }), fullName.length > 0 && /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
+                  onPress: () => setFullName(''),
+                  hitSlop: {
+                    top: 10,
+                    bottom: 10,
+                    left: 10,
+                    right: 10
+                  },
+                  children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                    style: styles.clearIcon,
+                    children: "\u2715"
+                  })
+                })]
               })]
             }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
-              style: [styles.formInputCard, nameError && styles.inputCardError],
-              children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-                style: styles.fieldIcon,
-                children: "\uD83D\uDC64"
-              }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TextInput, {
-                style: styles.formTextInput,
-                placeholder: "Enter full name",
-                placeholderTextColor: "#94A3B8",
-                value: fullName,
-                onChangeText: text => {
-                  setFullName(text);
-                  if (text.trim()) setNameError(false);
-                }
-              }), fullName.length > 0 && /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
-                onPress: () => setFullName(''),
-                hitSlop: {
-                  top: 10,
-                  bottom: 10,
-                  left: 10,
-                  right: 10
-                },
-                children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-                  style: styles.clearIcon,
-                  children: "\u2715"
-                })
-              })]
-            })]
-          }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
-            style: styles.sectionContainer,
-            children: [/*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.Text, {
-              style: styles.inputLabel,
-              children: ["Email Address ", /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-                style: styles.optionalText,
-                children: "(Optional)"
-              })]
-            }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
-              style: styles.formInputCard,
-              children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-                style: styles.fieldIcon,
-                children: "\u2709\uFE0F"
-              }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TextInput, {
-                style: styles.formTextInput,
-                placeholder: "Enter email address",
-                placeholderTextColor: "#94A3B8",
-                keyboardType: "email-address",
-                autoCapitalize: "none",
-                value: email,
-                onChangeText: setEmail
-              }), email.length > 0 && /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
-                onPress: () => setEmail(''),
-                hitSlop: {
-                  top: 10,
-                  bottom: 10,
-                  left: 10,
-                  right: 10
-                },
-                children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-                  style: styles.clearIcon,
-                  children: "\u2715"
-                })
-              })]
-            })]
-          }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
-            style: styles.sectionContainer,
-            children: [/*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.Text, {
-              style: styles.inputLabel,
-              children: ["Aadhaar Card Number ", /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-                style: styles.optionalText,
-                children: "(Optional)"
+              style: styles.sectionContainer,
+              children: [/*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.Text, {
+                style: styles.inputLabel,
+                children: ["Email Address ", /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                  style: styles.optionalText,
+                  children: "(Optional)"
+                })]
+              }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
+                style: styles.formInputCard,
+                children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                  style: styles.fieldIcon,
+                  children: "\u2709\uFE0F"
+                }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TextInput, {
+                  style: styles.formTextInput,
+                  placeholder: "Enter email address",
+                  placeholderTextColor: "#94A3B8",
+                  keyboardType: "email-address",
+                  autoCapitalize: "none",
+                  value: email,
+                  onFocus: () => {
+                    setIsInputFocused(true);
+                    setTimeout(() => {
+                      if (scrollViewRef.current) {
+                        scrollViewRef.current.scrollToEnd({ animated: true });
+                      }
+                    }, 150);
+                  },
+                  onBlur: () => setIsInputFocused(false),
+                  onChangeText: setEmail
+                }), email.length > 0 && /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
+                  onPress: () => setEmail(''),
+                  hitSlop: {
+                    top: 10,
+                    bottom: 10,
+                    left: 10,
+                    right: 10
+                  },
+                  children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                    style: styles.clearIcon,
+                    children: "\u2715"
+                  })
+                })]
               })]
             }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
-              style: styles.formInputCard,
-              children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-                style: styles.fieldIcon,
-                children: "\uD83E\uDEAA"
-              }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TextInput, {
-                style: styles.formTextInput,
-                placeholder: "Enter 12 digit Aadhaar number",
-                placeholderTextColor: "#94A3B8",
-                keyboardType: "number-pad",
-                maxLength: 12,
-                value: aadhaar,
-                onChangeText: text => setAadhaar(text.replace(/[^0-9]/g, ''))
-              }), aadhaar.length > 0 && /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
-                onPress: () => setAadhaar(''),
-                hitSlop: {
-                  top: 10,
-                  bottom: 10,
-                  left: 10,
-                  right: 10
-                },
-                children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-                  style: styles.clearIcon,
-                  children: "\u2715"
-                })
+              style: styles.sectionContainer,
+              children: [/*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.Text, {
+                style: styles.inputLabel,
+                children: ["Aadhaar Card Number ", /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                  style: styles.optionalText,
+                  children: "(Optional)"
+                })]
+              }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
+                style: styles.formInputCard,
+                children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                  style: styles.fieldIcon,
+                  children: "\uD83E\uDEAA"
+                }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TextInput, {
+                  style: styles.formTextInput,
+                  placeholder: "Enter 12 digit Aadhaar number",
+                  placeholderTextColor: "#94A3B8",
+                  keyboardType: "number-pad",
+                  maxLength: 12,
+                  value: aadhaar,
+                  onFocus: () => {
+                    setIsInputFocused(true);
+                    setTimeout(() => {
+                      if (scrollViewRef.current) {
+                        scrollViewRef.current.scrollToEnd({ animated: true });
+                      }
+                    }, 150);
+                  },
+                  onBlur: () => setIsInputFocused(false),
+                  onChangeText: text => setAadhaar(text.replace(/[^0-9]/g, ''))
+                }), aadhaar.length > 0 && /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
+                  onPress: () => setAadhaar(''),
+                  hitSlop: {
+                    top: 10,
+                    bottom: 10,
+                    left: 10,
+                    right: 10
+                  },
+                  children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                    style: styles.clearIcon,
+                    children: "\u2715"
+                  })
+                })]
               })]
-            })]
-          }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
-            style: styles.securityCard,
-            children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.View, {
-              style: styles.securityIconBox,
+            }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
+              style: styles.securityCard,
+              children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.View, {
+                style: styles.securityIconBox,
+                children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                  style: styles.securityEmoji,
+                  children: "\uD83D\uDEE1\uFE0F"
+                })
+              }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
+                style: styles.securityTextContainer,
+                children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                  style: styles.securityTitle,
+                  children: "Your information is safe and secure."
+                }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                  style: styles.securitySubtitle,
+                  children: "We use this only for verification and to build trust with our customers."
+                })]
+              })]
+            }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
+              style: [styles.nextButton, { marginTop: scale(8) }],
+              onPress: handleNext,
+              activeOpacity: 0.85,
               children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-                style: styles.securityEmoji,
-                children: "\uD83D\uDEE1\uFE0F"
+                style: styles.nextButtonText,
+                children: "Next  \u2794"
               })
-            }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
-              style: styles.securityTextContainer,
-              children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-                style: styles.securityTitle,
-                children: "Your information is safe and secure."
-              }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-                style: styles.securitySubtitle,
-                children: "We use this only for verification and to build trust with our customers."
-              })]
             })]
-          }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
-            style: styles.nextButton,
-            onPress: handleNext,
-            activeOpacity: 0.85,
-            children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-              style: styles.nextButtonText,
-              children: "Next  \u2794"
-            })
-          })]
+          })
         })]
       })
     });
@@ -4342,8 +4415,10 @@ const DefaultAvatar = require('./src/assets/default_avatar.png');
       justifyContent: 'center'
     },
     homeMainLogo: {
-      width: 420,
-      height: 125,
+      width: '90%',
+      maxWidth: 420,
+      height: scale(115),
+      resizeMode: 'contain',
       alignSelf: 'center'
     },
     homeLocationRow: {
@@ -4643,8 +4718,8 @@ const DefaultAvatar = require('./src/assets/default_avatar.png');
       alignItems: 'flex-end'
     },
     topBarCentered: {
-      paddingHorizontal: 24,
-      paddingTop: 48,
+      paddingHorizontal: 16,
+      paddingTop: scale(76),
       paddingBottom: 4,
       alignItems: 'center',
       justifyContent: 'center',
@@ -4653,9 +4728,9 @@ const DefaultAvatar = require('./src/assets/default_avatar.png');
     },
     backButtonAbsolute: {
       position: 'absolute',
-      left: 20,
-      top: 54,
-      padding: 12,
+      left: 18,
+      top: scale(76),
+      padding: 10,
       zIndex: 99,
       elevation: 99
     },
@@ -4666,16 +4741,19 @@ const DefaultAvatar = require('./src/assets/default_avatar.png');
     },
     skipButtonAbsolute: {
       position: 'absolute',
-      right: 20,
-      top: 54,
-      paddingHorizontal: 10,
+      right: 18,
+      top: scale(76),
+      paddingHorizontal: 12,
       paddingVertical: 6,
       zIndex: 99,
       elevation: 99
     },
     topLogoCompact: {
-      width: 300,
-      height: 120
+      width: '100%',
+      maxWidth: 420,
+      height: scale(145),
+      resizeMode: 'contain',
+      alignSelf: 'center'
     },
     skipButton: {
       paddingHorizontal: 10,
@@ -4699,22 +4777,23 @@ const DefaultAvatar = require('./src/assets/default_avatar.png');
     },
     phoneInputCard: {
       backgroundColor: '#FFFFFF',
-      borderRadius: 18,
+      borderRadius: 14,
       borderWidth: 1,
       borderColor: '#CBD5E1',
       flexDirection: 'row',
       alignItems: 'center',
-      paddingHorizontal: 16,
-      paddingVertical: 12,
-      width: '100%',
-      marginVertical: 25,
+      paddingHorizontal: 14,
+      paddingVertical: 8,
+      width: '92%',
+      marginVertical: 16,
+      alignSelf: 'center',
       shadowColor: '#000',
       shadowOffset: {
         width: 0,
-        height: 3
+        height: 2
       },
       shadowOpacity: 0.05,
-      shadowRadius: 8,
+      shadowRadius: 6,
       elevation: 2
     },
     countrySelector: {
@@ -4750,100 +4829,106 @@ const DefaultAvatar = require('./src/assets/default_avatar.png');
     onboardingContent: {
       alignItems: 'center',
       paddingHorizontal: 20,
-      paddingBottom: 30
+      paddingBottom: scale(20)
     },
     onboardingContent2: {
+      flexGrow: 1,
       alignItems: 'center',
+      justifyContent: 'space-between',
       paddingHorizontal: 20,
-      paddingBottom: 30
+      paddingBottom: scale(14)
     },
     textSection2: {
       alignItems: 'center',
       marginTop: 2,
-      marginBottom: 6,
+      marginBottom: 4,
       paddingHorizontal: 15
     },
     descriptionText2: {
-      fontSize: 13.5,
+      fontSize: 13,
       color: '#64748B',
       textAlign: 'center',
-      lineHeight: 19,
-      maxWidth: 310,
+      lineHeight: 18,
+      maxWidth: 320,
       marginTop: 2
     },
     illustrationContainer2: {
       width: '100%',
-      height: 185,
-      marginTop: 2,
+      maxHeight: scale(145),
+      height: scale(130),
+      marginTop: 0,
       marginBottom: 2,
       alignItems: 'center',
       justifyContent: 'center'
     },
     onboardingIllustration2: {
       width: '100%',
-      height: '100%'
+      height: '100%',
+      resizeMode: 'contain'
     },
     featureCard: {
       backgroundColor: '#FFFFFF',
-      borderRadius: 18,
-      paddingVertical: 12,
-      paddingHorizontal: 6,
-      width: '92%',
+      borderRadius: 16,
+      paddingVertical: 6,
+      paddingHorizontal: 4,
+      width: '94%',
       flexDirection: 'row',
       justifyContent: 'space-around',
       alignItems: 'center',
-      marginTop: 4,
-      marginBottom: 12,
+      marginTop: 2,
+      marginBottom: 4,
       shadowColor: '#000',
       shadowOffset: {
         width: 0,
-        height: 4
+        height: 2
       },
-      shadowOpacity: 0.08,
-      shadowRadius: 10,
-      elevation: 3
+      shadowOpacity: 0.06,
+      shadowRadius: 6,
+      elevation: 2
     },
     featureItem: {
       alignItems: 'center',
       flex: 1
     },
     featureIconBox: {
-      width: 44,
-      height: 44,
-      borderRadius: 22,
+      width: 36,
+      height: 36,
+      borderRadius: 18,
       alignItems: 'center',
       justifyContent: 'center',
-      marginBottom: 6
+      marginBottom: 3
     },
     featureEmoji: {
-      fontSize: 20
+      fontSize: 17
     },
     featureText: {
-      fontSize: 11,
+      fontSize: 10,
       fontWeight: '600',
       color: '#334155',
       textAlign: 'center',
-      lineHeight: 14
+      lineHeight: 12.5
     },
     workerButton: {
-      width: '88%',
-      height: 52,
+      width: '90%',
+      height: scale(44),
       backgroundColor: '#FFFFFF',
-      borderRadius: 26,
+      borderRadius: 22,
       borderWidth: 1.5,
       borderColor: '#0F172A',
       alignItems: 'center',
       justifyContent: 'center',
-      marginTop: 10
+      marginTop: 4,
+      marginBottom: 4
     },
     workerButtonText: {
       color: '#0F172A',
-      fontSize: 17,
+      fontSize: 15,
       fontWeight: '700'
     },
     loginContainer: {
-      marginTop: 12,
-      padding: 4
+      marginTop: 4,
+      marginBottom: 4,
+      padding: 2
     },
     loginText: {
       fontSize: 14,
@@ -4871,40 +4956,45 @@ const DefaultAvatar = require('./src/assets/default_avatar.png');
       alignItems: 'center'
     },
     onboardingLogo: {
-      width: 390,
-      height: 160
+      width: '90%',
+      maxWidth: 390,
+      height: scale(150),
+      resizeMode: 'contain',
+      alignSelf: 'center'
     },
     illustrationContainer: {
       width: '100%',
-      height: 290,
-      marginTop: 0,
-      marginBottom: 0,
+      maxHeight: scale(240),
+      height: scale(220),
+      marginTop: 2,
+      marginBottom: 4,
       alignItems: 'center',
       justifyContent: 'center'
     },
     onboardingIllustration: {
       width: '100%',
-      height: '100%'
+      height: '100%',
+      resizeMode: 'contain'
     },
     textSection: {
       alignItems: 'center',
-      marginTop: -8,
-      marginBottom: 8,
+      marginTop: 2,
+      marginBottom: 6,
       paddingHorizontal: 15
     },
     titleLine1: {
-      fontSize: 32,
+      fontSize: moderateScale(26),
       fontWeight: '800',
       color: '#1E293B',
       textAlign: 'center',
-      lineHeight: 38
+      lineHeight: moderateScale(32)
     },
     titleLine2: {
-      fontSize: 32,
+      fontSize: moderateScale(26),
       fontWeight: '800',
       color: '#FF5436',
       textAlign: 'center',
-      lineHeight: 38,
+      lineHeight: moderateScale(32),
       marginBottom: 6
     },
     pillRow: {
@@ -4913,14 +5003,14 @@ const DefaultAvatar = require('./src/assets/default_avatar.png');
       justifyContent: 'center',
       alignItems: 'center',
       marginTop: 6,
-      marginBottom: 8
+      marginBottom: 6
     },
     servicePill: {
       flexDirection: 'row',
       alignItems: 'center',
-      paddingHorizontal: 15,
-      paddingVertical: 9,
-      borderRadius: 22,
+      paddingHorizontal: 13,
+      paddingVertical: 7,
+      borderRadius: 20,
       marginHorizontal: 4,
       marginVertical: 4,
       borderWidth: 1.5,
@@ -4932,28 +5022,28 @@ const DefaultAvatar = require('./src/assets/default_avatar.png');
         height: 2
       },
       shadowOpacity: 0.06,
-      shadowRadius: 5,
-      elevation: 3
+      shadowRadius: 4,
+      elevation: 2
     },
     pillEmoji: {
-      fontSize: 20,
-      marginRight: 8
+      fontSize: 18,
+      marginRight: 6
     },
     servicePillText: {
-      fontSize: 14,
+      fontSize: 13,
       fontWeight: '800',
       color: '#0F172A',
-      letterSpacing: 0.2
+      letterSpacing: 0.1
     },
     descriptionText: {
-      fontSize: 15,
+      fontSize: 14,
       color: '#334155',
       fontWeight: '500',
       textAlign: 'center',
-      lineHeight: 23,
+      lineHeight: 20,
       maxWidth: 330,
-      marginTop: 8,
-      letterSpacing: 0.2
+      marginTop: 6,
+      letterSpacing: 0.1
     },
     boldDarkGray: {
       fontWeight: '700',
@@ -4963,8 +5053,8 @@ const DefaultAvatar = require('./src/assets/default_avatar.png');
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
-      marginTop: 18,
-      marginBottom: 8
+      marginTop: 12,
+      marginBottom: 6
     },
     dot: {
       width: 8,
@@ -4981,21 +5071,21 @@ const DefaultAvatar = require('./src/assets/default_avatar.png');
     },
     nextButton: {
       width: '88%',
-      height: 56,
+      height: scale(52),
       backgroundColor: '#FF5436',
-      borderRadius: 28,
+      borderRadius: 26,
       alignItems: 'center',
       justifyContent: 'center',
-      marginTop: 8,
-      marginBottom: 8,
+      marginTop: scale(18),
+      marginBottom: 4,
       shadowColor: '#FF5436',
       shadowOffset: {
         width: 0,
-        height: 6
+        height: 5
       },
-      shadowOpacity: 0.35,
-      shadowRadius: 10,
-      elevation: 5
+      shadowOpacity: 0.3,
+      shadowRadius: 8,
+      elevation: 4
     },
     nextButtonText: {
       color: '#FFFFFF',
@@ -5144,24 +5234,24 @@ const DefaultAvatar = require('./src/assets/default_avatar.png');
     profileContent: {
       alignItems: 'center',
       paddingHorizontal: 20,
-      paddingBottom: 40
+      paddingBottom: 16
     },
     sectionContainer: {
       width: '100%',
-      marginTop: 14
+      marginTop: 8
     },
     inputLabel: {
-      fontSize: 14,
+      fontSize: 13,
       fontWeight: '700',
       color: '#0F172A',
-      marginBottom: 8
+      marginBottom: 4
     },
     requiredStar: {
       color: '#FF5436',
       fontWeight: '800'
     },
     optionalText: {
-      fontSize: 13,
+      fontSize: 12,
       fontWeight: '400',
       color: '#64748B'
     },
@@ -5171,48 +5261,48 @@ const DefaultAvatar = require('./src/assets/default_avatar.png');
       width: '100%'
     },
     avatarWrapper: {
-      width: 100,
-      height: 100,
-      borderRadius: 20,
+      width: 60,
+      height: 60,
+      borderRadius: 14,
       position: 'relative',
-      marginRight: 14,
+      marginRight: 10,
       borderWidth: 1.5,
       borderColor: '#CBD5E1'
     },
     avatarImage: {
       width: '100%',
       height: '100%',
-      borderRadius: 18
+      borderRadius: 12
     },
     avatarPlaceholder: {
       width: '100%',
       height: '100%',
-      borderRadius: 18,
+      borderRadius: 12,
       backgroundColor: '#F1F5F9',
       alignItems: 'center',
       justifyContent: 'center'
     },
     placeholderIcon: {
-      fontSize: 32,
+      fontSize: 20,
       color: '#94A3B8'
     },
     placeholderText: {
-      fontSize: 10,
+      fontSize: 8,
       fontWeight: '600',
       color: '#94A3B8',
-      marginTop: 2
+      marginTop: 1
     },
     cameraBadge: {
       position: 'absolute',
-      bottom: -4,
-      right: -4,
-      width: 32,
-      height: 32,
-      borderRadius: 16,
+      bottom: -3,
+      right: -3,
+      width: 22,
+      height: 22,
+      borderRadius: 11,
       backgroundColor: '#FF5436',
       alignItems: 'center',
       justifyContent: 'center',
-      borderWidth: 2,
+      borderWidth: 1.5,
       borderColor: '#FFFFFF',
       shadowColor: '#000',
       shadowOffset: {
@@ -5224,60 +5314,60 @@ const DefaultAvatar = require('./src/assets/default_avatar.png');
       elevation: 4
     },
     cameraBadgeIcon: {
-      fontSize: 14
+      fontSize: 10
     },
     uploadCard: {
       flex: 1,
-      height: 100,
+      height: 60,
       backgroundColor: '#FFF5F2',
-      borderRadius: 18,
+      borderRadius: 14,
       borderWidth: 1.5,
       borderColor: '#FFE2DB',
       flexDirection: 'row',
       alignItems: 'center',
-      paddingHorizontal: 14
+      paddingHorizontal: 10
     },
     uploadCardUploaded: {
       backgroundColor: '#ECFDF5',
       borderColor: '#A7F3D0'
     },
     uploadIconCircle: {
-      width: 44,
-      height: 44,
-      borderRadius: 22,
+      width: 34,
+      height: 34,
+      borderRadius: 17,
       borderWidth: 1.5,
       borderColor: '#FF5436',
       alignItems: 'center',
       justifyContent: 'center',
-      marginRight: 10,
+      marginRight: 8,
       backgroundColor: '#FFFFFF'
     },
     uploadIconText: {
-      fontSize: 18
+      fontSize: 14
     },
     uploadTextContainer: {
       flex: 1
     },
     uploadTitle: {
-      fontSize: 14,
+      fontSize: 12,
       fontWeight: '700',
       color: '#1E293B',
-      marginBottom: 2
+      marginBottom: 1
     },
     uploadSubtitle: {
-      fontSize: 11,
+      fontSize: 10,
       color: '#64748B',
-      lineHeight: 15
+      lineHeight: 13
     },
     formInputCard: {
       backgroundColor: '#FFFFFF',
-      borderRadius: 14,
+      borderRadius: 12,
       borderWidth: 1,
       borderColor: '#CBD5E1',
       flexDirection: 'row',
       alignItems: 'center',
-      paddingHorizontal: 14,
-      height: 52,
+      paddingHorizontal: 12,
+      height: 42,
       width: '100%',
       shadowColor: '#000',
       shadowOffset: {
@@ -5289,58 +5379,58 @@ const DefaultAvatar = require('./src/assets/default_avatar.png');
       elevation: 1
     },
     fieldIcon: {
-      fontSize: 18,
-      marginRight: 10,
+      fontSize: 16,
+      marginRight: 8,
       color: '#64748B'
     },
     formTextInput: {
       flex: 1,
-      fontSize: 15,
+      fontSize: 14,
       fontWeight: '500',
       color: '#0F172A'
     },
     clearIcon: {
-      fontSize: 14,
+      fontSize: 13,
       fontWeight: '600',
       color: '#94A3B8',
       padding: 4
     },
     securityCard: {
       backgroundColor: '#EFF6FF',
-      borderRadius: 16,
+      borderRadius: 12,
       borderWidth: 1,
       borderColor: '#DBEAFE',
       flexDirection: 'row',
       alignItems: 'center',
-      padding: 14,
+      padding: 8,
       width: '100%',
-      marginVertical: 18
+      marginVertical: 8
     },
     securityIconBox: {
-      width: 38,
-      height: 38,
-      borderRadius: 19,
+      width: 30,
+      height: 30,
+      borderRadius: 15,
       backgroundColor: '#3B82F6',
       alignItems: 'center',
       justifyContent: 'center',
-      marginRight: 12
+      marginRight: 8
     },
     securityEmoji: {
-      fontSize: 18
+      fontSize: 14
     },
     securityTextContainer: {
       flex: 1
     },
     securityTitle: {
-      fontSize: 13,
+      fontSize: 11,
       fontWeight: '700',
       color: '#1E3A8A',
-      marginBottom: 2
+      marginBottom: 1
     },
     securitySubtitle: {
-      fontSize: 11,
+      fontSize: 10,
       color: '#3B82F6',
-      lineHeight: 15
+      lineHeight: 13
     },
     // Select Professions Screen Styles
     professionsContent: {
@@ -5682,8 +5772,10 @@ const DefaultAvatar = require('./src/assets/default_avatar.png');
       paddingBottom: 6
     },
     dashboardLogo: {
-      width: 280,
-      height: 88,
+      width: '75%',
+      maxWidth: 280,
+      height: scale(80),
+      resizeMode: 'contain',
       alignSelf: 'center',
       marginTop: 2
     },
@@ -7443,8 +7535,10 @@ const DefaultAvatar = require('./src/assets/default_avatar.png');
       fontWeight: '600'
     },
     homeLogo: {
-      width: 200,
-      height: 70
+      width: '60%',
+      maxWidth: 200,
+      height: scale(65),
+      resizeMode: 'contain'
     },
     searchContainer: {
       flexDirection: 'row',
