@@ -475,6 +475,14 @@ const DefaultAvatar = require('./src/assets/default_avatar.png');
     var [otp, setOtp] = useState(['', '', '', '', '', '']);
     var [timer, setTimer] = useState(45);
     var inputRefs = useRef([]);
+    var scrollViewRef = useRef(null);
+
+    var scrollBottom = () => {
+      if (scrollViewRef.current) {
+        scrollViewRef.current.scrollToEnd({ animated: true });
+      }
+    };
+
     useEffect(() => {
       if (timer <= 0) return;
       var interval = setInterval(() => {
@@ -482,6 +490,21 @@ const DefaultAvatar = require('./src/assets/default_avatar.png');
       }, 1000);
       return () => clearInterval(interval);
     }, [timer]);
+
+    useEffect(() => {
+      var showSub = _reactNative.Keyboard.addListener(
+        _reactNative.Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+        () => {
+          setTimeout(scrollBottom, 50);
+          setTimeout(scrollBottom, 150);
+          setTimeout(scrollBottom, 300);
+        }
+      );
+      return () => {
+        showSub.remove();
+      };
+    }, []);
+
     var handleOtpChange = (text, index) => {
       var sanitized = text.replace(/[^0-9]/g, '');
       var newOtp = [...otp];
@@ -493,6 +516,7 @@ const DefaultAvatar = require('./src/assets/default_avatar.png');
         setOtp(newOtp);
         var lastFilled = Math.min(pasted.length - 1, 5);
         inputRefs.current[lastFilled]?.focus();
+        setTimeout(scrollBottom, 50);
         return;
       }
       newOtp[index] = sanitized;
@@ -500,6 +524,7 @@ const DefaultAvatar = require('./src/assets/default_avatar.png');
       if (sanitized && index < 5) {
         inputRefs.current[index + 1]?.focus();
       }
+      setTimeout(scrollBottom, 50);
     };
     var handleKeyPress = (e, index) => {
       if (e.nativeEvent.key === 'Backspace' && !otp[index] && index > 0) {
@@ -544,6 +569,7 @@ const DefaultAvatar = require('./src/assets/default_avatar.png');
               resizeMode: "contain"
             })]
           }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.ScrollView, {
+            ref: scrollViewRef,
             contentContainerStyle: styles.otpContent,
             showsVerticalScrollIndicator: false,
             keyboardShouldPersistTaps: "handled",
@@ -577,6 +603,7 @@ const DefaultAvatar = require('./src/assets/default_avatar.png');
                 value: digit,
                 onChangeText: text => handleOtpChange(text, index),
                 onKeyPress: e => handleKeyPress(e, index),
+                onFocus: () => setTimeout(scrollBottom, 50),
                 selectTextOnFocus: true
               }, index))
             }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
@@ -1003,7 +1030,7 @@ const DefaultAvatar = require('./src/assets/default_avatar.png');
                 })]
               })]
             }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
-              style: [styles.nextButton, { marginTop: scale(8) }],
+              style: [styles.nextButton, { marginTop: scale(4), marginBottom: 10 }],
               onPress: handleNext,
               activeOpacity: 0.85,
               children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
@@ -1020,7 +1047,55 @@ const DefaultAvatar = require('./src/assets/default_avatar.png');
     onBack,
     onNext
   }) {
-    var [selectedProfessions, setSelectedProfessions] = useState([]);
+    var [selectedProfessions, setSelectedProfessions] = useState(['plumber']);
+    var [toastMessage, setToastMessage] = useState(null);
+    var slideAnim = useRef(new _reactNative.Animated.Value(200)).current;
+    var opacityAnim = useRef(new _reactNative.Animated.Value(0)).current;
+    var timeoutRef = useRef(null);
+
+    var triggerToast = message => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      setToastMessage(message);
+      slideAnim.setValue(200);
+      opacityAnim.setValue(0);
+      _reactNative.Animated.parallel([_reactNative.Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true
+      }), _reactNative.Animated.timing(opacityAnim, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true
+      })]).start();
+
+      timeoutRef.current = setTimeout(() => {
+        dismissToast();
+      }, 3500);
+    };
+
+    var dismissToast = () => {
+      _reactNative.Animated.parallel([_reactNative.Animated.timing(slideAnim, {
+        toValue: 200,
+        duration: 250,
+        useNativeDriver: true
+      }), _reactNative.Animated.timing(opacityAnim, {
+        toValue: 0,
+        duration: 250,
+        useNativeDriver: true
+      })]).start(() => {
+        setToastMessage(null);
+      });
+    };
+
+    var handleFinish = () => {
+      if (selectedProfessions.length === 0) {
+        triggerToast('Please select at least 1 profession to continue.');
+        return;
+      }
+      onNext();
+    };
+
+    var isAnySelected = selectedProfessions.length > 0;
     var categories = [{
       id: 'home_repair',
       title: 'Home Repair',
@@ -1161,7 +1236,37 @@ const DefaultAvatar = require('./src/assets/default_avatar.png');
       resizeMode: "cover",
       children: /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.SafeAreaView, {
         style: styles.onboardingContainer,
-        children: [/*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
+        children: [toastMessage && /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Animated.View, {
+          style: [styles.toastContainer, {
+            opacity: opacityAnim,
+            transform: [{
+              translateX: slideAnim
+            }]
+          }],
+          children: /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
+            style: styles.toastContent,
+            children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+              style: styles.toastIcon,
+              children: "\u26A0\uFE0F"
+            }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+              style: styles.toastText,
+              children: toastMessage
+            }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
+              onPress: dismissToast,
+              style: styles.toastCloseBtn,
+              hitSlop: {
+                top: 10,
+                bottom: 10,
+                left: 10,
+                right: 10
+              },
+              children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                style: styles.toastCloseText,
+                children: "\u2715"
+              })
+            })]
+          })
+        }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
           style: styles.topBarCentered,
           children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
             style: styles.backButtonAbsolute,
@@ -1192,7 +1297,7 @@ const DefaultAvatar = require('./src/assets/default_avatar.png');
             children: "Select Your Professions"
           }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.Text, {
             style: styles.descriptionText2,
-            children: ["Choose the types of services you provide.", '\n', "You can select multiple."]
+            children: ["Select at least 1 profession to continue.", '\n', "You can select multiple."]
           })]
         }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.ScrollView, {
           style: {
@@ -1253,13 +1358,11 @@ const DefaultAvatar = require('./src/assets/default_avatar.png');
             }, category.id);
           })
         }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.View, {
-          style: [styles.fixedBottomContainer, {
-            marginTop: 10,
-            marginBottom: 12
-          }],
+          style: [styles.fixedBottomContainer, { marginTop: -30, marginBottom: 55 }],
           children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
-            style: styles.nextButton,
-            onPress: onNext,
+            style: [styles.nextButton, !isAnySelected && styles.disabledButton, { marginTop: 0, marginBottom: 0 }],
+            onPress: handleFinish,
+            disabled: !isAnySelected,
             activeOpacity: 0.85,
             children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
               style: styles.nextButtonText,
@@ -1278,12 +1381,116 @@ const DefaultAvatar = require('./src/assets/default_avatar.png');
     var [locationText, setLocationText] = useState('Connaught Place, New Delhi');
     var [distanceKm, setDistanceKm] = useState(15);
     var [isLocating, setIsLocating] = useState(false);
+    var [showSuggestions, setShowSuggestions] = useState(false);
     var presetDistances = [5, 10, 15, 25, 50, 75];
+
+    var LOCATION_DATABASE = [
+      // Dehradun localities
+      { city: 'Dehradun', name: 'Rajpur Road, Dehradun' },
+      { city: 'Dehradun', name: 'Clock Tower, Dehradun' },
+      { city: 'Dehradun', name: 'Clement Town, Dehradun' },
+      { city: 'Dehradun', name: 'Vasant Vihar, Dehradun' },
+      { city: 'Dehradun', name: 'Prem Nagar, Dehradun' },
+      { city: 'Dehradun', name: 'Ballupur Chowk, Dehradun' },
+      { city: 'Dehradun', name: 'Dharampur, Dehradun' },
+      { city: 'Dehradun', name: 'ISBT Dehradun, Dehradun' },
+      { city: 'Dehradun', name: 'Sahastradhara Road, Dehradun' },
+      { city: 'Dehradun', name: 'Patel Nagar, Dehradun' },
+      { city: 'Dehradun', name: 'Karanpur, Dehradun' },
+      { city: 'Dehradun', name: 'Garhi Cantt, Dehradun' },
+      { city: 'Dehradun', name: 'Majra, Dehradun' },
+      { city: 'Dehradun', name: 'Rishikesh Highway, Dehradun' },
+
+      // Zirakpur localities
+      { city: 'Zirakpur', name: 'VIP Road, Zirakpur' },
+      { city: 'Zirakpur', name: 'Baltana, Zirakpur' },
+      { city: 'Zirakpur', name: 'Dhakoli, Zirakpur' },
+      { city: 'Zirakpur', name: 'Chandigarh-Ambala Highway, Zirakpur' },
+      { city: 'Zirakpur', name: 'Gazipur, Zirakpur' },
+      { city: 'Zirakpur', name: 'Patiala Chowk, Zirakpur' },
+      { city: 'Zirakpur', name: 'Lohgarh, Zirakpur' },
+      { city: 'Zirakpur', name: 'Singhpura, Zirakpur' },
+      { city: 'Zirakpur', name: 'Shatabdi Enclave, Zirakpur' },
+      { city: 'Zirakpur', name: 'High Ground, Zirakpur' },
+
+      // Chandigarh & Tricity
+      { city: 'Chandigarh', name: 'Sector 17, Chandigarh' },
+      { city: 'Chandigarh', name: 'Sector 35, Chandigarh' },
+      { city: 'Chandigarh', name: 'Sector 22, Chandigarh' },
+      { city: 'Chandigarh', name: 'Sector 43 ISBT, Chandigarh' },
+      { city: 'Chandigarh', name: 'Industrial Area Phase 1, Chandigarh' },
+      { city: 'Chandigarh', name: 'Elante Mall Area, Chandigarh' },
+      { city: 'Chandigarh', name: 'Manimajra, Chandigarh' },
+      { city: 'Mohali', name: 'Phase 3B2, Mohali' },
+      { city: 'Mohali', name: 'Phase 7, Mohali' },
+      { city: 'Mohali', name: 'Phase 5, Mohali' },
+      { city: 'Mohali', name: 'Sector 70, Mohali' },
+      { city: 'Mohali', name: 'Sector 82 IT City, Mohali' },
+      { city: 'Mohali', name: 'Kharar Landran Road, Mohali' },
+      { city: 'Panchkula', name: 'Sector 5, Panchkula' },
+      { city: 'Panchkula', name: 'Sector 20, Panchkula' },
+      { city: 'Panchkula', name: 'MDC Sector 5, Panchkula' },
+
+      // Delhi NCR
+      { city: 'Delhi', name: 'Connaught Place, New Delhi' },
+      { city: 'Delhi', name: 'South Extension, New Delhi' },
+      { city: 'Delhi', name: 'Lajpat Nagar, New Delhi' },
+      { city: 'Delhi', name: 'Dwarka Sector 10, New Delhi' },
+      { city: 'Delhi', name: 'Rohini Sector 7, New Delhi' },
+      { city: 'Delhi', name: 'Karol Bagh, New Delhi' },
+      { city: 'Delhi', name: 'Saket, New Delhi' },
+      { city: 'Delhi', name: 'Janakpuri, New Delhi' },
+      { city: 'Noida', name: 'Sector 18, Noida' },
+      { city: 'Noida', name: 'Sector 62, Noida' },
+      { city: 'Noida', name: 'Noida Extension (Greater Noida West)' },
+      { city: 'Gurugram', name: 'Cyber City, Gurugram' },
+      { city: 'Gurugram', name: 'Golf Course Road, Gurugram' },
+      { city: 'Gurugram', name: 'MG Road, Gurugram' },
+      { city: 'Gurugram', name: 'Sohna Road, Gurugram' },
+
+      // Regional Hubs
+      { city: 'Jaipur', name: 'Malviya Nagar, Jaipur' },
+      { city: 'Jaipur', name: 'Vaishali Nagar, Jaipur' },
+      { city: 'Jaipur', name: 'C-Scheme, Jaipur' },
+      { city: 'Lucknow', name: 'Hazratganj, Lucknow' },
+      { city: 'Lucknow', name: 'Gomti Nagar, Lucknow' },
+      { city: 'Shimla', name: 'Mall Road, Shimla' },
+      { city: 'Shimla', name: 'Sanjauli, Shimla' },
+      { city: 'Haridwar', name: 'Har Ki Pauri, Haridwar' },
+      { city: 'Rishikesh', name: 'Triveni Ghat, Rishikesh' },
+      { city: 'Ludhiana', name: 'Model Town, Ludhiana' },
+      { city: 'Ambala', name: 'Ambala Cantt, Ambala' }
+    ];
+
+    var getFilteredSuggestions = () => {
+      var query = (locationText || '').trim().toLowerCase();
+      if (!query) return LOCATION_DATABASE.slice(0, 6);
+      
+      var matches = LOCATION_DATABASE.filter(item => 
+        item.name.toLowerCase().includes(query) || item.city.toLowerCase().includes(query)
+      );
+
+      if (matches.length < 3 && query.length >= 2) {
+        var capitalized = locationText.trim().charAt(0).toUpperCase() + locationText.trim().slice(1);
+        var customAdditions = [
+          { city: capitalized, name: `${capitalized} Center Point` },
+          { city: capitalized, name: `${capitalized} Main Market` },
+          { city: capitalized, name: `${capitalized} Railway Station Area` },
+          { city: capitalized, name: `${capitalized} Bus Stand Area` }
+        ];
+        matches = [...matches, ...customAdditions];
+      }
+      return matches.slice(0, 8);
+    };
+
+    var suggestions = getFilteredSuggestions();
+
     var handleCurrentLocation = () => {
       setIsLocating(true);
       setTimeout(() => {
         setLocationText('Current GPS Location (Delhi NCR)');
         setIsLocating(false);
+        setShowSuggestions(false);
       }, 800);
     };
     return /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.ImageBackground, {
@@ -1348,9 +1555,16 @@ const DefaultAvatar = require('./src/assets/default_avatar.png');
                 placeholder: "Enter city, area or landmark...",
                 placeholderTextColor: "#94A3B8",
                 value: locationText,
-                onChangeText: setLocationText
+                onFocus: () => setShowSuggestions(true),
+                onChangeText: text => {
+                  setLocationText(text);
+                  setShowSuggestions(true);
+                }
               }), locationText.length > 0 && /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
-                onPress: () => setLocationText(''),
+                onPress: () => {
+                  setLocationText('');
+                  setShowSuggestions(true);
+                },
                 hitSlop: {
                   top: 10,
                   bottom: 10,
@@ -1362,6 +1576,32 @@ const DefaultAvatar = require('./src/assets/default_avatar.png');
                   children: "\u2715"
                 })
               })]
+            }), showSuggestions && suggestions.length > 0 && /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.View, {
+              style: styles.suggestionsDropdown,
+              children: suggestions.map((item, index) => /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.TouchableOpacity, {
+                key: index,
+                style: styles.suggestionRow,
+                onPress: () => {
+                  setLocationText(item.name);
+                  setShowSuggestions(false);
+                  _reactNative.Keyboard.dismiss();
+                },
+                activeOpacity: 0.7,
+                children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                  style: styles.suggestionPinIcon,
+                  children: "\uD83D\uDCCD"
+                }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                  style: styles.suggestionText,
+                  numberOfLines: 1,
+                  children: item.name
+                }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.View, {
+                  style: styles.cityBadge,
+                  children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                    style: styles.cityBadgeText,
+                    children: item.city
+                  })
+                })]
+              }))
             }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.TouchableOpacity, {
               style: styles.useGpsButton,
               onPress: handleCurrentLocation,
@@ -1455,24 +1695,15 @@ const DefaultAvatar = require('./src/assets/default_avatar.png');
                 }), " available within ", distanceKm, " km."]
               })]
             })]
-          })]
-        }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.View, {
-          style: [styles.fixedBottomContainer, userRole === 'customer' ? {
-            marginTop: -40,
-            marginBottom: 10
-          } : {
-            marginTop: 10,
-            marginBottom: 10
-          }],
-          children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
-            style: styles.nextButton,
+          }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
+            style: [styles.nextButton, { marginTop: scale(10), marginBottom: scale(16) }],
             onPress: onFinish,
             activeOpacity: 0.85,
             children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
               style: styles.nextButtonText,
               children: userRole === 'customer' ? "Complete Profile  \u2794" : "Next  \u2794"
             })
-          })
+          })]
         })]
       })
     });
@@ -5106,7 +5337,7 @@ const DefaultAvatar = require('./src/assets/default_avatar.png');
     otpContent: {
       alignItems: 'center',
       paddingHorizontal: 24,
-      paddingBottom: 40
+      paddingBottom: 60
     },
     otpContainer: {
       flexDirection: 'row',
@@ -5238,7 +5469,7 @@ const DefaultAvatar = require('./src/assets/default_avatar.png');
     },
     sectionContainer: {
       width: '100%',
-      marginTop: 8
+      marginTop: 4
     },
     inputLabel: {
       fontSize: 13,
@@ -5402,9 +5633,9 @@ const DefaultAvatar = require('./src/assets/default_avatar.png');
       borderColor: '#DBEAFE',
       flexDirection: 'row',
       alignItems: 'center',
-      padding: 8,
+      padding: 6,
       width: '100%',
-      marginVertical: 8
+      marginVertical: 4
     },
     securityIconBox: {
       width: 30,
@@ -5436,17 +5667,17 @@ const DefaultAvatar = require('./src/assets/default_avatar.png');
     professionsContent: {
       alignItems: 'center',
       paddingHorizontal: 16,
-      paddingBottom: 40
+      paddingBottom: 50
     },
     categoryBlock: {
       width: '100%',
-      marginTop: 14
+      marginTop: 8
     },
     categoryHeaderRow: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      marginBottom: 10,
+      marginBottom: 4,
       paddingHorizontal: 2
     },
     categoryTitleGroup: {
@@ -5454,24 +5685,24 @@ const DefaultAvatar = require('./src/assets/default_avatar.png');
       alignItems: 'center'
     },
     categoryEmoji: {
-      fontSize: 18,
-      marginRight: 8
+      fontSize: 15,
+      marginRight: 6
     },
     categoryTitleText: {
-      fontSize: 16,
+      fontSize: 14,
       fontWeight: '800',
       color: '#0F172A'
     },
     countBadge: {
       backgroundColor: '#FFF0ED',
-      paddingHorizontal: 10,
-      paddingVertical: 4,
-      borderRadius: 12,
+      paddingHorizontal: 8,
+      paddingVertical: 2,
+      borderRadius: 10,
       borderWidth: 1,
       borderColor: '#FFDCD4'
     },
     countBadgeText: {
-      fontSize: 12,
+      fontSize: 11,
       fontWeight: '700',
       color: '#FF5436'
     },
@@ -5483,10 +5714,10 @@ const DefaultAvatar = require('./src/assets/default_avatar.png');
     professionCard: {
       width: '30.8%',
       marginHorizontal: '1.2%',
-      marginBottom: 10,
-      borderRadius: 16,
-      paddingVertical: 14,
-      paddingHorizontal: 6,
+      marginBottom: 6,
+      borderRadius: 12,
+      paddingVertical: 8,
+      paddingHorizontal: 4,
       alignItems: 'center',
       justifyContent: 'center',
       position: 'relative',
@@ -5507,11 +5738,11 @@ const DefaultAvatar = require('./src/assets/default_avatar.png');
     },
     checkCircle: {
       position: 'absolute',
-      top: 6,
-      right: 6,
-      width: 18,
-      height: 18,
-      borderRadius: 9,
+      top: 4,
+      right: 4,
+      width: 15,
+      height: 15,
+      borderRadius: 7.5,
       borderWidth: 1.5,
       borderColor: '#CBD5E1',
       alignItems: 'center',
@@ -5524,98 +5755,146 @@ const DefaultAvatar = require('./src/assets/default_avatar.png');
     },
     checkIconText: {
       color: '#FFFFFF',
-      fontSize: 11,
+      fontSize: 9,
       fontWeight: '900'
     },
     professionIcon: {
-      fontSize: 28,
-      marginBottom: 6,
-      marginTop: 4
+      fontSize: 22,
+      marginBottom: 3,
+      marginTop: 2
     },
     professionCardTitle: {
-      fontSize: 12,
+      fontSize: 11,
       fontWeight: '700',
       color: '#0F172A',
       textAlign: 'center',
-      lineHeight: 16
+      lineHeight: 14
     },
     fixedBottomContainer: {
       width: '100%',
       alignItems: 'center',
       justifyContent: 'center',
       paddingTop: 4,
-      paddingBottom: 10,
+      paddingBottom: 4,
       paddingHorizontal: 20,
-      marginTop: -16,
-      marginBottom: 35,
       backgroundColor: 'transparent'
     },
     // Select Location & Distance Screen Styles
     locationScrollContent: {
       alignItems: 'center',
       paddingHorizontal: 16,
-      paddingBottom: 20
+      paddingBottom: 2
     },
     locationSectionCard: {
       width: '100%',
       backgroundColor: '#FFFFFF',
-      borderRadius: 18,
+      borderRadius: 14,
       borderWidth: 1,
       borderColor: '#CBD5E1',
-      padding: 16,
-      marginTop: 12,
+      padding: 8,
+      marginTop: 4,
       shadowColor: '#000',
       shadowOffset: {
         width: 0,
-        height: 2
+        height: 1
       },
-      shadowOpacity: 0.04,
-      shadowRadius: 6,
-      elevation: 2
+      shadowOpacity: 0.03,
+      shadowRadius: 4,
+      elevation: 1
     },
     locationSectionLabel: {
-      fontSize: 14,
+      fontSize: 12.5,
       fontWeight: '800',
       color: '#0F172A',
-      marginBottom: 10
+      marginBottom: 3
     },
     locationInputBox: {
       backgroundColor: '#F8FAFC',
-      borderRadius: 14,
+      borderRadius: 10,
       borderWidth: 1.5,
       borderColor: '#E2E8F0',
       flexDirection: 'row',
       alignItems: 'center',
-      paddingHorizontal: 12,
-      height: 50
+      paddingHorizontal: 8,
+      height: 38
     },
     locationPinIcon: {
-      fontSize: 18,
-      marginRight: 8
+      fontSize: 14,
+      marginRight: 6
     },
     locationTextInput: {
       flex: 1,
-      fontSize: 14,
+      fontSize: 12.5,
       fontWeight: '600',
       color: '#0F172A'
+    },
+    suggestionsDropdown: {
+      backgroundColor: '#FFFFFF',
+      borderRadius: 12,
+      borderWidth: 1.5,
+      borderColor: '#E2E8F0',
+      marginTop: 4,
+      marginBottom: 6,
+      width: '100%',
+      shadowColor: '#000',
+      shadowOffset: {
+        width: 0,
+        height: 3
+      },
+      shadowOpacity: 0.08,
+      shadowRadius: 6,
+      elevation: 4,
+      maxHeight: 180
+    },
+    suggestionRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: 10,
+      paddingVertical: 8,
+      borderBottomWidth: 1,
+      borderBottomColor: '#F1F5F9'
+    },
+    suggestionPinIcon: {
+      fontSize: 14,
+      marginRight: 6
+    },
+    suggestionText: {
+      flex: 1,
+      fontSize: 12,
+      fontWeight: '600',
+      color: '#0F172A'
+    },
+    cityBadge: {
+      backgroundColor: '#EFF6FF',
+      borderRadius: 6,
+      paddingHorizontal: 6,
+      paddingVertical: 2,
+      borderWidth: 1,
+      borderColor: '#DBEAFE',
+      marginLeft: 4
+    },
+    cityBadgeText: {
+      fontSize: 10,
+      fontWeight: '700',
+      color: '#2563EB'
     },
     useGpsButton: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
       backgroundColor: '#EFF6FF',
-      borderRadius: 12,
+      borderRadius: 8,
       borderWidth: 1,
       borderColor: '#BFDBFE',
-      paddingVertical: 10,
-      marginTop: 12
+      paddingVertical: 4,
+      marginTop: 4
     },
     useGpsIcon: {
-      fontSize: 16,
-      marginRight: 6
+      fontSize: 13,
+      marginRight: 5
     },
     useGpsText: {
-      fontSize: 13,
+      fontSize: 11.5,
       fontWeight: '700',
       color: '#2563EB'
     },
@@ -5626,22 +5905,22 @@ const DefaultAvatar = require('./src/assets/default_avatar.png');
     },
     distanceMetricBadge: {
       backgroundColor: '#DCFCE7',
-      paddingHorizontal: 12,
-      paddingVertical: 4,
-      borderRadius: 12,
+      paddingHorizontal: 8,
+      paddingVertical: 2,
+      borderRadius: 8,
       borderWidth: 1,
       borderColor: '#86EFAC'
     },
     distanceMetricText: {
-      fontSize: 14,
+      fontSize: 12,
       fontWeight: '900',
       color: '#15803D'
     },
     distanceHelperText: {
-      fontSize: 12.5,
+      fontSize: 10.5,
       color: '#64748B',
-      lineHeight: 18,
-      marginBottom: 14
+      lineHeight: 13,
+      marginBottom: 4
     },
     boldDistanceText: {
       fontWeight: '700',
@@ -5650,25 +5929,25 @@ const DefaultAvatar = require('./src/assets/default_avatar.png');
     presetPillRow: {
       flexDirection: 'row',
       flexWrap: 'wrap',
-      marginHorizontal: -4,
-      marginBottom: 14
+      marginHorizontal: -2,
+      marginBottom: 4
     },
     distancePill: {
-      paddingHorizontal: 16,
-      paddingVertical: 8,
-      borderRadius: 20,
+      paddingHorizontal: 8,
+      paddingVertical: 3,
+      borderRadius: 12,
       backgroundColor: '#F1F5F9',
       borderWidth: 1.5,
       borderColor: '#E2E8F0',
-      marginHorizontal: 4,
-      marginVertical: 4
+      marginHorizontal: 2,
+      marginVertical: 2
     },
     distancePillSelected: {
       backgroundColor: '#FF5436',
       borderColor: '#FF5436'
     },
     distancePillText: {
-      fontSize: 13,
+      fontSize: 11,
       fontWeight: '700',
       color: '#475569'
     },
@@ -5680,15 +5959,15 @@ const DefaultAvatar = require('./src/assets/default_avatar.png');
       alignItems: 'center',
       justifyContent: 'space-between',
       backgroundColor: '#F8FAFC',
-      borderRadius: 14,
-      padding: 6,
+      borderRadius: 10,
+      padding: 2,
       borderWidth: 1,
       borderColor: '#E2E8F0'
     },
     stepperBtn: {
-      width: 40,
-      height: 40,
-      borderRadius: 10,
+      width: 28,
+      height: 28,
+      borderRadius: 6,
       backgroundColor: '#FFFFFF',
       alignItems: 'center',
       justifyContent: 'center',
@@ -5700,11 +5979,11 @@ const DefaultAvatar = require('./src/assets/default_avatar.png');
         height: 1
       },
       shadowOpacity: 0.05,
-      shadowRadius: 2,
+      shadowRadius: 1,
       elevation: 1
     },
     stepperBtnText: {
-      fontSize: 20,
+      fontSize: 14,
       fontWeight: '800',
       color: '#0F172A'
     },
@@ -5713,29 +5992,29 @@ const DefaultAvatar = require('./src/assets/default_avatar.png');
       alignItems: 'center'
     },
     stepperValueText: {
-      fontSize: 13.5,
+      fontSize: 11,
       fontWeight: '700',
       color: '#1E293B'
     },
     mapRadarCard: {
       width: '100%',
       backgroundColor: '#ECFDF5',
-      borderRadius: 16,
+      borderRadius: 12,
       borderWidth: 1,
       borderColor: '#A7F3D0',
       flexDirection: 'row',
       alignItems: 'center',
-      padding: 14,
-      marginTop: 14
+      padding: 6,
+      marginTop: 4
     },
     radarIconCircle: {
-      width: 40,
-      height: 40,
-      borderRadius: 20,
+      width: 26,
+      height: 26,
+      borderRadius: 13,
       backgroundColor: '#10B981',
       alignItems: 'center',
       justifyContent: 'center',
-      marginRight: 12
+      marginRight: 6
     },
     radarEmoji: {
       fontSize: 18
