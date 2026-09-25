@@ -43,7 +43,7 @@ const DefaultAvatar = require('./src/assets/default_avatar.png');
 
 function App() {
   var isDarkMode = useColorScheme() === 'dark';
-  var [currentScreen, setCurrentScreen] = useState('onboarding1');
+  var [currentScreen, setCurrentScreen] = useState('workerDashboard');
   var [userPhone, setUserPhone] = useState('');
   var [userRole, setUserRole] = useState('worker');
   return /*#__PURE__*/(0, _jsxRuntime.jsxs)(require("react-native-safe-area-context").SafeAreaProvider, {
@@ -1975,7 +1975,7 @@ function WorkerDashboardScreen({
           })]
         })]
       }), activeTab === 'dashboard' && /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.ScrollView, {
-        contentContainerStyle: { paddingHorizontal: 16, paddingTop: 4, paddingBottom: 95, gap: 10 },
+        contentContainerStyle: { paddingHorizontal: 16, paddingTop: 4, paddingBottom: 125, gap: 10 },
         showsVerticalScrollIndicator: false,
         scrollEnabled: false,
         children: [/*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.TouchableOpacity, {
@@ -2448,30 +2448,7 @@ function WorkerDashboardScreen({
             })]
           })]
         }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
-          style: styles.profileAvailabilityCard,
-          children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.View, {
-            style: [styles.statusDot, isAvailable ? styles.statusDotOnline : styles.statusDotOffline]
-          }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
-            style: styles.availabilityInfoGroup,
-            children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-              style: styles.availabilityCardTitle,
-              children: isAvailable ? "Available for New Work" : "Currently Offline"
-            }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-              style: styles.availabilityCardSubtitle,
-              children: isAvailable ? "Visible to customers searching nearby" : "Turn on to get customer calls"
-            })]
-          }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
-            style: [styles.toggleSwitchTrack, isAvailable && styles.toggleSwitchTrackActive],
-            onPress: () => setIsAvailable(!isAvailable),
-            activeOpacity: 0.8,
-            children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.View, {
-              style: [styles.toggleSwitchThumb, isAvailable && styles.toggleSwitchThumbActive]
-            })
-          })]
-        }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.ScrollView, {
-          contentContainerStyle: styles.profileTabScrollContent,
-          showsVerticalScrollIndicator: false,
-          style: { flex: 1 },
+          style: [styles.profileTabScrollContent, { flex: 1, paddingBottom: 0 }],
           children: [/*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
             style: styles.profileSectionCard,
             children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
@@ -2594,26 +2571,13 @@ function WorkerDashboardScreen({
                 style: styles.profileEditBtnText,
                 children: "Edit Profile & Settings"
               })]
-            }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.TouchableOpacity, {
-              style: styles.profileLogoutBtn,
-              onPress: onBackToOnboarding,
-              activeOpacity: 0.8,
-              children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-                style: styles.profileLogoutBtnIcon,
-                children: "🚪"
-              }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-                style: styles.profileLogoutBtnText,
-                children: "Logout / Exit"
-              })]
             })]
           })]
         })]
-      }), activeTab === 'settings' && (/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.ImageBackground, {
-        source: require("./src/assets/onboarding_bg.png"),
+      }), activeTab === 'settings' && (/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.View, {
         style: { flex: 1 },
-        resizeMode: "cover",
         children: settingsSubScreen === 'profileAccount' ? /* Separate Profile & Account Screen (Single Page, No Scroll) */ /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
-          style: { flex: 1, paddingHorizontal: 16, paddingTop: 8, paddingBottom: 20, backgroundColor: 'transparent' },
+          style: { flex: 1, paddingHorizontal: 16, paddingTop: 8, paddingBottom: 110, backgroundColor: 'transparent' },
           children: [
             /* Top Content Container */
             /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
@@ -2830,7 +2794,7 @@ function WorkerDashboardScreen({
           : settingsSubScreen === 'profession' ? (
           /* Separate Profession & Services Screen (Fixed Page, Profession List Scroll Only) */
           /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
-            style: { flex: 1, paddingHorizontal: 16, paddingTop: 8, paddingBottom: 20, backgroundColor: 'transparent' },
+            style: { flex: 1, paddingHorizontal: 16, paddingTop: 8, paddingBottom: 110, backgroundColor: 'transparent' },
             children: [
               /* Fixed Header Bar with Left Arrow Back Button & Right Side Save Button */
               /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
@@ -3784,7 +3748,7 @@ function WorkerDashboardScreen({
               /* Scrollable List for 10 Settings Option Cards */
               /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.ScrollView, {
               style: { flex: 1 },
-              contentContainerStyle: { gap: 10, paddingBottom: 20 },
+              contentContainerStyle: { gap: 5, paddingBottom: 160 },
               showsVerticalScrollIndicator: false,
               children: [
                   /* 1. Profile & Account */
@@ -4164,14 +4128,15 @@ function WorkerDashboardScreen({
                   })
                   ]
                 })
-                ]
-              })
               ]
             })
             ]
           })
-          )
-      })), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
+          ]
+        })
+      )
+    })
+  ), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
         style: styles.bottomTabBarContainer,
         children: [/*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.TouchableOpacity, {
           style: styles.tabItem,
@@ -6563,7 +6528,7 @@ var styles = _reactNative.StyleSheet.create({
   // Customer Calls Tab Styles
   callsTabScrollContent: {
     paddingHorizontal: 16,
-    paddingBottom: 100
+    paddingBottom: 125
   },
   callsTabHeader: {
     flexDirection: 'row',
@@ -6976,7 +6941,7 @@ var styles = _reactNative.StyleSheet.create({
   },
   profileTabScrollContent: {
     paddingHorizontal: 0,
-    paddingBottom: 95
+    paddingBottom: 0
   },
   profileHeaderNav: {
     flexDirection: 'row',
@@ -7027,8 +6992,8 @@ var styles = _reactNative.StyleSheet.create({
   },
   profileHeroCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    paddingVertical: 10,
+    borderRadius: 14,
+    paddingVertical: 4,
     paddingHorizontal: 8,
     alignItems: 'center',
     marginBottom: 8,
@@ -7048,8 +7013,8 @@ var styles = _reactNative.StyleSheet.create({
     marginBottom: 6
   },
   heroAvatarImg: {
-    width: 64,
-    height: 64,
+    width: 44,
+    height: 44,
     borderRadius: 32,
     borderWidth: 2,
     borderColor: '#FFDCD4'
@@ -7071,12 +7036,12 @@ var styles = _reactNative.StyleSheet.create({
     fontSize: 11
   },
   heroWorkerName: {
-    fontSize: 18,
+    fontSize: 14,
     fontWeight: '800',
     color: '#0F172A'
   },
   heroWorkerSkill: {
-    fontSize: 12,
+    fontSize: 10.5,
     fontWeight: '700',
     color: '#0F52BA',
     marginTop: 1,
@@ -7208,63 +7173,64 @@ var styles = _reactNative.StyleSheet.create({
   },
   profileSectionCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 18,
-    padding: 16,
-    marginBottom: 16,
+    borderRadius: 14,
+    paddingVertical: 7,
+    paddingHorizontal: 12,
+    marginBottom: 5,
     borderWidth: 1,
     borderColor: '#E2E8F0',
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
-      height: 2
+      height: 1
     },
-    shadowOpacity: 0.04,
-    shadowRadius: 4,
-    elevation: 2
+    shadowOpacity: 0.03,
+    shadowRadius: 3,
+    elevation: 1
   },
   sectionCardHeaderTitle: {
-    fontSize: 16,
+    fontSize: 14.5,
     fontWeight: '900',
     color: '#0F172A',
-    marginBottom: 14
+    marginBottom: 6
   },
   detailItemRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 6
+    paddingVertical: 4
   },
   detailItemIcon: {
-    fontSize: 18,
-    marginRight: 12,
-    width: 24
+    fontSize: 16,
+    marginRight: 10,
+    width: 20
   },
   detailItemTextGroup: {
     flex: 1
   },
   detailItemLabel: {
-    fontSize: 11.5,
+    fontSize: 10.5,
     fontWeight: '600',
     color: '#64748B'
   },
   detailItemValue: {
-    fontSize: 13.5,
+    fontSize: 12.5,
     fontWeight: '800',
     color: '#0F172A',
-    marginTop: 1
+    marginTop: 0
   },
   detailItemDivider: {
     height: 1,
     backgroundColor: '#F1F5F9',
-    marginVertical: 8
+    marginVertical: 4
   },
   verifiedBadgeMini: {
     backgroundColor: '#DCFCE7',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 8
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 7
   },
   verifiedBadgeMiniText: {
-    fontSize: 10.5,
+    fontSize: 10,
     fontWeight: '800',
     color: '#15803D'
   },
@@ -7320,32 +7286,32 @@ var styles = _reactNative.StyleSheet.create({
     fontWeight: '900'
   },
   profileActionsContainer: {
-    gap: 10,
+    gap: 6,
     marginTop: 4,
-    marginBottom: 10
+    marginBottom: 6
   },
   profileEditBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#FF5436',
-    paddingVertical: 14,
-    borderRadius: 14,
+    paddingVertical: 8,
+    borderRadius: 10,
     shadowColor: '#FF5436',
     shadowOffset: {
       width: 0,
-      height: 3
+      height: 2
     },
-    shadowOpacity: 0.25,
-    shadowRadius: 6,
-    elevation: 3
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 2
   },
   profileEditBtnIcon: {
-    fontSize: 16,
-    marginRight: 8
+    fontSize: 14,
+    marginRight: 6
   },
   profileEditBtnText: {
-    fontSize: 15,
+    fontSize: 13,
     fontWeight: '800',
     color: '#FFFFFF'
   },
@@ -7465,45 +7431,45 @@ var styles = _reactNative.StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 10
+    marginBottom: 6
   },
   linkTextSmall: {
-    fontSize: 12.5,
+    fontSize: 11.5,
     fontWeight: '800',
     color: '#FF5436'
   },
   portfolioGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 10,
-    marginBottom: 10
+    gap: 8,
+    marginBottom: 4
   },
   portfolioCardItem: {
     width: '30%',
     backgroundColor: '#F8FAFC',
-    borderRadius: 14,
+    borderRadius: 10,
     borderWidth: 1,
     borderColor: '#E2E8F0',
-    padding: 10,
+    padding: 7,
     alignItems: 'center',
     position: 'relative'
   },
   portfolioIconCircle: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
     backgroundColor: '#FFF',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 6,
+    marginBottom: 4,
     borderWidth: 1,
     borderColor: '#E2E8F0'
   },
   portfolioEmoji: {
-    fontSize: 22
+    fontSize: 17
   },
   portfolioTitleText: {
-    fontSize: 11,
+    fontSize: 10.5,
     fontWeight: '700',
     color: '#334155',
     textAlign: 'center'
@@ -7546,32 +7512,32 @@ var styles = _reactNative.StyleSheet.create({
   // Worker Settings Screen Custom Styles
   workerProfileSettingsTopCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 18,
-    padding: 16,
-    marginBottom: 16,
+    borderRadius: 14,
+    padding: 10,
+    marginBottom: 4,
     borderWidth: 1,
     borderColor: '#F1F5F9',
     shadowColor: '#64748B',
     shadowOffset: {
       width: 0,
-      height: 4
+      height: 2
     },
-    shadowOpacity: 0.06,
-    shadowRadius: 10,
-    elevation: 3,
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    elevation: 2,
     flexDirection: 'row',
     alignItems: 'center'
   },
   workerAvatarSettingsWrapper: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    width: 46,
+    height: 46,
+    borderRadius: 23,
     position: 'relative'
   },
   workerAvatarSettingsImg: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    width: 46,
+    height: 46,
+    borderRadius: 23,
     borderWidth: 2,
     borderColor: '#FF5436'
   },
@@ -7579,9 +7545,9 @@ var styles = _reactNative.StyleSheet.create({
     position: 'absolute',
     bottom: -2,
     right: -2,
-    width: 22,
-    height: 22,
-    borderRadius: 11,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
     backgroundColor: '#FF5436',
     alignItems: 'center',
     justifyContent: 'center',
@@ -7592,56 +7558,56 @@ var styles = _reactNative.StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#DCFCE7',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 12,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 8,
     alignSelf: 'flex-start',
-    marginVertical: 3
+    marginVertical: 2
   },
   settingsOptionCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    marginBottom: 12,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginBottom: 0,
     borderWidth: 1,
     borderColor: '#F1F5F9',
     shadowColor: '#64748B',
     shadowOffset: {
       width: 0,
-      height: 2
+      height: 1
     },
-    shadowOpacity: 0.04,
-    shadowRadius: 6,
-    elevation: 2
+    shadowOpacity: 0.03,
+    shadowRadius: 3,
+    elevation: 1
   },
   settingsCardHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center'
   },
   settingsIconCircle: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 14
+    marginRight: 10
   },
   settingsCardTitleText: {
-    fontSize: 15,
+    fontSize: 13.5,
     fontWeight: '800',
     color: '#0F172A'
   },
   settingsCardSubText: {
-    fontSize: 12,
+    fontSize: 11,
     color: '#64748B',
-    marginTop: 2
+    marginTop: 1
   },
   settingsChevronText: {
-    fontSize: 16,
+    fontSize: 13,
     fontWeight: '800',
     color: '#94A3B8',
-    marginLeft: 8
+    marginLeft: 6
   },
   saveSettingsBtn: {
     backgroundColor: '#FF5436',
