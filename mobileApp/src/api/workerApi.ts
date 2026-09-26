@@ -181,11 +181,18 @@ export const workerApi = {
    */
   async toggleAvailability(isAvailable: boolean) {
     try {
-      console.log('API [toggleAvailability]:', isAvailable);
-      return { success: true, isAvailable };
+      console.log('🚀 API [toggleAvailability]:', isAvailable);
+      const response = await fetch(`${API_BASE_URL}${ENDPOINTS.WORKER_AVAILABILITY}`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ isAvailable }),
+      });
+      const data = await response.json();
+      console.log('✅ [workerApi.toggleAvailability] Response:', data);
+      return data;
     } catch (error) {
-      console.error('Error in toggleAvailability:', error);
-      throw error;
+      console.error('❌ Error in toggleAvailability:', error);
+      return { success: false, isAvailable };
     }
   },
 
