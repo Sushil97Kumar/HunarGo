@@ -50,6 +50,28 @@ export const CompleteProfileScreen: React.FC<Props> = ({ onBack, onNext }) => {
   };
 
   useEffect(() => {
+    const fetchExistingProfile = async () => {
+      try {
+        const res = await workerApi.getProfile();
+        if (res && res.success && res.worker) {
+          const w = res.worker;
+          if (w.fullName) setFullName(w.fullName);
+          if (w.email) setEmail(w.email);
+          if (w.aadhaar) setAadhaar(w.aadhaar);
+          if (w.profileImage) {
+            const imgUri = w.profileImage.startsWith('http')
+              ? w.profileImage
+              : `https://${process.env.AWS_BUCKET_NAME || 'hunargo-bucket'}.s3.amazonaws.com/${w.profileImage}`;
+            setProfileImageUri(imgUri);
+            setHasProfileImage(true);
+          }
+        }
+      } catch (err) {
+        console.warn('Could not fetch existing profile details:', err);
+      }
+    };
+    fetchExistingProfile();
+
     const showSub = Keyboard.addListener(
       Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
       () => {
@@ -150,8 +172,19 @@ export const CompleteProfileScreen: React.FC<Props> = ({ onBack, onNext }) => {
     }
     try {
       setIsSaving(true);
+      if (hasProfileImage && profileImageUri) {
+        try {
+          console.log('📸 Uploading profile image to AWS S3 bucket...');
+          const uploadRes = await workerApi.uploadProfileImage(profileImageUri);
+          console.log('✅ AWS S3 Upload Response:', uploadRes);
+        } catch (s3Err) {
+          console.warn('⚠️ S3 upload error:', s3Err);
+        }
+      }
       await workerApi.updateProfile({
-        fullName,
+        fullName: fullName.trim(),
+        email: email ? email.trim() : '',
+        aadhaar: aadhaar ? aadhaar.trim() : '',
         gender: '',
         dob: '',
         profileImageUri,

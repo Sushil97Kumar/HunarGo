@@ -1,0 +1,18 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const authMiddleware_1 = require("../middleware/authMiddleware");
+const uploadMiddleware_1 = require("../middleware/uploadMiddleware");
+const workerController_1 = require("../controllers/workerController");
+const router = (0, express_1.Router)();
+router.get('/profile', authMiddleware_1.authMiddleware, workerController_1.getProfile);
+router.post('/profile', authMiddleware_1.authMiddleware, workerController_1.updateProfile);
+router.post('/upload-profile-image', uploadMiddleware_1.upload.single('profileImage'), workerController_1.uploadProfileImage);
+router.get('/location', authMiddleware_1.authMiddleware, workerController_1.getLocation);
+router.post('/location', authMiddleware_1.authMiddleware, workerController_1.updateLocation);
+router.get('/professions', authMiddleware_1.authMiddleware, workerController_1.getProfessions);
+router.post('/professions', authMiddleware_1.authMiddleware, workerController_1.updateProfessions);
+router.post('/availability', authMiddleware_1.authMiddleware, workerController_1.toggleAvailability);
+router.get('/dashboard-stats', authMiddleware_1.authMiddleware, workerController_1.getDashboardStats);
+router.get('/customer-calls', authMiddleware_1.authMiddleware, workerController_1.getCustomerCalls);
+exports.default = router;

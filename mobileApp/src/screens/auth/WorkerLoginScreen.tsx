@@ -23,16 +23,24 @@ interface Props {
 export const WorkerLoginScreen: React.FC<Props> = ({ onBack, onContinue }) => {
   const [phoneNumber, setPhoneNumber] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
   const isPhoneValid = phoneNumber.trim().length === 10;
 
   const handleContinue = async () => {
     if (!isPhoneValid || isLoading) return;
+    setErrorMessage('');
     try {
       setIsLoading(true);
-      await authApi.sendOtp({ phoneNumber });
-      onContinue(phoneNumber);
+      const res = await authApi.sendOtp({ phoneNumber: phoneNumber.trim(), role: 'worker' });
+      console.log('Worker Login OTP Sent:', res);
+      if (res && res.success) {
+        onContinue(phoneNumber.trim());
+      } else {
+        setErrorMessage(res?.message || 'Failed to send OTP. Please try again.');
+      }
     } catch (error) {
       console.error('Failed to send OTP:', error);
+      setErrorMessage('Network error while sending OTP.');
     } finally {
       setIsLoading(false);
     }
@@ -83,10 +91,19 @@ export const WorkerLoginScreen: React.FC<Props> = ({ onBack, onContinue }) => {
                 placeholderTextColor="#94A3B8"
                 keyboardType="phone-pad"
                 value={phoneNumber}
-                onChangeText={(text) => setPhoneNumber(text.replace(/[^0-9]/g, ''))}
+                onChangeText={(text) => {
+                  setPhoneNumber(text.replace(/[^0-9]/g, ''));
+                  if (errorMessage) setErrorMessage('');
+                }}
                 maxLength={10}
               />
             </View>
+
+            {errorMessage ? (
+              <Text style={{ color: '#EF4444', textAlign: 'center', marginTop: 10, fontSize: 14, fontWeight: '600' }}>
+                {errorMessage}
+              </Text>
+            ) : null}
 
             <TouchableOpacity
               style={[styles.nextButton, (!isPhoneValid || isLoading) && styles.disabledButton]}
@@ -95,7 +112,7 @@ export const WorkerLoginScreen: React.FC<Props> = ({ onBack, onContinue }) => {
               activeOpacity={0.85}
             >
               <Text style={styles.nextButtonText}>
-                {isLoading ? 'Sending...' : 'Continue  ➔'}
+                {isLoading ? 'Sending OTP...' : 'Continue  ➔'}
               </Text>
             </TouchableOpacity>
 

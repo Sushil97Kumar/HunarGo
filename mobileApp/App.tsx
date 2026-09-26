@@ -8,6 +8,7 @@ import {
   Dimensions,
   Image,
   ImageBackground,
+  Keyboard,
   KeyboardAvoidingView,
   Modal,
   PixelRatio,
@@ -24,6 +25,8 @@ import {
 } from 'react-native';
 import { launchImageLibrary } from 'react-native-image-picker';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { authApi } from './src/api/authApi';
+import { workerApi } from './src/api/workerApi';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const BASE_WIDTH = 390;
@@ -43,7 +46,7 @@ const DefaultAvatar = require('./src/assets/default_avatar.png');
 
 function App() {
   var isDarkMode = useColorScheme() === 'dark';
-  var [currentScreen, setCurrentScreen] = useState('workerDashboard');
+  var [currentScreen, setCurrentScreen] = useState('onboarding1');
   var [userPhone, setUserPhone] = useState('');
   var [userRole, setUserRole] = useState('worker');
   return /*#__PURE__*/(0, _jsxRuntime.jsxs)(require("react-native-safe-area-context").SafeAreaProvider, {
@@ -71,7 +74,15 @@ function App() {
     }), currentScreen === 'otpVerification' && /*#__PURE__*/(0, _jsxRuntime.jsx)(OtpVerificationScreen, {
       phoneNumber: userPhone,
       onBack: () => setCurrentScreen('workerLogin'),
-      onVerify: () => setCurrentScreen('completeProfile')
+      onVerify: (otp, isProfileComplete) => {
+        if (isProfileComplete) {
+          console.log('🚀 Worker profile is complete. Opening Dashboard directly!');
+          setCurrentScreen('workerDashboard');
+        } else {
+          console.log('📝 Worker profile incomplete. Navigating to completeProfile step...');
+          setCurrentScreen('completeProfile');
+        }
+      }
     }), currentScreen === 'completeProfile' && /*#__PURE__*/(0, _jsxRuntime.jsx)(CompleteProfileScreen, {
       onBack: () => setCurrentScreen('otpVerification'),
       onNext: () => setCurrentScreen('selectLocationDistance')
@@ -365,7 +376,30 @@ function WorkerLoginScreen({
   onContinue
 }) {
   var [phoneNumber, setPhoneNumber] = useState('');
+  var [isLoading, setIsLoading] = useState(false);
+  var [errorMessage, setErrorMessage] = useState('');
   var isPhoneValid = phoneNumber.trim().length === 10;
+
+  var handleContinue = async () => {
+    if (!isPhoneValid || isLoading) return;
+    setErrorMessage('');
+    setIsLoading(true);
+    try {
+      var res = await authApi.sendOtp({ phoneNumber: phoneNumber.trim(), role: 'worker' });
+      console.log('📱 Worker Login OTP Sent:', res);
+      if (res && res.success) {
+        onContinue(phoneNumber.trim());
+      } else {
+        setErrorMessage(res?.message || 'Failed to send OTP. Please try again.');
+      }
+    } catch (err) {
+      console.error('Failed to send OTP:', err);
+      setErrorMessage('Network error while sending OTP.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.ImageBackground, {
     source: require("./src/assets/onboarding_bg.png"),
     style: styles.bgImage,
@@ -434,25 +468,27 @@ function WorkerLoginScreen({
               placeholderTextColor: "#94A3B8",
               keyboardType: "phone-pad",
               value: phoneNumber,
-              onChangeText: text => setPhoneNumber(text.replace(/[^0-9]/g, '')),
+              onChangeText: text => {
+                setPhoneNumber(text.replace(/[^0-9]/g, ''));
+                if (errorMessage) setErrorMessage('');
+              },
               maxLength: 10
             })]
+          }), !!errorMessage && /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+            style: { color: '#EF4444', textAlign: 'center', marginTop: 10, fontSize: 14, fontWeight: '600' },
+            children: errorMessage
           }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
-            style: [styles.nextButton, !isPhoneValid && styles.disabledButton],
-            onPress: () => {
-              if (isPhoneValid) {
-                onContinue(phoneNumber);
-              }
-            },
-            disabled: !isPhoneValid,
+            style: [styles.nextButton, (!isPhoneValid || isLoading) && styles.disabledButton],
+            onPress: handleContinue,
+            disabled: !isPhoneValid || isLoading,
             activeOpacity: 0.85,
             children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
               style: styles.nextButtonText,
-              children: "Continue  \u2794"
+              children: isLoading ? "Sending OTP..." : "Continue  \u2794"
             })
           }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
             style: styles.loginContainer,
-            onPress: () => isPhoneValid && onContinue(phoneNumber),
+            onPress: handleContinue,
             activeOpacity: 0.7,
             children: /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.Text, {
               style: styles.loginText,
@@ -474,14 +510,39 @@ function OtpVerificationScreen({
 }) {
   var [otp, setOtp] = useState(['', '', '', '', '', '']);
   var [timer, setTimer] = useState(45);
+  var [isSubmitting, setIsSubmitting] = useState(false);
+  var [errorMessage, setErrorMessage] = useState('');
   var inputRefs = useRef([]);
   var scrollViewRef = useRef(null);
+  var toastAnim = useRef(new Animated.Value(350)).current;
 
   var scrollBottom = () => {
     if (scrollViewRef.current) {
       scrollViewRef.current.scrollToEnd({ animated: true });
     }
   };
+
+  useEffect(() => {
+    if (errorMessage) {
+      toastAnim.setValue(350);
+      Animated.spring(toastAnim, {
+        toValue: 0,
+        useNativeDriver: true,
+        tension: 80,
+        friction: 10,
+      }).start();
+
+      var timerId = setTimeout(() => {
+        Animated.timing(toastAnim, {
+          toValue: 350,
+          duration: 300,
+          useNativeDriver: true,
+        }).start(() => setErrorMessage(''));
+      }, 4500);
+
+      return () => clearTimeout(timerId);
+    }
+  }, [errorMessage]);
 
   useEffect(() => {
     if (timer <= 0) return;
@@ -492,8 +553,8 @@ function OtpVerificationScreen({
   }, [timer]);
 
   useEffect(() => {
-    var showSub = _reactNative.Keyboard.addListener(
-      _reactNative.Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+    var showSub = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
       () => {
         setTimeout(scrollBottom, 50);
         setTimeout(scrollBottom, 150);
@@ -506,6 +567,13 @@ function OtpVerificationScreen({
   }, []);
 
   var handleOtpChange = (text, index) => {
+    if (errorMessage) {
+      Animated.timing(toastAnim, {
+        toValue: 350,
+        duration: 200,
+        useNativeDriver: true,
+      }).start(() => setErrorMessage(''));
+    }
     var sanitized = text.replace(/[^0-9]/g, '');
     var newOtp = [...otp];
     if (sanitized.length > 1) {
@@ -526,11 +594,59 @@ function OtpVerificationScreen({
     }
     setTimeout(scrollBottom, 50);
   };
+
   var handleKeyPress = (e, index) => {
     if (e.nativeEvent.key === 'Backspace' && !otp[index] && index > 0) {
       inputRefs.current[index - 1]?.focus();
     }
   };
+
+  var clearOtpAndFocus = () => {
+    setOtp(['', '', '', '', '', '']);
+    setTimeout(() => {
+      inputRefs.current[0]?.focus();
+    }, 100);
+  };
+
+  var handleVerify = async () => {
+    if (!isOtpComplete || isSubmitting) return;
+    var otpString = otp.join('');
+    setErrorMessage('');
+    setIsSubmitting(true);
+    try {
+      var res = await authApi.verifyOtp({ phoneNumber: phoneNumber, otp: otpString, role: 'worker' });
+      console.log('🔒 Worker OTP Verification Response:', res);
+      if (res && res.success) {
+        var isComplete = Boolean(
+          res.isProfileComplete ||
+          (res.user && res.user.fullName && res.user.fullName.trim().length > 0 && res.user.professions && res.user.professions.length > 0)
+        );
+        onVerify(otpString, isComplete);
+      } else {
+        var msg = res?.message || 'OTP is not correct. Please enter the valid code.';
+        setErrorMessage(msg);
+        clearOtpAndFocus();
+      }
+    } catch (err) {
+      console.error('Failed to verify OTP:', err);
+      setErrorMessage('Network error while verifying OTP.');
+      clearOtpAndFocus();
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  var handleResendOtp = async () => {
+    if (timer > 0) return;
+    setErrorMessage('');
+    try {
+      setTimer(45);
+      await authApi.sendOtp({ phoneNumber: phoneNumber, role: 'worker' });
+    } catch (err) {
+      console.error('Resend OTP Error:', err);
+    }
+  };
+
   var formattedPhone = phoneNumber.length === 10 ? `+91 ${phoneNumber.slice(0, 5)} ${phoneNumber.slice(5)}` : '+91 98765 43210';
   var isOtpComplete = otp.every(digit => digit.length === 1);
   var formatTimer = seconds => {
@@ -538,102 +654,134 @@ function OtpVerificationScreen({
     var secs = seconds % 60;
     return `(${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')})`;
   };
-  return /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.ImageBackground, {
-    source: require("./src/assets/onboarding_bg.png"),
-    style: styles.bgImage,
-    resizeMode: "cover",
-    children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.SafeAreaView, {
-      style: styles.onboardingContainer,
-      children: /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.KeyboardAvoidingView, {
-        style: { flex: 1 },
-        behavior: _reactNative.Platform.OS === 'ios' ? 'padding' : 'height',
-        children: [/*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
-          style: styles.topBarCentered,
-          children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
-            style: styles.backButtonAbsolute,
-            onPress: onBack,
-            activeOpacity: 0.7,
-            hitSlop: {
-              top: 20,
-              bottom: 20,
-              left: 20,
-              right: 20
-            },
-            children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-              style: styles.backArrowText,
-              children: "\u2190"
-            })
-          }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Image, {
-            source: require("./src/assets/logo.png"),
-            style: styles.topLogoCompact,
-            resizeMode: "contain"
-          })]
-        }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.ScrollView, {
-          ref: scrollViewRef,
-          contentContainerStyle: styles.otpContent,
-          showsVerticalScrollIndicator: false,
-          keyboardShouldPersistTaps: "handled",
-          children: [/*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
-            style: styles.textSectionLogin,
-            children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-              style: styles.titleLine1,
-              children: "Verify Your"
-            }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-              style: styles.titleLine2,
-              children: "Mobile Number"
-            }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-              style: styles.descriptionText2,
-              children: "We've sent a 6-digit OTP to"
-            }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-              style: styles.phoneHighlight,
-              children: formattedPhone
-            }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-              style: styles.descriptionText2,
-              children: "Please enter the code below to continue."
-            })]
-          }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.View, {
-            style: styles.otpContainer,
-            children: otp.map((digit, index) => /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TextInput, {
-              ref: ref => {
-                inputRefs.current[index] = ref;
-              },
-              style: [styles.otpBox, digit !== '' && styles.otpBoxFilled, isOtpComplete && styles.otpBoxComplete],
-              keyboardType: "number-pad",
-              maxLength: 1,
-              value: digit,
-              onChangeText: text => handleOtpChange(text, index),
-              onKeyPress: e => handleKeyPress(e, index),
-              onFocus: () => setTimeout(scrollBottom, 50),
-              selectTextOnFocus: true
-            }, index))
-          }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
-            style: styles.resendContainer,
-            children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-              style: styles.resendLabel,
-              children: "Didn't receive the code? "
-            }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
-              disabled: timer > 0,
-              onPress: () => setTimer(45),
-              activeOpacity: 0.7,
-              children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-                style: [styles.resendLink, timer > 0 && styles.resendDisabledText],
-                children: timer > 0 ? `Resend ${formatTimer(timer)}` : "Resend OTP"
-              })
-            })]
-          }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
-            style: [styles.nextButton, !isOtpComplete && styles.disabledButton],
-            onPress: () => isOtpComplete && onVerify(otp.join('')),
-            disabled: !isOtpComplete,
-            activeOpacity: 0.85,
-            children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-              style: styles.nextButtonText,
-              children: "Verify & Proceed  \u2794"
-            })
-          })]
-        })]
-      })
-    })
-  });
+
+  return (
+    <ImageBackground source={require("./src/assets/onboarding_bg.png")} style={styles.bgImage} resizeMode="cover">
+      <SafeAreaView style={styles.onboardingContainer}>
+        {!!errorMessage && (
+          <Animated.View
+            style={{
+              position: 'absolute',
+              top: Platform.OS === 'ios' ? 70 : 60,
+              left: 16,
+              right: 16,
+              transform: [{ translateX: toastAnim }],
+              zIndex: 999999,
+              elevation: 20,
+            }}
+          >
+            <TouchableOpacity
+              activeOpacity={0.9}
+              onPress={() => setErrorMessage('')}
+              style={{
+                backgroundColor: '#FEE2E2',
+                borderRadius: 14,
+                paddingVertical: 12,
+                paddingHorizontal: 16,
+                flexDirection: 'row',
+                alignItems: 'center',
+                shadowColor: '#EF4444',
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.2,
+                shadowRadius: 8,
+                elevation: 8,
+                borderWidth: 1.5,
+                borderColor: '#FCA5A5',
+              }}
+            >
+              <Text style={{ fontSize: 18, marginRight: 10 }}>⚠️</Text>
+
+              <Text style={{ flex: 1, color: '#991B1B', fontSize: 13, fontWeight: '700', lineHeight: 18, marginRight: 8 }}>
+                {errorMessage}
+              </Text>
+
+              <TouchableOpacity
+                onPress={() => setErrorMessage('')}
+                hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+              >
+                <Text style={{ color: '#991B1B', fontSize: 16, fontWeight: '800' }}>✕</Text>
+              </TouchableOpacity>
+            </TouchableOpacity>
+          </Animated.View>
+        )}
+
+        <KeyboardAvoidingView
+          style={{ flex: 1 }}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        >
+          <View style={styles.topBarCentered}>
+            <TouchableOpacity
+              style={styles.backButtonAbsolute}
+              onPress={onBack}
+              activeOpacity={0.7}
+              hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
+            >
+              <Text style={styles.backArrowText}>←</Text>
+            </TouchableOpacity>
+            <Image source={require("./src/assets/logo.png")} style={styles.topLogoCompact} resizeMode="contain" />
+          </View>
+
+          <ScrollView
+            ref={scrollViewRef}
+            contentContainerStyle={styles.otpContent}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+          >
+            <View style={styles.textSectionLogin}>
+              <Text style={styles.titleLine1}>Verify Your</Text>
+              <Text style={styles.titleLine2}>Mobile Number</Text>
+              <Text style={styles.descriptionText2}>We've sent a 6-digit OTP to</Text>
+              <Text style={styles.phoneHighlight}>{formattedPhone}</Text>
+              <Text style={styles.descriptionText2}>Please enter the code below to continue.</Text>
+            </View>
+
+            <View style={styles.otpContainer}>
+              {otp.map((digit, index) => (
+                <TextInput
+                  key={index}
+                  ref={ref => {
+                    inputRefs.current[index] = ref;
+                  }}
+                  style={[styles.otpBox, digit !== '' && styles.otpBoxFilled, isOtpComplete && styles.otpBoxComplete]}
+                  keyboardType="number-pad"
+                  maxLength={1}
+                  value={digit}
+                  onChangeText={text => handleOtpChange(text, index)}
+                  onKeyPress={e => handleKeyPress(e, index)}
+                  onFocus={() => setTimeout(scrollBottom, 50)}
+                  selectTextOnFocus
+                />
+              ))}
+            </View>
+
+            <View style={styles.resendContainer}>
+              <Text style={styles.resendLabel}>Didn't receive the code? </Text>
+              <TouchableOpacity
+                disabled={timer > 0}
+                onPress={handleResendOtp}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.resendLink, timer > 0 && styles.resendDisabledText]}>
+                  {timer > 0 ? `Resend ${formatTimer(timer)}` : 'Resend OTP'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            <TouchableOpacity
+              style={[styles.nextButton, (!isOtpComplete || isSubmitting) && styles.disabledButton]}
+              onPress={handleVerify}
+              disabled={!isOtpComplete || isSubmitting}
+              activeOpacity={0.85}
+            >
+              <Text style={styles.nextButtonText}>
+                {isSubmitting ? 'Verifying...' : 'Verify & Proceed  ➔'}
+              </Text>
+            </TouchableOpacity>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
+    </ImageBackground>
+  );
 }
 function CompleteProfileScreen({
   onBack,
@@ -655,6 +803,28 @@ function CompleteProfileScreen({
   };
 
   useEffect(() => {
+    var fetchExistingProfile = async () => {
+      try {
+        var res = await workerApi.getProfile();
+        if (res && res.success && res.worker) {
+          var w = res.worker;
+          if (w.fullName) setFullName(w.fullName);
+          if (w.email) setEmail(w.email);
+          if (w.aadhaar) setAadhaar(w.aadhaar);
+          if (w.profileImage) {
+            var imgUri = w.profileImage.startsWith('http')
+              ? w.profileImage
+              : `https://${process.env.AWS_BUCKET_NAME || 'hunargo-bucket'}.s3.amazonaws.com/${w.profileImage}`;
+            setProfileImageUri(imgUri);
+            setHasProfileImage(true);
+          }
+        }
+      } catch (err) {
+        console.warn('Could not fetch existing profile details:', err);
+      }
+    };
+    fetchExistingProfile();
+
     var showSub = _reactNative.Keyboard.addListener(
       Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
       () => {
@@ -739,7 +909,8 @@ function CompleteProfileScreen({
       setToastMessage(null);
     });
   };
-  var handleNext = () => {
+  var [isSaving, setIsSaving] = useState(false);
+  var handleNext = async () => {
     setImageError(false);
     setNameError(false);
     if (!fullName.trim()) {
@@ -747,7 +918,31 @@ function CompleteProfileScreen({
       triggerToast('Please fill your full name.');
       return;
     }
-    onNext();
+    try {
+      setIsSaving(true);
+      if (hasProfileImage && profileImageUri) {
+        try {
+          console.log('📸 Uploading profile image to AWS S3 bucket...');
+          var uploadRes = await workerApi.uploadProfileImage(profileImageUri);
+          console.log('✅ AWS S3 Upload Response:', uploadRes);
+        } catch (s3Err) {
+          console.warn('⚠️ S3 upload error:', s3Err);
+        }
+      }
+      await workerApi.updateProfile({
+        fullName: fullName.trim(),
+        email: email ? email.trim() : '',
+        aadhaar: aadhaar ? aadhaar.trim() : '',
+        gender: '',
+        dob: '',
+        profileImageUri
+      });
+      onNext();
+    } catch (err) {
+      console.error('Failed to update profile:', err);
+    } finally {
+      setIsSaving(false);
+    }
   };
   return /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.ImageBackground, {
     source: require("./src/assets/onboarding_bg.png"),
@@ -1048,6 +1243,20 @@ function SelectProfessionsScreen({
   var opacityAnim = useRef(new _reactNative.Animated.Value(0)).current;
   var timeoutRef = useRef(null);
 
+  useEffect(() => {
+    var fetchSavedProfessions = async () => {
+      try {
+        var res = await workerApi.getProfessions();
+        if (res && res.success && Array.isArray(res.professions) && res.professions.length > 0) {
+          setSelectedProfessions(res.professions);
+        }
+      } catch (err) {
+        console.warn('Could not fetch saved professions:', err);
+      }
+    };
+    fetchSavedProfessions();
+  }, []);
+
   var triggerToast = message => {
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
     setToastMessage(message);
@@ -1082,12 +1291,20 @@ function SelectProfessionsScreen({
     });
   };
 
-  var handleFinish = () => {
+  var handleFinish = async () => {
     if (selectedProfessions.length === 0) {
       triggerToast('Please select at least 1 profession to continue.');
       return;
     }
-    onNext();
+    try {
+      console.log('🛠️ [App.tsx handleFinish] Saving professions to DB...');
+      var res = await workerApi.updateProfessions(selectedProfessions);
+      console.log('✅ [App.tsx handleFinish] Professions Save Response:', res);
+      onNext();
+    } catch (err) {
+      console.error('Failed to update professions:', err);
+      onNext();
+    }
   };
 
   var isAnySelected = selectedProfessions.length > 0;
@@ -1377,7 +1594,44 @@ function SelectLocationDistanceScreen({
   var [distanceKm, setDistanceKm] = useState(15);
   var [isLocating, setIsLocating] = useState(false);
   var [showSuggestions, setShowSuggestions] = useState(false);
+  var [isSaving, setIsSaving] = useState(false);
   var presetDistances = [5, 10, 15, 25, 50, 75];
+
+  useEffect(() => {
+    var fetchSavedLocation = async () => {
+      try {
+        var res = await workerApi.getLocation();
+        if (res && res.success && res.location) {
+          if (res.location.address) setLocationText(res.location.address);
+          if (res.location.serviceRadius) setDistanceKm(res.location.serviceRadius);
+        }
+      } catch (err) {
+        console.warn('Could not fetch saved location:', err);
+      }
+    };
+    fetchSavedLocation();
+  }, []);
+
+  var handleFinish = async () => {
+    try {
+      setIsSaving(true);
+      console.log('📍 [App.tsx handleFinish] Saving location & distance range to DB...');
+      var res = await workerApi.updateLocationAndDistance({
+        address: locationText,
+        city: locationText.split(',').pop()?.trim() || 'New Delhi',
+        pincode: '',
+        maxDistanceKm: distanceKm,
+        coordinates: [76.7179, 30.7046]
+      });
+      console.log('✅ [App.tsx handleFinish] Location Save Response:', res);
+      onFinish();
+    } catch (err) {
+      console.error('Failed to update location:', err);
+      onFinish();
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   var LOCATION_DATABASE = [
     // Dehradun localities
@@ -1692,7 +1946,7 @@ function SelectLocationDistanceScreen({
           })]
         }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
           style: [styles.nextButton, { marginTop: scale(10), marginBottom: scale(16) }],
-          onPress: onFinish,
+          onPress: handleFinish,
           activeOpacity: 0.85,
           children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
             style: styles.nextButtonText,
@@ -1739,17 +1993,127 @@ function WorkerDashboardScreen({
   var [settingsSubScreen, setSettingsSubScreen] = useState(null);
   var [callAlertsEnabled, setCallAlertsEnabled] = useState(true);
   var [soundAlertsEnabled, setSoundAlertsEnabled] = useState(true);
-  var [workerName, setWorkerName] = useState('Raj Kumar');
-  var [workerMobile, setWorkerMobile] = useState('+91 98765 43210');
-  var [workerEmail, setWorkerEmail] = useState('raj.kumar@example.com');
-  var [workerAadhaar, setWorkerAadhaar] = useState('5482 9102 3841');
+  var [workerAvatarUri, setWorkerAvatarUri] = useState(null);
+  var [workerName, setWorkerName] = useState('');
+  var [workerMobile, setWorkerMobile] = useState('');
+  var [workerEmail, setWorkerEmail] = useState('');
+  var [workerAadhaar, setWorkerAadhaar] = useState('');
   var [workerPassword, setWorkerPassword] = useState('••••••••');
   var [workingDays, setWorkingDays] = useState(['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']);
   var [workingHours, setWorkingHours] = useState('09:00 AM - 07:00 PM');
   var [emergencyAvailable, setEmergencyAvailable] = useState(true);
   var [privacyProfileVisible, setPrivacyProfileVisible] = useState(true);
-  var [hourlyRate, setHourlyRate] = useState('350');
+  var [hourlyRate, setHourlyRate] = useState('250');
+  var [visitingCharge, setVisitingCharge] = useState(150);
+  var [experienceYears, setExperienceYears] = useState(5);
+  var [profileViews, setProfileViews] = useState(245);
+  var [callsReceivedCount, setCallsReceivedCount] = useState(38);
+  var [customersServedCount, setCustomersServedCount] = useState(21);
+  var [rating, setRating] = useState(4.8);
+  var [reviewCount, setReviewCount] = useState(38);
   var [reviewsCurrentPage, setReviewsCurrentPage] = useState(1);
+
+  useEffect(() => {
+    var fetchWorkerProfile = async () => {
+      try {
+        console.log('🔄 [WorkerDashboard] Fetching logged-in worker profile from DB...');
+        var res = await workerApi.getProfile();
+        console.log('✅ [WorkerDashboard] getProfile response:', res);
+        if (res && res.success && res.worker) {
+          var w = res.worker;
+          if (w.fullName) setWorkerName(w.fullName);
+          if (w.phoneNumber) setWorkerMobile(w.phoneNumber);
+          if (w.email) setWorkerEmail(w.email);
+          if (w.aadhaar) setWorkerAadhaar(w.aadhaar);
+          if (w.profileImage) setWorkerAvatarUri(w.profileImage);
+          if (w.professions && Array.isArray(w.professions) && w.professions.length > 0) {
+            setSelectedProfessions(w.professions);
+          }
+          if (w.location) {
+            var loc = w.location.address || w.location.city || (typeof w.location === 'string' ? w.location : '');
+            if (loc) setWorkerLocation(loc);
+            if (w.location.serviceRadius) setServiceRadius(w.location.serviceRadius);
+          }
+          if (w.isAvailable !== undefined) setIsAvailable(w.isAvailable);
+          if (w.hourlyRate !== undefined) setHourlyRate(String(w.hourlyRate));
+          if (w.visitingCharge !== undefined) setVisitingCharge(w.visitingCharge);
+          if (w.experienceYears !== undefined) setExperienceYears(w.experienceYears);
+          if (w.profileViews !== undefined) setProfileViews(w.profileViews);
+          if (w.callsReceivedCount !== undefined) setCallsReceivedCount(w.callsReceivedCount);
+          if (w.customersServedCount !== undefined) setCustomersServedCount(w.customersServedCount);
+          if (w.rating !== undefined) setRating(w.rating);
+          if (w.reviewCount !== undefined) setReviewCount(w.reviewCount);
+          if (w.workImages && Array.isArray(w.workImages) && w.workImages.length > 0) {
+            setWorkImages(w.workImages.map((img, i) => ({
+              id: img._id || img.id || String(i + 1),
+              title: img.title || 'Work Photo',
+              icon: img.icon || '⚡'
+            })));
+          }
+        }
+      } catch (err) {
+        console.error('❌ [WorkerDashboard] Failed to fetch profile:', err);
+      }
+    };
+    fetchWorkerProfile();
+  }, []);
+
+  var handlePickProfileImage = async () => {
+    try {
+      var result = await launchImageLibrary({
+        mediaType: 'photo',
+        quality: 0.8,
+      });
+      if (result.assets && result.assets.length > 0 && result.assets[0].uri) {
+        var selectedUri = result.assets[0].uri;
+        setWorkerAvatarUri(selectedUri);
+        console.log('📸 Uploading newly picked profile image...');
+        var uploadRes = await workerApi.uploadProfileImage(selectedUri);
+        if (uploadRes && uploadRes.imageUrl) {
+          setWorkerAvatarUri(uploadRes.imageUrl);
+          await workerApi.updateProfile({ fullName: workerName, profileImageUri: uploadRes.imageUrl });
+        }
+      }
+    } catch (err) {
+      console.error('Failed to pick profile image:', err);
+    }
+  };
+
+  var handleSaveProfileAccount = async () => {
+    try {
+      console.log('💾 Saving updated profile details...');
+      await workerApi.updateProfile({
+        fullName: workerName,
+        email: workerEmail,
+        aadhaar: workerAadhaar,
+        phoneNumber: workerMobile,
+        profileImageUri: workerAvatarUri,
+      });
+      if (workerLocation) {
+        await workerApi.updateLocationAndDistance({
+          address: workerLocation,
+          city: '',
+          pincode: '',
+          maxDistanceKm: serviceRadius,
+        });
+      }
+      setSettingsSubScreen(null);
+    } catch (err) {
+      console.error('Failed to save profile account changes:', err);
+      setSettingsSubScreen(null);
+    }
+  };
+
+  var handleSaveProfessions = async () => {
+    try {
+      console.log('💾 Saving professions:', selectedProfessions);
+      await workerApi.updateProfessions(selectedProfessions);
+      setSettingsSubScreen(null);
+    } catch (err) {
+      console.error('Failed to save profession changes:', err);
+      setSettingsSubScreen(null);
+    }
+  };
 
   var toggleSettingsSection = secId => {
     setOpenSettingsSection(openSettingsSection === secId ? null : secId);
@@ -1985,10 +2349,12 @@ function WorkerDashboardScreen({
           children: [/*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
             style: styles.workerAvatarWrapper,
             children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Image, {
-              source: require("./src/assets/default_avatar.png"),
+              source: workerAvatarUri ? { uri: workerAvatarUri } : DefaultAvatar,
               style: styles.workerAvatarImg
-            }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.View, {
+            }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
               style: styles.cameraBadgeSmall,
+              onPress: handlePickProfileImage,
+              activeOpacity: 0.8,
               children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
                 style: styles.cameraIconSmall,
                 children: "\uD83D\uDCF7"
@@ -2003,7 +2369,7 @@ function WorkerDashboardScreen({
               style: styles.workerNameRow,
               children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
                 style: styles.workerNameText,
-                children: "Raj Kumar"
+                children: workerName || 'Worker'
               }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
                 style: styles.waveEmoji,
                 children: " \uD83D\uDC4B"
@@ -2075,7 +2441,7 @@ function WorkerDashboardScreen({
               })
             }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
               style: styles.statValue,
-              children: "245"
+              children: profileViews
             }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
               style: styles.statLabel,
               children: "Profile Views"
@@ -2092,7 +2458,7 @@ function WorkerDashboardScreen({
               })
             }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
               style: styles.statValue,
-              children: "38"
+              children: callsReceivedCount
             }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
               style: styles.statLabel,
               children: "Calls Received"
@@ -2109,7 +2475,7 @@ function WorkerDashboardScreen({
               })
             }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
               style: styles.statValue,
-              children: "21"
+              children: customersServedCount
             }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
               style: styles.statLabel,
               children: "Customers Served"
@@ -2126,7 +2492,7 @@ function WorkerDashboardScreen({
               })
             }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
               style: styles.statValue,
-              children: "4.8"
+              children: rating
             }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
               style: styles.statLabel,
               children: "Rating"
@@ -2363,12 +2729,12 @@ function WorkerDashboardScreen({
           children: [/*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
             style: styles.heroAvatarContainer,
             children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Image, {
-              source: require("./src/assets/default_avatar.png"),
+              source: workerAvatarUri ? { uri: workerAvatarUri } : DefaultAvatar,
               style: styles.heroAvatarImg
             }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
               style: styles.heroCameraBadge,
               activeOpacity: 0.8,
-              onPress: () => setActiveTab('settings'),
+              onPress: handlePickProfileImage,
               children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
                 style: styles.heroCameraIcon,
                 children: "\uD83D\uDCF7"
@@ -2376,7 +2742,7 @@ function WorkerDashboardScreen({
             })]
           }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
             style: styles.heroWorkerName,
-            children: "Raj Kumar"
+            children: workerName || 'Worker'
           }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.Text, {
             style: styles.heroWorkerSkill,
             children: ["\u26A1 Master ", workerProfession]
@@ -2398,7 +2764,7 @@ function WorkerDashboardScreen({
                 children: "\u2B50"
               }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
                 style: styles.heroRatingText,
-                children: "4.8 (38 Reviews)"
+                children: `${rating} (${reviewCount} Reviews)`
               })]
             })]
           }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
@@ -2407,7 +2773,7 @@ function WorkerDashboardScreen({
               style: styles.heroStatBox,
               children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
                 style: styles.heroStatVal,
-                children: "245"
+                children: profileViews
               }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
                 style: styles.heroStatLbl,
                 children: "Views"
@@ -2418,7 +2784,7 @@ function WorkerDashboardScreen({
               style: styles.heroStatBox,
               children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
                 style: styles.heroStatVal,
-                children: "38"
+                children: callsReceivedCount
               }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
                 style: styles.heroStatLbl,
                 children: "Calls"
@@ -2429,7 +2795,7 @@ function WorkerDashboardScreen({
               style: styles.heroStatBox,
               children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
                 style: styles.heroStatVal,
-                children: "21"
+                children: customersServedCount
               }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
                 style: styles.heroStatLbl,
                 children: "Served"
@@ -2440,7 +2806,7 @@ function WorkerDashboardScreen({
               style: styles.heroStatBox,
               children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
                 style: styles.heroStatVal,
-                children: "4.8\u2605"
+                children: `${rating}★`
               }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
                 style: styles.heroStatLbl,
                 children: "Rating"
@@ -2466,7 +2832,7 @@ function WorkerDashboardScreen({
                   children: "Mobile Phone"
                 }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
                   style: styles.detailItemValue,
-                  children: "+91 98765 43210"
+                  children: workerMobile || 'Not provided'
                 })]
               }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.View, {
                 style: styles.verifiedBadgeMini,
@@ -2506,7 +2872,7 @@ function WorkerDashboardScreen({
                   children: "Experience"
                 }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
                   style: styles.detailItemValue,
-                  children: "5+ Years Professional Experience"
+                  children: `${experienceYears}+ Years Professional Experience`
                 })]
               })]
             }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.View, {
@@ -2523,7 +2889,7 @@ function WorkerDashboardScreen({
                   children: "Service Rates"
                 }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
                   style: styles.detailItemValue,
-                  children: "\u20B9150 Visiting Charge \u2022 \u20B9250/hr Repair"
+                  children: `\u20B9${visitingCharge} Visiting Charge \u2022 \u20B9${hourlyRate}/hr Repair`
                 })]
               })]
             })]
@@ -2614,11 +2980,12 @@ function WorkerDashboardScreen({
                 style: [styles.workerAvatarSettingsWrapper, { width: 52, height: 52, borderRadius: 26, marginBottom: 0 }],
                 children: [
                         /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Image, {
-                  source: require("./src/assets/default_avatar.png"),
+                  source: workerAvatarUri ? { uri: workerAvatarUri } : DefaultAvatar,
                   style: { width: 52, height: 52, borderRadius: 26 }
                 }),
                         /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
                   style: [styles.cameraBadgeSettings, { width: 18, height: 18, borderRadius: 9, right: -2, bottom: -2 }],
+                  onPress: handlePickProfileImage,
                   activeOpacity: 0.8,
                   children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
                     style: { fontSize: 8 },
@@ -2763,7 +3130,7 @@ function WorkerDashboardScreen({
                 /* Save Button */
                 /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
               style: [styles.saveSettingsBtn, { marginTop: 0, paddingVertical: 11 }],
-              onPress: () => setSettingsSubScreen(null),
+              onPress: handleSaveProfileAccount,
               activeOpacity: 0.85,
               children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
                 style: styles.saveSettingsBtnText,
@@ -2825,7 +3192,7 @@ function WorkerDashboardScreen({
                   /* Right Side: Save Button */
                   /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
                 style: { backgroundColor: '#FF6B00', paddingHorizontal: 16, paddingVertical: 7, borderRadius: 8 },
-                onPress: () => setSettingsSubScreen(null),
+                onPress: handleSaveProfessions,
                 activeOpacity: 0.85,
                 children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
                   style: { color: '#FFFFFF', fontWeight: '700', fontSize: 13 },

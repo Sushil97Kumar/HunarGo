@@ -50,6 +50,21 @@ export const SelectLocationDistanceScreen: React.FC<Props> = ({
 
   const presetDistances = [5, 10, 15, 25, 50, 75];
 
+  useEffect(() => {
+    const fetchSavedLocation = async () => {
+      try {
+        const res = await workerApi.getLocation();
+        if (res && res.success && res.location) {
+          if (res.location.address) setLocationText(res.location.address);
+          if (res.location.serviceRadius) setDistanceKm(res.location.serviceRadius);
+        }
+      } catch (err) {
+        console.warn('Could not fetch saved location:', err);
+      }
+    };
+    fetchSavedLocation();
+  }, []);
+
   const getFilteredSuggestions = () => {
     const query = (locationText || '').trim().toLowerCase();
     if (!query) return LOCATION_DATABASE.slice(0, 6);

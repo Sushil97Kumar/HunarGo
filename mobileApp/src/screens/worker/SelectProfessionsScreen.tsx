@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   Animated,
   Image,
@@ -22,6 +22,20 @@ export const SelectProfessionsScreen: React.FC<Props> = ({ onBack, onNext }) => 
   const [selectedProfessions, setSelectedProfessions] = useState(['plumber']);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    const fetchSavedProfessions = async () => {
+      try {
+        const res = await workerApi.getProfessions();
+        if (res && res.success && Array.isArray(res.professions) && res.professions.length > 0) {
+          setSelectedProfessions(res.professions);
+        }
+      } catch (err) {
+        console.warn('Could not fetch saved professions:', err);
+      }
+    };
+    fetchSavedProfessions();
+  }, []);
 
   const slideAnim = useRef(new Animated.Value(200)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;

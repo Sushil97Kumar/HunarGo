@@ -11,6 +11,7 @@ export const ENDPOINTS = {
   
   // Worker Flow
   WORKER_PROFILE: '/worker/profile',
+  WORKER_UPLOAD_IMAGE: '/worker/upload-profile-image',
   WORKER_LOCATION: '/worker/location',
   WORKER_PROFESSIONS: '/worker/professions',
   WORKER_TOGGLE_AVAILABILITY: '/worker/availability',
@@ -22,6 +23,34 @@ export const ENDPOINTS = {
   SEARCH_WORKERS: '/customer/search-workers',
   CUSTOMER_CALLS: '/customer/calls',
   CALL_WORKER: '/customer/call-worker',
+};
+
+let currentAuthToken: string | null = null;
+let currentActiveUserPhone: string | null = null;
+
+export const setAuthToken = (token: string | null) => {
+  currentAuthToken = token;
+};
+
+export const setActiveUserPhone = (phone: string | null) => {
+  currentActiveUserPhone = phone;
+};
+
+export const getAuthToken = () => currentAuthToken;
+export const getActiveUserPhone = () => currentActiveUserPhone;
+
+export const getAuthHeaders = () => {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json',
+  };
+  if (currentAuthToken) {
+    headers['Authorization'] = `Bearer ${currentAuthToken}`;
+  }
+  if (currentActiveUserPhone) {
+    headers['x-user-phone'] = currentActiveUserPhone;
+  }
+  return headers;
 };
 
 export const defaultHeaders = {
