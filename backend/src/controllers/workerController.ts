@@ -197,7 +197,7 @@ export const updateProfessions = async (req: AuthRequest, res: Response, next: N
     const { professions } = req.body;
 
     const rawList: string[] = Array.isArray(professions) ? professions : (professions ? [professions] : []);
-    const uniqueProfessions = Array.from(new Set(rawList.map((p) => (typeof p === 'string' ? p.trim() : p)).filter(Boolean)));
+    const uniqueProfessions = Array.from(new Set(rawList.map((p) => (typeof p === 'string' ? p.trim().toLowerCase() : p)).filter(Boolean)));
 
     const query: any = {};
     if (req.user?.id && req.user.id !== 'mock-user-id') {
@@ -261,23 +261,45 @@ export const toggleAvailability = async (req: AuthRequest, res: Response, next: 
     const query: any = {};
     if (req.user?.id && req.user.id !== 'mock-user-id') {
       query._id = req.user.id;
-    } else if (req.user?.phoneNumber && req.user.phoneNumber !== '+919876543210') {
-      query.phoneNumber = formatPhoneNumber(req.user.phoneNumber);
     } else if (req.headers['x-user-phone']) {
       query.phoneNumber = formatPhoneNumber(req.headers['x-user-phone'] as string);
+    } else if (req.user?.phoneNumber && req.user.phoneNumber !== '+919876543210') {
+      query.phoneNumber = formatPhoneNumber(req.user.phoneNumber);
     } else if (req.user?.phoneNumber) {
       query.phoneNumber = formatPhoneNumber(req.user.phoneNumber);
     } else {
       query.phoneNumber = '+919876543210';
     }
 
-    const updatedUser = await User.findOneAndUpdate(
+    console.log('📥 [toggleAvailability Request]:', { isAvailable, query, headersPhone: req.headers['x-user-phone'], userPhone: req.user?.phoneNumber });
+
+    let updatedUser = await User.findOneAndUpdate(
       query,
       { $set: { isAvailable } },
       { new: true }
     );
 
-    console.log(`📶 [Worker Availability Toggled]: query: ${JSON.stringify(query)} is now ${isAvailable ? 'Online' : 'Offline'}`);
+    if (!updatedUser && req.headers['x-user-phone']) {
+      updatedUser = await User.findOneAndUpdate(
+        { phoneNumber: formatPhoneNumber(req.headers['x-user-phone'] as string) },
+        { $set: { isAvailable } },
+        { new: true }
+      );
+    }
+
+    if (!updatedUser && req.user?.phoneNumber) {
+      updatedUser = await User.findOneAndUpdate(
+        { phoneNumber: formatPhoneNumber(req.user.phoneNumber) },
+        { $set: { isAvailable } },
+        { new: true }
+      );
+    }
+
+    console.log(`🎉 [MongoDB Worker Availability Toggled Successfully]:`, {
+      _id: updatedUser?._id,
+      phoneNumber: updatedUser?.phoneNumber,
+      isAvailable: updatedUser?.isAvailable,
+    });
 
     return res.status(200).json({
       success: true,

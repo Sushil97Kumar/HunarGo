@@ -3,12 +3,13 @@ export function WorkerDashboardScreen({
 }) {
   var [isAvailable, setIsAvailable] = useState(true);
   var [activeTab, setActiveTab] = useState('dashboard');
-  var [selectedProfessions, setSelectedProfessions] = useState(['Electrician', 'Plumber']);
+  var [selectedProfessions, setSelectedProfessions] = useState([]);
   var workerProfession = selectedProfessions.join(', ');
   var toggleProfessionSelection = title => {
-    if (selectedProfessions.includes(title)) {
+    var exists = selectedProfessions.some(p => typeof p === 'string' && p.toLowerCase() === title.toLowerCase());
+    if (exists) {
       if (selectedProfessions.length > 1) {
-        setSelectedProfessions(selectedProfessions.filter(p => p !== title));
+        setSelectedProfessions(selectedProfessions.filter(p => typeof p === 'string' && p.toLowerCase() !== title.toLowerCase()));
       }
     } else {
       setSelectedProfessions([...selectedProfessions, title]);
@@ -91,12 +92,36 @@ export function WorkerDashboardScreen({
             })));
           }
         }
+        try {
+          var profRes = await workerApi.getProfessions();
+          if (profRes && profRes.success && Array.isArray(profRes.professions) && profRes.professions.length > 0) {
+            setSelectedProfessions(profRes.professions);
+          }
+        } catch (pErr) {
+          console.warn('Could not fetch professions directly:', pErr);
+        }
       } catch (err) {
         console.error('❌ [WorkerDashboardScreen] Error fetching profile:', err);
       }
     };
     fetchWorkerProfile();
   }, []);
+
+  useEffect(() => {
+    if (settingsSubScreen === 'profession') {
+      var fetchProfessionsOnOpen = async () => {
+        try {
+          var profRes = await workerApi.getProfessions();
+          if (profRes && profRes.success && Array.isArray(profRes.professions) && profRes.professions.length > 0) {
+            setSelectedProfessions(profRes.professions);
+          }
+        } catch (err) {
+          console.error('Error fetching professions on subscreen open:', err);
+        }
+      };
+      fetchProfessionsOnOpen();
+    }
+  }, [settingsSubScreen]);
 
   var handlePickProfileImage = async () => {
     try {
@@ -158,8 +183,9 @@ export function WorkerDashboardScreen({
 
   var handleSaveProfessions = async () => {
     try {
-      console.log('💾 Saving professions:', selectedProfessions);
-      await workerApi.updateProfessions(selectedProfessions);
+      var lowercaseProfessions = selectedProfessions.map(p => typeof p === 'string' ? p.trim().toLowerCase() : p);
+      console.log('💾 Saving professions in small letters:', lowercaseProfessions);
+      await workerApi.updateProfessions(lowercaseProfessions);
       setSettingsSubScreen(null);
     } catch (err) {
       console.error('Failed to save profession changes:', err);
@@ -499,8 +525,10 @@ export function WorkerDashboardScreen({
                   fontSize: 13,
                   marginBottom: 0,
                   height: 38,
-                  marginRight: 8
-                }]} value={workerMobile} onChangeText={setWorkerMobile} placeholder="Enter mobile number" />}{<View style={[styles.verifiedBadgeMini, {
+                  marginRight: 8,
+                  backgroundColor: '#F1F5F9',
+                  color: '#64748B'
+                }]} value={workerMobile} onChangeText={setWorkerMobile} editable={false} placeholder="Enter mobile number" />}{<View style={[styles.verifiedBadgeMini, {
                   paddingVertical: 4,
                   paddingHorizontal: 8
                 }]}>{<Text style={[styles.verifiedBadgeMiniText, {
@@ -535,24 +563,12 @@ export function WorkerDashboardScreen({
                   marginBottom: 0,
                   height: 38,
                   marginRight: 8
-                }]} value={workerAadhaar} onChangeText={setWorkerAadhaar} keyboardType="numeric" placeholder="Enter 12-digit Aadhaar number" />}{<View style={[styles.verifiedBadgeMini, {
+                }]} value={workerAadhaar} onChangeText={(text) => setWorkerAadhaar(text.replace(/[^0-9]/g, ''))} maxLength={12} keyboardType="numeric" placeholder="Enter 12-digit Aadhaar number" />}{<View style={[styles.verifiedBadgeMini, {
                   paddingVertical: 4,
                   paddingHorizontal: 8
                 }]}>{<Text style={[styles.verifiedBadgeMiniText, {
                     fontSize: 10
-                  }]}>✔ Verified</Text>}</View>}</View>}{
-              /* Location Field */
-              <Text style={[styles.settingsInputSubLabel, {
-                fontSize: 11,
-                marginBottom: 2,
-                marginTop: 0
-              }]}>Base Location / Address:</Text>}{<TextInput style={[styles.settingsTextInputField, {
-                paddingVertical: 6,
-                paddingHorizontal: 10,
-                fontSize: 13,
-                marginBottom: 4,
-                height: 38
-              }]} value={workerLocation} onChangeText={setWorkerLocation} placeholder="e.g. Sector 17, Chandigarh" />}</View>}</View>}{
+                  }]}>✔ Verified</Text>}</View>}</View>}</View>}</View>}{
           /* Bottom Action Buttons */
           <View style={{
             gap: 8,
@@ -638,16 +654,16 @@ export function WorkerDashboardScreen({
               gap: 8,
               paddingRight: 4
             }}>{[{
-                id: 'electrician',
-                title: 'Electrician',
-                icon: '⚡',
-                color: '#FEF9C3',
-                category: 'Home Repair'
-              }, {
                 id: 'plumber',
                 title: 'Plumber',
                 icon: '🔧',
                 color: '#EBF3FF',
+                category: 'Home Repair'
+              }, {
+                id: 'electrician',
+                title: 'Electrician',
+                icon: '⚡',
+                color: '#FEF9C3',
                 category: 'Home Repair'
               }, {
                 id: 'carpenter',
@@ -660,6 +676,18 @@ export function WorkerDashboardScreen({
                 title: 'Painter',
                 icon: '🎨',
                 color: '#FCE7F3',
+                category: 'Home Repair'
+              }, {
+                id: 'mason',
+                title: 'Mason',
+                icon: '🧱',
+                color: '#F3E8FF',
+                category: 'Home Repair'
+              }, {
+                id: 'technician',
+                title: 'Technician',
+                icon: '🧰',
+                color: '#DCFCE7',
                 category: 'Home Repair'
               }, {
                 id: 'ac_repair',
@@ -680,10 +708,34 @@ export function WorkerDashboardScreen({
                 color: '#F3E8FF',
                 category: 'Vehicle Services'
               }, {
+                id: 'barber',
+                title: 'Barber',
+                icon: '✂️',
+                color: '#FCE7F3',
+                category: 'Personal Care'
+              }, {
+                id: 'hair_stylist',
+                title: 'Hair Stylist',
+                icon: '💇',
+                color: '#F3E8FF',
+                category: 'Personal Care'
+              }, {
+                id: 'beautician',
+                title: 'Beautician',
+                icon: '💆',
+                color: '#DCFCE7',
+                category: 'Personal Care'
+              }, {
                 id: 'home_cleaning',
                 title: 'Home Cleaning',
                 icon: '🧹',
                 color: '#DCFCE7',
+                category: 'Cleaning'
+              }, {
+                id: 'home_help',
+                title: 'Home Help / Maid',
+                icon: '👩‍🍳',
+                color: '#FEF9C3',
                 category: 'Cleaning'
               }, {
                 id: 'gardener',
@@ -692,26 +744,37 @@ export function WorkerDashboardScreen({
                 color: '#DCFCE7',
                 category: 'Outdoor'
               }, {
-                id: 'mason',
-                title: 'Mason & Brickwork',
-                icon: '🧱',
-                color: '#F3E8FF',
-                category: 'Construction'
-              }, {
-                id: 'barber',
-                title: 'Barber & Salon',
-                icon: '✂️',
-                color: '#FCE7F3',
-                category: 'Personal Care'
-              }, {
-                id: 'labour',
-                title: 'Construction Labour',
-                icon: '👷',
+                id: 'farm_labour',
+                title: 'Farm Labour',
+                icon: '🧑‍🌾',
                 color: '#FEF9C3',
                 category: 'Labour'
+              }, {
+                id: 'construction_labour',
+                title: 'Construction Labour',
+                icon: '👷',
+                color: '#F3E8FF',
+                category: 'Labour'
+              }, {
+                id: 'daily_labour',
+                title: 'Daily Labour',
+                icon: '🧑‍🔧',
+                color: '#FFE4E6',
+                category: 'Labour'
               }].map(item => {
-                var isSelected = selectedProfessions.includes(item.title);
-                return <TouchableOpacity style={[styles.professionCardSelectRow, isSelected && styles.professionCardSelectRowActive]} onPress={() => toggleProfessionSelection(item.title)} activeOpacity={0.8}>{
+                var isSelected = selectedProfessions.some(p => {
+                  if (typeof p !== 'string') return false;
+                  var normP = p.trim().toLowerCase();
+                  var normId = item.id.trim().toLowerCase();
+                  var normTitle = item.title.trim().toLowerCase();
+                  return (
+                    normP === normId ||
+                    normP === normTitle ||
+                    normP.replace(/[\s\-_]/g, '') === normId.replace(/[\s\-_]/g, '') ||
+                    normP.replace(/[\s\-_]/g, '') === normTitle.replace(/[\s\-_]/g, '')
+                  );
+                });
+                return <TouchableOpacity style={[styles.professionCardSelectRow, isSelected && styles.professionCardSelectRowActive]} onPress={() => toggleProfessionSelection(item.id)} activeOpacity={0.8}>{
                   /* Logo Circle */
                   <View style={[styles.professionLogoCircle, {
                     backgroundColor: item.color

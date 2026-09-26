@@ -14,6 +14,7 @@ export const ENDPOINTS = {
   WORKER_UPLOAD_IMAGE: '/worker/upload-profile-image',
   WORKER_LOCATION: '/worker/location',
   WORKER_PROFESSIONS: '/worker/professions',
+  WORKER_AVAILABILITY: '/worker/availability',
   WORKER_TOGGLE_AVAILABILITY: '/worker/availability',
   WORKER_DASHBOARD_STATS: '/worker/dashboard-stats',
   WORKER_CUSTOMER_CALLS: '/worker/customer-calls',
