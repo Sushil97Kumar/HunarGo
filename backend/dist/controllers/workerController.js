@@ -273,27 +273,13 @@ exports.getProfessions = getProfessions;
 const toggleAvailability = async (req, res, next) => {
     try {
         const { isAvailable } = req.body;
-        const query = {};
-        if (req.user?.id && req.user.id !== 'mock-user-id') {
-            query._id = req.user.id;
+        try {
+            await User_1.default.findOneAndUpdate({ phoneNumber: req.user?.phoneNumber }, { isAvailable });
         }
-        else if (req.user?.phoneNumber && req.user.phoneNumber !== '+919876543210') {
-            query.phoneNumber = formatPhoneNumber(req.user.phoneNumber);
-        }
-        else if (req.headers['x-user-phone']) {
-            query.phoneNumber = formatPhoneNumber(req.headers['x-user-phone']);
-        }
-        else if (req.user?.phoneNumber) {
-            query.phoneNumber = formatPhoneNumber(req.user.phoneNumber);
-        }
-        else {
-            query.phoneNumber = '+919876543210';
-        }
-        const updatedUser = await User_1.default.findOneAndUpdate(query, { $set: { isAvailable } }, { new: true });
-        console.log(`📶 [Worker Availability Toggled]: query: ${JSON.stringify(query)} is now ${isAvailable ? 'Online' : 'Offline'}`);
+        catch (err) { }
         return res.status(200).json({
             success: true,
-            isAvailable: updatedUser?.isAvailable ?? isAvailable,
+            isAvailable,
             message: `Worker is now ${isAvailable ? 'Online' : 'Offline'}`,
         });
     }

@@ -2079,18 +2079,6 @@ function WorkerDashboardScreen({
     }
   };
 
-  var handleToggleAvailability = async () => {
-    var newStatus = !isAvailable;
-    setIsAvailable(newStatus);
-    try {
-      console.log('🔄 Toggling worker availability to:', newStatus);
-      var res = await workerApi.toggleAvailability(newStatus);
-      console.log('✅ Worker availability updated in DB:', res);
-    } catch (err) {
-      console.error('❌ Failed to toggle availability:', err);
-    }
-  };
-
   var handleSaveProfileAccount = async () => {
     try {
       console.log('💾 Saving updated profile details...');
@@ -2513,19 +2501,19 @@ function WorkerDashboardScreen({
         }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
           style: styles.availabilityBannerCard,
           children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.View, {
-            style: [styles.greenPulseDot, !isAvailable && { backgroundColor: '#94A3B8' }]
+            style: styles.greenPulseDot
           }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
             style: styles.availabilityTextGroup,
             children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
               style: styles.availabilityTitle,
-              children: isAvailable ? "Available Now" : "Currently Offline"
+              children: "Available Now"
             }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
               style: styles.availabilitySubtitle,
-              children: isAvailable ? "You are visible to customers" : "Hidden from customer searches"
+              children: "You are visible to customers"
             })]
           }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
             style: [styles.toggleSwitchTrack, isAvailable && styles.toggleSwitchTrackActive],
-            onPress: handleToggleAvailability,
+            onPress: () => setIsAvailable(!isAvailable),
             activeOpacity: 0.8,
             children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.View, {
               style: [styles.toggleSwitchThumb, isAvailable && styles.toggleSwitchThumbActive]
@@ -3530,7 +3518,7 @@ function WorkerDashboardScreen({
                 }),
                       /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
                   style: [styles.toggleSwitchTrack, isAvailable && styles.toggleSwitchTrackActive],
-                  onPress: handleToggleAvailability,
+                  onPress: () => setIsAvailable(!isAvailable),
                   children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.View, {
                     style: [styles.toggleSwitchThumb, isAvailable && styles.toggleSwitchThumbActive]
                   })
