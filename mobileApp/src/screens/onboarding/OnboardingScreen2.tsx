@@ -15,9 +15,10 @@ interface Props {
   onSkip: () => void;
   onFinish: () => void;
   onWorker: () => void;
+  onLogin?: () => void;
 }
 
-export const OnboardingScreen2: React.FC<Props> = ({ onSkip, onFinish, onWorker }) => {
+export const OnboardingScreen2: React.FC<Props> = ({ onSkip, onFinish, onWorker, onLogin }) => {
   return (
     <ImageBackground source={OnboardingBg} style={styles.bgImage} resizeMode="cover">
       <SafeAreaView style={styles.onboardingContainer}>
@@ -83,7 +84,7 @@ export const OnboardingScreen2: React.FC<Props> = ({ onSkip, onFinish, onWorker 
             <Text style={styles.workerButtonText}>{"I'm a Worker  ➔"}</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.loginContainer} onPress={onFinish} activeOpacity={0.7}>
+          <TouchableOpacity style={styles.loginContainer} onPress={onLogin || onFinish} activeOpacity={0.7}>
             <Text style={styles.loginText}>
               Already have an account? <Text style={styles.loginLink}>Login</Text>
             </Text>

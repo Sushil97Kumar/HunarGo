@@ -22,11 +22,12 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 interface Props {
   phoneNumber: string;
+  userRole?: string;
   onBack: () => void;
-  onVerify: (otpString: string, isProfileComplete?: boolean) => void;
+  onVerify: (otpString: string, isProfileComplete?: boolean, actualRole?: string) => void;
 }
 
-export const OtpVerificationScreen: React.FC<Props> = ({ phoneNumber, onBack, onVerify }) => {
+export const OtpVerificationScreen: React.FC<Props> = ({ phoneNumber, onBack, onVerify, userRole = 'customer' }) => {
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [timer, setTimer] = useState(45);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -133,14 +134,16 @@ export const OtpVerificationScreen: React.FC<Props> = ({ phoneNumber, onBack, on
     setErrorMessage('');
     try {
       setIsSubmitting(true);
-      const res = await authApi.verifyOtp({ phoneNumber, otp: otpString, role: 'worker' });
-      console.log('Worker OTP Verification Response:', res);
+      const targetRole = userRole || 'customer';
+      const res = await authApi.verifyOtp({ phoneNumber, otp: otpString, role: targetRole });
+      console.log('OTP Verification Response:', res);
       if (res && res.success) {
+        const actualRole = res.user?.role || targetRole;
         const isComplete = Boolean(
           res.isProfileComplete ||
-          (res.user && res.user.fullName && res.user.fullName.trim().length > 0 && res.user.professions && res.user.professions.length > 0)
+          (res.user && res.user.fullName && res.user.fullName.trim().length > 0 && (actualRole === 'customer' || (res.user.professions && res.user.professions.length > 0)))
         );
-        onVerify(otpString, isComplete);
+        onVerify(otpString, isComplete, actualRole);
       } else {
         const msg = res?.message || 'OTP is not correct. Please enter the valid code.';
         setErrorMessage(msg);

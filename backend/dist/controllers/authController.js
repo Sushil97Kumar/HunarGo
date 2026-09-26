@@ -14,11 +14,23 @@ const twilio_1 = require("../config/twilio");
  */
 const sendOtp = async (req, res, next) => {
     try {
-        const { phoneNumber, role = 'worker' } = req.body;
+        const { phoneNumber, role = 'worker', isLogin = false } = req.body;
         if (!phoneNumber) {
             return res.status(400).json({ success: false, message: 'Phone number is required' });
         }
         const formattedPhone = (0, twilio_1.formatPhoneNumberE164)(phoneNumber.toString());
+        // Validation for Login Flow: Check if user exists in database
+        if (isLogin) {
+            const existingUser = await User_1.default.findOne({ phoneNumber: formattedPhone });
+            if (!existingUser) {
+                console.log(`❌ [sendOtp Login Check]: No user found in DB for ${formattedPhone}`);
+                return res.status(404).json({
+                    success: false,
+                    userNotFound: true,
+                    message: "You don't have an account yet. Please sign up first.",
+                });
+            }
+        }
         let twilioStatus = '';
         let twilioSent = false;
         try {
@@ -129,8 +141,8 @@ const verifyOtpAndSignup = async (req, res, next) => {
                 console.log(`🎉 [MongoDB Signup Success]: New ${signupRole.toUpperCase()} created for ${formattedPhone}`);
             }
             else {
-                // If user exists, sync role if requested
-                if (role && user.role !== signupRole) {
+                // Preserve existing user's role from MongoDB
+                if (!user.role) {
                     user.role = signupRole;
                     await user.save();
                 }
@@ -143,12 +155,11 @@ const verifyOtpAndSignup = async (req, res, next) => {
         }
         // STEP 4: Generate JWT Auth Token
         const token = jsonwebtoken_1.default.sign({ id: user._id, phoneNumber: formattedPhone, role: user.role }, process.env.JWT_SECRET || 'hunargo_super_secret_jwt_key_2026', { expiresIn: '30d' });
-        // Check if worker profile steps are fully completed
-        const isProfileComplete = Boolean(!isNewUser &&
-            user.fullName &&
-            user.fullName.trim().length > 0 &&
-            Array.isArray(user.professions) &&
-            user.professions.length > 0);
+        // Check if customer or worker profile steps are fully completed
+        const effectiveRole = user.role || signupRole || 'customer';
+        const isProfileComplete = effectiveRole === 'customer'
+            ? Boolean(!isNewUser && user.fullName && user.fullName.trim().length > 0)
+            : Boolean(!isNewUser && user.fullName && user.fullName.trim().length > 0 && Array.isArray(user.professions) && user.professions.length > 0);
         return res.status(200).json({
             success: true,
             token,

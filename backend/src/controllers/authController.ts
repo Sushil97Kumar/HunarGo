@@ -10,13 +10,26 @@ import { sendOTP, verifyOTP, formatPhoneNumberE164 } from '../config/twilio';
  */
 export const sendOtp = async (req: Request, res: Response, next: NextFunction): Promise<Response | void> => {
   try {
-    const { phoneNumber, role = 'worker' } = req.body;
+    const { phoneNumber, role = 'worker', isLogin = false } = req.body;
 
     if (!phoneNumber) {
       return res.status(400).json({ success: false, message: 'Phone number is required' });
     }
 
     const formattedPhone = formatPhoneNumberE164(phoneNumber.toString());
+
+    // Validation for Login Flow: Check if user exists in database
+    if (isLogin) {
+      const existingUser = await User.findOne({ phoneNumber: formattedPhone });
+      if (!existingUser) {
+        console.log(`❌ [sendOtp Login Check]: No user found in DB for ${formattedPhone}`);
+        return res.status(404).json({
+          success: false,
+          userNotFound: true,
+          message: "You don't have an account yet. Please sign up first.",
+        });
+      }
+    }
 
     let twilioStatus = '';
     let twilioSent = false;
@@ -134,8 +147,8 @@ export const verifyOtpAndSignup = async (req: Request, res: Response, next: Next
         });
         console.log(`🎉 [MongoDB Signup Success]: New ${signupRole.toUpperCase()} created for ${formattedPhone}`);
       } else {
-        // If user exists, sync role if requested
-        if (role && user.role !== signupRole) {
+        // Preserve existing user's role from MongoDB
+        if (!user.role) {
           user.role = signupRole;
           await user.save();
         }
@@ -153,14 +166,11 @@ export const verifyOtpAndSignup = async (req: Request, res: Response, next: Next
       { expiresIn: '30d' }
     );
 
-    // Check if worker profile steps are fully completed
-    const isProfileComplete = Boolean(
-      !isNewUser &&
-      user.fullName &&
-      user.fullName.trim().length > 0 &&
-      Array.isArray(user.professions) &&
-      user.professions.length > 0
-    );
+    // Check if customer or worker profile steps are fully completed
+    const effectiveRole = user.role || signupRole || 'customer';
+    const isProfileComplete = effectiveRole === 'customer'
+      ? Boolean(!isNewUser && user.fullName && user.fullName.trim().length > 0)
+      : Boolean(!isNewUser && user.fullName && user.fullName.trim().length > 0 && Array.isArray(user.professions) && user.professions.length > 0);
 
     return res.status(200).json({
       success: true,

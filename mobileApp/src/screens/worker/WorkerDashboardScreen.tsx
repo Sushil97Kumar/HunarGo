@@ -1,3 +1,19 @@
+var LOCATION_DATABASE = [
+  { city: 'Dehradun', name: 'Rajpur Road, Dehradun' },
+  { city: 'Dehradun', name: 'Clock Tower, Dehradun' },
+  { city: 'Dehradun', name: 'Clement Town, Dehradun' },
+  { city: 'Dehradun', name: 'Vasant Vihar, Dehradun' },
+  { city: 'Dehradun', name: 'Prem Nagar, Dehradun' },
+  { city: 'Zirakpur', name: 'VIP Road, Zirakpur' },
+  { city: 'Zirakpur', name: 'Baltana, Zirakpur' },
+  { city: 'Chandigarh', name: 'Sector 17, Chandigarh' },
+  { city: 'Chandigarh', name: 'Sector 35, Chandigarh' },
+  { city: 'Mohali', name: 'Phase 3B2, Mohali' },
+  { city: 'Delhi', name: 'Connaught Place, New Delhi' },
+  { city: 'Noida', name: 'Sector 18, Noida' },
+  { city: 'Gurugram', name: 'Cyber City, Gurugram' },
+];
+
 export function WorkerDashboardScreen({
   onBackToOnboarding
 }) {
@@ -17,6 +33,55 @@ export function WorkerDashboardScreen({
   };
   var [workerLocation, setWorkerLocation] = useState('Sector 17, Chandigarh');
   var [serviceRadius, setServiceRadius] = useState(15);
+  var [showLocationSuggestions, setShowLocationSuggestions] = useState(false);
+  var [isLocating, setIsLocating] = useState(false);
+
+  var getFilteredLocationSuggestions = (queryText) => {
+    var query = (queryText || '').trim().toLowerCase();
+    if (!query) return LOCATION_DATABASE.slice(0, 6);
+
+    var matches = LOCATION_DATABASE.filter(
+      (item) =>
+        item.name.toLowerCase().includes(query) || item.city.toLowerCase().includes(query)
+    );
+
+    if (matches.length < 3 && query.length >= 2) {
+      var capitalized = queryText.trim().charAt(0).toUpperCase() + queryText.trim().slice(1);
+      var customAdditions = [
+        { city: capitalized, name: `${capitalized} Center Point` },
+        { city: capitalized, name: `${capitalized} Main Market` },
+      ];
+      matches = [...matches, ...customAdditions];
+    }
+    return matches.slice(0, 8);
+  };
+
+  var locationSuggestions = getFilteredLocationSuggestions(workerLocation);
+
+  var handleCurrentLocation = () => {
+    setIsLocating(true);
+    setTimeout(() => {
+      setWorkerLocation('Current GPS Location (Delhi NCR)');
+      setIsLocating(false);
+      setShowLocationSuggestions(false);
+    }, 800);
+  };
+
+  var handleSaveLocationSettings = async () => {
+    try {
+      console.log('💾 Saving location & distance radius:', workerLocation, serviceRadius);
+      await workerApi.updateLocationAndDistance({
+        address: workerLocation,
+        city: workerLocation.split(',').pop()?.trim() || 'New Delhi',
+        pincode: '',
+        maxDistanceKm: serviceRadius,
+      });
+      setSettingsSubScreen(null);
+    } catch (err) {
+      console.error('Failed to save location settings:', err);
+      setSettingsSubScreen(null);
+    }
+  };
   var [workImages, setWorkImages] = useState([{
     id: '1',
     title: 'Fan Repair & Wiring',
@@ -802,14 +867,69 @@ export function WorkerDashboardScreen({
             }}>{<Text style={styles.subScreenBackArrowIcon}>←</Text>}</TouchableOpacity>}{
             /* Header Title */
             <Text style={styles.subScreenNavTitleText}>Location & Service Radius</Text>}</View>}{
+
           /* Location Card */
-          <View style={styles.profileSectionCard}>{<Text style={styles.settingsInputSubLabel}>Base Location / Area:</Text>}{<TextInput style={styles.settingsTextInputField} value={workerLocation} onChangeText={setWorkerLocation} placeholder="e.g. Sector 17, Chandigarh" />}{<Text style={[styles.settingsInputSubLabel, {
-              marginTop: 12
-            }]}>Service Distance Radius (km):</Text>}{<View style={styles.quickPillsGrid}>{[5, 10, 15, 25, 50].map(rad => <TouchableOpacity style={[styles.quickChoicePill, serviceRadius === rad && styles.quickChoicePillActive]} onPress={() => setServiceRadius(rad)} activeOpacity={0.7}>{<Text style={[styles.quickChoicePillText, serviceRadius === rad && styles.quickChoicePillTextActive]}>{rad} km</Text>}</TouchableOpacity>)}</View>}</View>}{
+          <View style={styles.locationSectionCard}>{
+            <Text style={styles.locationSectionLabel}>📍 Primary Work Location (Center Point)</Text>}{
+            <View style={styles.locationInputBox}>{
+              <Text style={styles.locationPinIcon}>📍</Text>}{
+              <TextInput style={styles.locationTextInput} placeholder="Enter city, area or landmark..." placeholderTextColor="#94A3B8" value={workerLocation} onFocus={() => setShowLocationSuggestions(true)} onChangeText={text => {
+                setWorkerLocation(text);
+                setShowLocationSuggestions(true);
+              }} />}{
+              workerLocation.length > 0 && <TouchableOpacity onPress={() => {
+                setWorkerLocation('');
+                setShowLocationSuggestions(true);
+              }} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>{
+                <Text style={styles.clearIcon}>✕</Text>
+              }</TouchableOpacity>
+            }</View>}{
+
+            /* Auto-complete Dropdown */
+            showLocationSuggestions && locationSuggestions.length > 0 && <View style={styles.suggestionsDropdown}>{
+              locationSuggestions.map((item, index) => <TouchableOpacity key={index} style={styles.suggestionRow} onPress={() => {
+                setWorkerLocation(item.name);
+                setShowLocationSuggestions(false);
+              }} activeOpacity={0.7}>{
+                <Text style={styles.suggestionPinIcon}>📍</Text>}{
+                <Text style={styles.suggestionText} numberOfLines={1}>{item.name}</Text>}{
+                <View style={styles.cityBadge}>{
+                  <Text style={styles.cityBadgeText}>{item.city}</Text>
+                }</View>
+              }</TouchableOpacity>)
+            }</View>}{
+
+            /* Use Current GPS Location Button */
+            <TouchableOpacity style={styles.useGpsButton} onPress={handleCurrentLocation} activeOpacity={0.8}>{
+              <Text style={styles.useGpsIcon}>{isLocating ? '⏳' : '🎯'}</Text>}{
+              <Text style={styles.useGpsText}>{isLocating ? 'Locating your GPS position...' : 'Use My Current GPS Location'}</Text>
+            }</TouchableOpacity>
+          }</View>}{
+
+          /* Service Distance Radius Card */
+          <View style={styles.locationSectionCard}>{
+            <View style={styles.distanceHeaderRow}>{
+              <Text style={styles.locationSectionLabel}>📐 Distance Range (Radius)</Text>}{
+              <View style={styles.distanceMetricBadge}>{
+                <Text style={styles.distanceMetricText}>{serviceRadius} km</Text>
+              }</View>
+            }</View>}{
+            <Text style={styles.distanceHelperText}>You will receive customer job alerts within a <Text style={styles.boldDistanceText}>{serviceRadius} km</Text> radius around your center location.</Text>}{
+            <View style={styles.presetPillRow}>{[5, 10, 15, 25, 50, 75].map(rad => {
+              var isSelected = serviceRadius === rad;
+              return <TouchableOpacity key={rad} style={[styles.distancePill, isSelected && styles.distancePillSelected]} onPress={() => setServiceRadius(rad)} activeOpacity={0.75}>{
+                <Text style={[styles.distancePillText, isSelected && styles.distancePillTextSelected]}>{rad} km</Text>
+              }</TouchableOpacity>;
+            })}</View>
+          }</View>}{
+
           /* Save Button */
           <TouchableOpacity style={[styles.saveSettingsBtn, {
             marginBottom: 30
-          }]} onPress={() => setSettingsSubScreen(null)} activeOpacity={0.85}>{<Text style={styles.saveSettingsBtnText}>Save Location Settings</Text>}</TouchableOpacity>}</ScrollView> : settingsSubScreen === 'portfolio' ?
+          }]} onPress={handleSaveLocationSettings} activeOpacity={0.85}>{
+            <Text style={styles.saveSettingsBtnText}>Save Location Settings</Text>
+          }</TouchableOpacity>
+        }</ScrollView> : settingsSubScreen === 'portfolio' ?
         /* Separate Work Photos & Portfolio Screen */
         <ScrollView contentContainerStyle={styles.profileTabScrollContent} showsVerticalScrollIndicator={false}>{
           /* Header Bar with Left Arrow Back Button */

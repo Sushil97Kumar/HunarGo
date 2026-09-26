@@ -48,38 +48,64 @@ function App() {
   var isDarkMode = useColorScheme() === 'dark';
   var [currentScreen, setCurrentScreen] = useState('onboarding1');
   var [userPhone, setUserPhone] = useState('');
-  var [userRole, setUserRole] = useState('worker');
+  var [userRole, setUserRole] = useState('customer');
+  var [isLoginFlow, setIsLoginFlow] = useState(false);
   return /*#__PURE__*/(0, _jsxRuntime.jsxs)(require("react-native-safe-area-context").SafeAreaProvider, {
     children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.StatusBar, {
       barStyle: isDarkMode ? 'light-content' : 'dark-content'
     }), currentScreen === 'onboarding1' && /*#__PURE__*/(0, _jsxRuntime.jsx)(OnboardingScreen1, {
       onNext: () => setCurrentScreen('onboarding2'),
-      onSkip: () => setCurrentScreen('home')
+      onSkip: () => {
+        setUserRole('customer');
+        setIsLoginFlow(true);
+        setCurrentScreen('workerLogin');
+      }
     }), currentScreen === 'onboarding2' && /*#__PURE__*/(0, _jsxRuntime.jsx)(OnboardingScreen2, {
-      onSkip: () => setCurrentScreen('home'),
+      onSkip: () => {
+        setUserRole('customer');
+        setIsLoginFlow(true);
+        setCurrentScreen('workerLogin');
+      },
       onFinish: () => {
         setUserRole('customer');
+        setIsLoginFlow(false);
         setCurrentScreen('workerLogin');
       },
       onWorker: () => {
         setUserRole('worker');
+        setIsLoginFlow(false);
+        setCurrentScreen('workerLogin');
+      },
+      onLogin: () => {
+        setIsLoginFlow(true);
         setCurrentScreen('workerLogin');
       }
     }), currentScreen === 'workerLogin' && /*#__PURE__*/(0, _jsxRuntime.jsx)(WorkerLoginScreen, {
+      userRole: userRole,
+      isLoginFlow: isLoginFlow,
       onBack: () => setCurrentScreen('onboarding2'),
+      onRedirectToGetStarted: () => setCurrentScreen('onboarding2'),
       onContinue: phone => {
         setUserPhone(phone);
         setCurrentScreen('otpVerification');
       }
     }), currentScreen === 'otpVerification' && /*#__PURE__*/(0, _jsxRuntime.jsx)(OtpVerificationScreen, {
       phoneNumber: userPhone,
+      userRole: userRole,
       onBack: () => setCurrentScreen('workerLogin'),
-      onVerify: (otp, isProfileComplete) => {
+      onVerify: (otp, isProfileComplete, actualRole) => {
+        var finalRole = actualRole || userRole || 'customer';
+        setUserRole(finalRole);
         if (isProfileComplete) {
-          console.log('🚀 Worker profile is complete. Opening Dashboard directly!');
-          setCurrentScreen('workerDashboard');
+          if (finalRole === 'customer') {
+            console.log('🚀 Customer profile complete. Opening Customer Home Screen!');
+            setCurrentScreen('home');
+          } else {
+            console.log('🚀 Worker profile complete. Opening Dashboard directly!');
+            setCurrentScreen('workerDashboard');
+          }
         } else {
-          console.log('📝 Worker profile incomplete. Navigating to completeProfile step...');
+          console.log('📝 Profile incomplete. Navigating to completeProfile step...');
           setCurrentScreen('completeProfile');
         }
       }
@@ -228,7 +254,8 @@ function OnboardingScreen1({
 function OnboardingScreen2({
   onSkip,
   onFinish,
-  onWorker
+  onWorker,
+  onLogin
 }) {
   return /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.ImageBackground, {
     source: require("./src/assets/onboarding_bg.png"),
@@ -351,7 +378,7 @@ function OnboardingScreen2({
           })
         }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
           style: styles.loginContainer,
-          onPress: onFinish,
+          onPress: onLogin || onFinish,
           activeOpacity: 0.7,
           children: /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.Text, {
             style: styles.loginText,
@@ -373,11 +400,43 @@ function OnboardingScreen2({
 }
 function WorkerLoginScreen({
   onBack,
-  onContinue
+  onContinue,
+  userRole = 'customer',
+  isLoginFlow = false,
+  onRedirectToGetStarted
 }) {
   var [phoneNumber, setPhoneNumber] = useState('');
   var [isLoading, setIsLoading] = useState(false);
   var [errorMessage, setErrorMessage] = useState('');
+  var [isLoginMode, setIsLoginMode] = useState(isLoginFlow);
+  var toastAnim = useRef(new Animated.Value(350)).current;
+
+  useEffect(() => {
+    setIsLoginMode(isLoginFlow);
+  }, [isLoginFlow]);
+
+  useEffect(() => {
+    if (errorMessage) {
+      toastAnim.setValue(350);
+      Animated.spring(toastAnim, {
+        toValue: 0,
+        useNativeDriver: true,
+        tension: 80,
+        friction: 10,
+      }).start();
+
+      var timerId = setTimeout(() => {
+        Animated.timing(toastAnim, {
+          toValue: 350,
+          duration: 300,
+          useNativeDriver: true,
+        }).start(() => setErrorMessage(''));
+      }, 4500);
+
+      return () => clearTimeout(timerId);
+    }
+  }, [errorMessage]);
+
   var isPhoneValid = phoneNumber.trim().length === 10;
 
   var handleContinue = async () => {
@@ -385,12 +444,14 @@ function WorkerLoginScreen({
     setErrorMessage('');
     setIsLoading(true);
     try {
-      var res = await authApi.sendOtp({ phoneNumber: phoneNumber.trim(), role: 'worker' });
-      console.log('📱 Worker Login OTP Sent:', res);
+      var targetRole = userRole || 'customer';
+      var res = await authApi.sendOtp({ phoneNumber: phoneNumber.trim(), role: targetRole, isLogin: isLoginMode });
+      console.log('📱 Login OTP Sent:', res);
       if (res && res.success) {
         onContinue(phoneNumber.trim());
       } else {
-        setErrorMessage(res?.message || 'Failed to send OTP. Please try again.');
+        var msg = res?.message || 'Failed to send OTP. Please try again.';
+        setErrorMessage(msg);
       }
     } catch (err) {
       console.error('Failed to send OTP:', err);
@@ -400,113 +461,141 @@ function WorkerLoginScreen({
     }
   };
 
-  return /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.ImageBackground, {
-    source: require("./src/assets/onboarding_bg.png"),
-    style: styles.bgImage,
-    resizeMode: "cover",
-    children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.SafeAreaView, {
-      style: styles.onboardingContainer,
-      children: /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.KeyboardAvoidingView, {
-        style: { flex: 1 },
-        behavior: _reactNative.Platform.OS === 'ios' ? 'padding' : 'height',
-        children: [/*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
-          style: styles.topBarCentered,
-          children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
-            style: styles.backButtonAbsolute,
-            onPress: onBack,
-            activeOpacity: 0.7,
-            hitSlop: {
-              top: 20,
-              bottom: 20,
-              left: 20,
-              right: 20
-            },
-            children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-              style: styles.backArrowText,
-              children: "\u2190"
-            })
-          }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Image, {
-            source: require("./src/assets/logo.png"),
-            style: styles.topLogoCompact,
-            resizeMode: "contain"
-          })]
-        }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.ScrollView, {
-          contentContainerStyle: styles.loginContent,
-          showsVerticalScrollIndicator: false,
-          keyboardShouldPersistTaps: "handled",
-          children: [/*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
-            style: styles.textSectionLogin,
-            children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-              style: styles.titleLine1,
-              children: "Enter Your"
-            }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-              style: styles.titleLine2,
-              children: "Mobile Number"
-            }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-              style: styles.descriptionText2,
-              children: "We'll send you a verification code to continue."
-            })]
-          }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
-            style: styles.phoneInputCard,
-            children: [/*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
-              style: styles.countrySelector,
-              children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-                style: styles.flagEmoji,
-                children: "\uD83C\uDDEE\uD83C\uDDF3"
-              }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-                style: styles.dropdownArrow,
-                children: "\u2304"
-              }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-                style: styles.countryCode,
-                children: "+91"
-              })]
-            }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.View, {
-              style: styles.verticalDivider
-            }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TextInput, {
-              style: styles.phoneTextInput,
-              placeholder: "Enter mobile number",
-              placeholderTextColor: "#94A3B8",
-              keyboardType: "phone-pad",
-              value: phoneNumber,
-              onChangeText: text => {
-                setPhoneNumber(text.replace(/[^0-9]/g, ''));
-                if (errorMessage) setErrorMessage('');
-              },
-              maxLength: 10
-            })]
-          }), !!errorMessage && /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-            style: { color: '#EF4444', textAlign: 'center', marginTop: 10, fontSize: 14, fontWeight: '600' },
-            children: errorMessage
-          }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
-            style: [styles.nextButton, (!isPhoneValid || isLoading) && styles.disabledButton],
-            onPress: handleContinue,
-            disabled: !isPhoneValid || isLoading,
-            activeOpacity: 0.85,
-            children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-              style: styles.nextButtonText,
-              children: isLoading ? "Sending OTP..." : "Continue  \u2794"
-            })
-          }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
-            style: styles.loginContainer,
-            onPress: handleContinue,
-            activeOpacity: 0.7,
-            children: /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.Text, {
-              style: styles.loginText,
-              children: ["Already have an account? ", /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-                style: styles.loginLink,
-                children: "Login"
-              })]
-            })
-          })]
-        })]
-      })
-    })
-  });
+  return (
+    <ImageBackground source={require("./src/assets/onboarding_bg.png")} style={styles.bgImage} resizeMode="cover">
+      <SafeAreaView style={styles.onboardingContainer}>
+        {!!errorMessage && (
+          <Animated.View
+            style={{
+              position: 'absolute',
+              top: Platform.OS === 'ios' ? 70 : 60,
+              left: 16,
+              right: 16,
+              transform: [{ translateX: toastAnim }],
+              zIndex: 999999,
+              elevation: 20,
+            }}
+          >
+            <TouchableOpacity
+              activeOpacity={0.9}
+              onPress={() => setErrorMessage('')}
+              style={{
+                backgroundColor: '#FEE2E2',
+                borderRadius: 14,
+                paddingVertical: 12,
+                paddingHorizontal: 16,
+                flexDirection: 'row',
+                alignItems: 'center',
+                shadowColor: '#EF4444',
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.2,
+                shadowRadius: 8,
+                elevation: 8,
+                borderWidth: 1.5,
+                borderColor: '#FCA5A5',
+              }}
+            >
+              <Text style={{ fontSize: 18, marginRight: 10 }}>⚠️</Text>
+
+              <Text style={{ flex: 1, color: '#991B1B', fontSize: 13, fontWeight: '700', lineHeight: 18, marginRight: 8 }}>
+                {errorMessage}
+              </Text>
+
+              <TouchableOpacity
+                onPress={() => setErrorMessage('')}
+                hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+              >
+                <Text style={{ color: '#991B1B', fontSize: 16, fontWeight: '800' }}>✕</Text>
+              </TouchableOpacity>
+            </TouchableOpacity>
+          </Animated.View>
+        )}
+        <KeyboardAvoidingView
+          style={{ flex: 1 }}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        >
+          <View style={styles.topBarCentered}>
+            <TouchableOpacity
+              style={styles.backButtonAbsolute}
+              onPress={onBack}
+              activeOpacity={0.7}
+              hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
+            >
+              <Text style={styles.backArrowText}>←</Text>
+            </TouchableOpacity>
+            <Image source={require("./src/assets/logo.png")} style={styles.topLogoCompact} resizeMode="contain" />
+          </View>
+
+          <ScrollView
+            contentContainerStyle={styles.loginContent}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+          >
+            <View style={styles.textSectionLogin}>
+              <Text style={styles.titleLine1}>Enter Your</Text>
+              <Text style={styles.titleLine2}>Mobile Number</Text>
+              <Text style={styles.descriptionText2}>
+                We'll send you a verification code to continue.
+              </Text>
+            </View>
+
+            <View style={styles.phoneInputCard}>
+              <View style={styles.countrySelector}>
+                <Text style={styles.flagEmoji}>🇮🇳</Text>
+                <Text style={styles.dropdownArrow}>⌄</Text>
+                <Text style={styles.countryCode}>+91</Text>
+              </View>
+              <View style={styles.verticalDivider} />
+              <TextInput
+                style={styles.phoneTextInput}
+                placeholder="Enter mobile number"
+                placeholderTextColor="#94A3B8"
+                keyboardType="phone-pad"
+                value={phoneNumber}
+                onChangeText={(text) => {
+                  setPhoneNumber(text.replace(/[^0-9]/g, ''));
+                  if (errorMessage) setErrorMessage('');
+                }}
+                maxLength={10}
+              />
+            </View>
+
+            <TouchableOpacity
+              style={[styles.nextButton, (!isPhoneValid || isLoading) && styles.disabledButton]}
+              onPress={handleContinue}
+              disabled={!isPhoneValid || isLoading}
+              activeOpacity={0.85}
+            >
+              <Text style={styles.nextButtonText}>
+                {isLoading ? 'Sending OTP...' : 'Continue  ➔'}
+              </Text>
+            </TouchableOpacity>
+
+            {!isLoginMode && (
+              <TouchableOpacity
+                style={styles.loginContainer}
+                onPress={() => {
+                  setErrorMessage('');
+                  setIsLoginMode(true);
+                }}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.loginText}>
+                  Already have an account? <Text style={styles.loginLink}>Login</Text>
+                </Text>
+              </TouchableOpacity>
+            )}
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
+    </ImageBackground>
+  );
 }
 function OtpVerificationScreen({
   phoneNumber,
   onBack,
-  onVerify
+  onVerify,
+  userRole = 'customer'
 }) {
   var [otp, setOtp] = useState(['', '', '', '', '', '']);
   var [timer, setTimer] = useState(45);
@@ -614,14 +703,16 @@ function OtpVerificationScreen({
     setErrorMessage('');
     setIsSubmitting(true);
     try {
-      var res = await authApi.verifyOtp({ phoneNumber: phoneNumber, otp: otpString, role: 'worker' });
-      console.log('🔒 Worker OTP Verification Response:', res);
+      var targetRole = userRole || 'customer';
+      var res = await authApi.verifyOtp({ phoneNumber: phoneNumber, otp: otpString, role: targetRole });
+      console.log('🔒 OTP Verification Response:', res);
       if (res && res.success) {
+        var returnedRole = res.user?.role || targetRole;
         var isComplete = Boolean(
           res.isProfileComplete ||
-          (res.user && res.user.fullName && res.user.fullName.trim().length > 0 && res.user.professions && res.user.professions.length > 0)
+          (res.user && res.user.fullName && res.user.fullName.trim().length > 0 && (returnedRole === 'customer' || (res.user.professions && res.user.professions.length > 0)))
         );
-        onVerify(otpString, isComplete);
+        onVerify(otpString, isComplete, returnedRole);
       } else {
         var msg = res?.message || 'OTP is not correct. Please enter the valid code.';
         setErrorMessage(msg);
@@ -1585,6 +1676,84 @@ function SelectProfessionsScreen({
     })
   });
 }
+var LOCATION_DATABASE = [
+  // Dehradun localities
+  { city: 'Dehradun', name: 'Rajpur Road, Dehradun' },
+  { city: 'Dehradun', name: 'Clock Tower, Dehradun' },
+  { city: 'Dehradun', name: 'Clement Town, Dehradun' },
+  { city: 'Dehradun', name: 'Vasant Vihar, Dehradun' },
+  { city: 'Dehradun', name: 'Prem Nagar, Dehradun' },
+  { city: 'Dehradun', name: 'Ballupur Chowk, Dehradun' },
+  { city: 'Dehradun', name: 'Dharampur, Dehradun' },
+  { city: 'Dehradun', name: 'ISBT Dehradun, Dehradun' },
+  { city: 'Dehradun', name: 'Sahastradhara Road, Dehradun' },
+  { city: 'Dehradun', name: 'Patel Nagar, Dehradun' },
+  { city: 'Dehradun', name: 'Karanpur, Dehradun' },
+  { city: 'Dehradun', name: 'Garhi Cantt, Dehradun' },
+  { city: 'Dehradun', name: 'Majra, Dehradun' },
+  { city: 'Dehradun', name: 'Rishikesh Highway, Dehradun' },
+
+  // Zirakpur localities
+  { city: 'Zirakpur', name: 'VIP Road, Zirakpur' },
+  { city: 'Zirakpur', name: 'Baltana, Zirakpur' },
+  { city: 'Zirakpur', name: 'Dhakoli, Zirakpur' },
+  { city: 'Zirakpur', name: 'Chandigarh-Ambala Highway, Zirakpur' },
+  { city: 'Zirakpur', name: 'Gazipur, Zirakpur' },
+  { city: 'Zirakpur', name: 'Patiala Chowk, Zirakpur' },
+  { city: 'Zirakpur', name: 'Lohgarh, Zirakpur' },
+  { city: 'Zirakpur', name: 'Singhpura, Zirakpur' },
+  { city: 'Zirakpur', name: 'Shatabdi Enclave, Zirakpur' },
+  { city: 'Zirakpur', name: 'High Ground, Zirakpur' },
+
+  // Chandigarh & Tricity
+  { city: 'Chandigarh', name: 'Sector 17, Chandigarh' },
+  { city: 'Chandigarh', name: 'Sector 35, Chandigarh' },
+  { city: 'Chandigarh', name: 'Sector 22, Chandigarh' },
+  { city: 'Chandigarh', name: 'Sector 43 ISBT, Chandigarh' },
+  { city: 'Chandigarh', name: 'Industrial Area Phase 1, Chandigarh' },
+  { city: 'Chandigarh', name: 'Elante Mall Area, Chandigarh' },
+  { city: 'Chandigarh', name: 'Manimajra, Chandigarh' },
+  { city: 'Mohali', name: 'Phase 3B2, Mohali' },
+  { city: 'Mohali', name: 'Phase 7, Mohali' },
+  { city: 'Mohali', name: 'Phase 5, Mohali' },
+  { city: 'Mohali', name: 'Sector 70, Mohali' },
+  { city: 'Mohali', name: 'Sector 82 IT City, Mohali' },
+  { city: 'Mohali', name: 'Kharar Landran Road, Mohali' },
+  { city: 'Panchkula', name: 'Sector 5, Panchkula' },
+  { city: 'Panchkula', name: 'Sector 20, Panchkula' },
+  { city: 'Panchkula', name: 'MDC Sector 5, Panchkula' },
+
+  // Delhi NCR
+  { city: 'Delhi', name: 'Connaught Place, New Delhi' },
+  { city: 'Delhi', name: 'South Extension, New Delhi' },
+  { city: 'Delhi', name: 'Lajpat Nagar, New Delhi' },
+  { city: 'Delhi', name: 'Dwarka Sector 10, New Delhi' },
+  { city: 'Delhi', name: 'Rohini Sector 7, New Delhi' },
+  { city: 'Delhi', name: 'Karol Bagh, New Delhi' },
+  { city: 'Delhi', name: 'Saket, New Delhi' },
+  { city: 'Delhi', name: 'Janakpuri, New Delhi' },
+  { city: 'Noida', name: 'Sector 18, Noida' },
+  { city: 'Noida', name: 'Sector 62, Noida' },
+  { city: 'Noida', name: 'Noida Extension (Greater Noida West)' },
+  { city: 'Gurugram', name: 'Cyber City, Gurugram' },
+  { city: 'Gurugram', name: 'Golf Course Road, Gurugram' },
+  { city: 'Gurugram', name: 'MG Road, Gurugram' },
+  { city: 'Gurugram', name: 'Sohna Road, Gurugram' },
+
+  // Regional Hubs
+  { city: 'Jaipur', name: 'Malviya Nagar, Jaipur' },
+  { city: 'Jaipur', name: 'Vaishali Nagar, Jaipur' },
+  { city: 'Jaipur', name: 'C-Scheme, Jaipur' },
+  { city: 'Lucknow', name: 'Hazratganj, Lucknow' },
+  { city: 'Lucknow', name: 'Gomti Nagar, Lucknow' },
+  { city: 'Shimla', name: 'Mall Road, Shimla' },
+  { city: 'Shimla', name: 'Sanjauli, Shimla' },
+  { city: 'Haridwar', name: 'Har Ki Pauri, Haridwar' },
+  { city: 'Rishikesh', name: 'Triveni Ghat, Rishikesh' },
+  { city: 'Ludhiana', name: 'Model Town, Ludhiana' },
+  { city: 'Ambala', name: 'Ambala Cantt, Ambala' }
+];
+
 function SelectLocationDistanceScreen({
   onBack,
   onFinish,
@@ -1632,84 +1801,6 @@ function SelectLocationDistanceScreen({
       setIsSaving(false);
     }
   };
-
-  var LOCATION_DATABASE = [
-    // Dehradun localities
-    { city: 'Dehradun', name: 'Rajpur Road, Dehradun' },
-    { city: 'Dehradun', name: 'Clock Tower, Dehradun' },
-    { city: 'Dehradun', name: 'Clement Town, Dehradun' },
-    { city: 'Dehradun', name: 'Vasant Vihar, Dehradun' },
-    { city: 'Dehradun', name: 'Prem Nagar, Dehradun' },
-    { city: 'Dehradun', name: 'Ballupur Chowk, Dehradun' },
-    { city: 'Dehradun', name: 'Dharampur, Dehradun' },
-    { city: 'Dehradun', name: 'ISBT Dehradun, Dehradun' },
-    { city: 'Dehradun', name: 'Sahastradhara Road, Dehradun' },
-    { city: 'Dehradun', name: 'Patel Nagar, Dehradun' },
-    { city: 'Dehradun', name: 'Karanpur, Dehradun' },
-    { city: 'Dehradun', name: 'Garhi Cantt, Dehradun' },
-    { city: 'Dehradun', name: 'Majra, Dehradun' },
-    { city: 'Dehradun', name: 'Rishikesh Highway, Dehradun' },
-
-    // Zirakpur localities
-    { city: 'Zirakpur', name: 'VIP Road, Zirakpur' },
-    { city: 'Zirakpur', name: 'Baltana, Zirakpur' },
-    { city: 'Zirakpur', name: 'Dhakoli, Zirakpur' },
-    { city: 'Zirakpur', name: 'Chandigarh-Ambala Highway, Zirakpur' },
-    { city: 'Zirakpur', name: 'Gazipur, Zirakpur' },
-    { city: 'Zirakpur', name: 'Patiala Chowk, Zirakpur' },
-    { city: 'Zirakpur', name: 'Lohgarh, Zirakpur' },
-    { city: 'Zirakpur', name: 'Singhpura, Zirakpur' },
-    { city: 'Zirakpur', name: 'Shatabdi Enclave, Zirakpur' },
-    { city: 'Zirakpur', name: 'High Ground, Zirakpur' },
-
-    // Chandigarh & Tricity
-    { city: 'Chandigarh', name: 'Sector 17, Chandigarh' },
-    { city: 'Chandigarh', name: 'Sector 35, Chandigarh' },
-    { city: 'Chandigarh', name: 'Sector 22, Chandigarh' },
-    { city: 'Chandigarh', name: 'Sector 43 ISBT, Chandigarh' },
-    { city: 'Chandigarh', name: 'Industrial Area Phase 1, Chandigarh' },
-    { city: 'Chandigarh', name: 'Elante Mall Area, Chandigarh' },
-    { city: 'Chandigarh', name: 'Manimajra, Chandigarh' },
-    { city: 'Mohali', name: 'Phase 3B2, Mohali' },
-    { city: 'Mohali', name: 'Phase 7, Mohali' },
-    { city: 'Mohali', name: 'Phase 5, Mohali' },
-    { city: 'Mohali', name: 'Sector 70, Mohali' },
-    { city: 'Mohali', name: 'Sector 82 IT City, Mohali' },
-    { city: 'Mohali', name: 'Kharar Landran Road, Mohali' },
-    { city: 'Panchkula', name: 'Sector 5, Panchkula' },
-    { city: 'Panchkula', name: 'Sector 20, Panchkula' },
-    { city: 'Panchkula', name: 'MDC Sector 5, Panchkula' },
-
-    // Delhi NCR
-    { city: 'Delhi', name: 'Connaught Place, New Delhi' },
-    { city: 'Delhi', name: 'South Extension, New Delhi' },
-    { city: 'Delhi', name: 'Lajpat Nagar, New Delhi' },
-    { city: 'Delhi', name: 'Dwarka Sector 10, New Delhi' },
-    { city: 'Delhi', name: 'Rohini Sector 7, New Delhi' },
-    { city: 'Delhi', name: 'Karol Bagh, New Delhi' },
-    { city: 'Delhi', name: 'Saket, New Delhi' },
-    { city: 'Delhi', name: 'Janakpuri, New Delhi' },
-    { city: 'Noida', name: 'Sector 18, Noida' },
-    { city: 'Noida', name: 'Sector 62, Noida' },
-    { city: 'Noida', name: 'Noida Extension (Greater Noida West)' },
-    { city: 'Gurugram', name: 'Cyber City, Gurugram' },
-    { city: 'Gurugram', name: 'Golf Course Road, Gurugram' },
-    { city: 'Gurugram', name: 'MG Road, Gurugram' },
-    { city: 'Gurugram', name: 'Sohna Road, Gurugram' },
-
-    // Regional Hubs
-    { city: 'Jaipur', name: 'Malviya Nagar, Jaipur' },
-    { city: 'Jaipur', name: 'Vaishali Nagar, Jaipur' },
-    { city: 'Jaipur', name: 'C-Scheme, Jaipur' },
-    { city: 'Lucknow', name: 'Hazratganj, Lucknow' },
-    { city: 'Lucknow', name: 'Gomti Nagar, Lucknow' },
-    { city: 'Shimla', name: 'Mall Road, Shimla' },
-    { city: 'Shimla', name: 'Sanjauli, Shimla' },
-    { city: 'Haridwar', name: 'Har Ki Pauri, Haridwar' },
-    { city: 'Rishikesh', name: 'Triveni Ghat, Rishikesh' },
-    { city: 'Ludhiana', name: 'Model Town, Ludhiana' },
-    { city: 'Ambala', name: 'Ambala Cantt, Ambala' }
-  ];
 
   var getFilteredSuggestions = () => {
     var query = (locationText || '').trim().toLowerCase();
@@ -1977,6 +2068,55 @@ function WorkerDashboardScreen({
   };
   var [workerLocation, setWorkerLocation] = useState('Sector 17, Chandigarh');
   var [serviceRadius, setServiceRadius] = useState(15);
+  var [showLocationSuggestions, setShowLocationSuggestions] = useState(false);
+  var [isLocating, setIsLocating] = useState(false);
+
+  var getFilteredLocationSuggestions = (queryText) => {
+    var query = (queryText || '').trim().toLowerCase();
+    if (!query) return LOCATION_DATABASE.slice(0, 6);
+
+    var matches = LOCATION_DATABASE.filter(
+      (item) =>
+        item.name.toLowerCase().includes(query) || item.city.toLowerCase().includes(query)
+    );
+
+    if (matches.length < 3 && query.length >= 2) {
+      var capitalized = queryText.trim().charAt(0).toUpperCase() + queryText.trim().slice(1);
+      var customAdditions = [
+        { city: capitalized, name: `${capitalized} Center Point` },
+        { city: capitalized, name: `${capitalized} Main Market` },
+      ];
+      matches = [...matches, ...customAdditions];
+    }
+    return matches.slice(0, 8);
+  };
+
+  var locationSuggestions = getFilteredLocationSuggestions(workerLocation);
+
+  var handleCurrentLocation = () => {
+    setIsLocating(true);
+    setTimeout(() => {
+      setWorkerLocation('Current GPS Location (Delhi NCR)');
+      setIsLocating(false);
+      setShowLocationSuggestions(false);
+    }, 800);
+  };
+
+  var handleSaveLocationSettings = async () => {
+    try {
+      console.log('💾 Saving location & distance radius:', workerLocation, serviceRadius);
+      await workerApi.updateLocationAndDistance({
+        address: workerLocation,
+        city: workerLocation.split(',').pop()?.trim() || 'New Delhi',
+        pincode: '',
+        maxDistanceKm: serviceRadius,
+      });
+      setSettingsSubScreen(null);
+    } catch (err) {
+      console.error('Failed to save location settings:', err);
+      setSettingsSubScreen(null);
+    }
+  };
   var [workImages, setWorkImages] = useState([{
     id: '1',
     title: 'Fan Repair & Wiring',
@@ -3372,33 +3512,131 @@ function WorkerDashboardScreen({
 
               /* Location Card */
               /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
-              style: styles.profileSectionCard,
+              style: styles.locationSectionCard,
               children: [
                   /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-                style: styles.settingsInputSubLabel,
-                children: "Base Location / Area:"
+                style: styles.locationSectionLabel,
+                children: "📍 Primary Work Location (Center Point)"
               }),
-                  /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TextInput, {
-                style: styles.settingsTextInputField,
-                value: workerLocation,
-                onChangeText: setWorkerLocation,
-                placeholder: "e.g. Sector 17, Chandigarh"
+                  /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
+                style: styles.locationInputBox,
+                children: [
+                    /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                  style: styles.locationPinIcon,
+                  children: "📍"
+                }),
+                    /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TextInput, {
+                  style: styles.locationTextInput,
+                  placeholder: "Enter city, area or landmark...",
+                  placeholderTextColor: "#94A3B8",
+                  value: workerLocation,
+                  onFocus: () => setShowLocationSuggestions(true),
+                  onChangeText: text => {
+                    setWorkerLocation(text);
+                    setShowLocationSuggestions(true);
+                  }
+                }), workerLocation.length > 0 && /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
+                  onPress: () => {
+                    setWorkerLocation('');
+                    setShowLocationSuggestions(true);
+                  },
+                  hitSlop: { top: 10, bottom: 10, left: 10, right: 10 },
+                  children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                    style: styles.clearIcon,
+                    children: "✕"
+                  })
+                })
+                ]
+              }), showLocationSuggestions && locationSuggestions.length > 0 && /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.View, {
+                style: styles.suggestionsDropdown,
+                children: locationSuggestions.map((item, index) => /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.TouchableOpacity, {
+                  style: styles.suggestionRow,
+                  onPress: () => {
+                    setWorkerLocation(item.name);
+                    setShowLocationSuggestions(false);
+                    _reactNative.Keyboard.dismiss();
+                  },
+                  activeOpacity: 0.7,
+                  children: [
+                      /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                    style: styles.suggestionPinIcon,
+                    children: "📍"
+                  }),
+                      /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                    style: styles.suggestionText,
+                    numberOfLines: 1,
+                    children: item.name
+                  }),
+                      /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.View, {
+                    style: styles.cityBadge,
+                    children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                      style: styles.cityBadgeText,
+                      children: item.city
+                    })
+                  })
+                  ]
+                }, index))
               }),
-                  /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-                style: [styles.settingsInputSubLabel, { marginTop: 12 }],
-                children: "Service Distance Radius (km):"
+                  /* Use GPS Button */
+                  /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.TouchableOpacity, {
+                style: styles.useGpsButton,
+                onPress: handleCurrentLocation,
+                activeOpacity: 0.8,
+                children: [
+                    /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                  style: styles.useGpsIcon,
+                  children: isLocating ? "⏳" : "🎯"
+                }),
+                    /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                  style: styles.useGpsText,
+                  children: isLocating ? "Locating your GPS position..." : "Use My Current GPS Location"
+                })
+                ]
+              })
+              ]
+            }),
+
+              /* Service Distance Radius Card */
+              /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
+              style: styles.locationSectionCard,
+              children: [
+                  /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
+                style: styles.distanceHeaderRow,
+                children: [
+                    /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                  style: styles.locationSectionLabel,
+                  children: "📐 Distance Range (Radius)"
+                }),
+                    /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.View, {
+                  style: styles.distanceMetricBadge,
+                  children: /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.Text, {
+                    style: styles.distanceMetricText,
+                    children: [serviceRadius, " km"]
+                  })
+                })
+                ]
+              }),
+                  /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.Text, {
+                style: styles.distanceHelperText,
+                children: ["You will receive customer job alerts within a ", /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.Text, {
+                  style: styles.boldDistanceText,
+                  children: [serviceRadius, " km"]
+                }), " radius around your center location."]
               }),
                   /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.View, {
-                style: styles.quickPillsGrid,
-                children: [5, 10, 15, 25, 50].map(rad => /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.TouchableOpacity, {
-                  style: [styles.quickChoicePill, serviceRadius === rad && styles.quickChoicePillActive],
-                  onPress: () => setServiceRadius(rad),
-                  activeOpacity: 0.7,
-                  children: [/*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.Text, {
-                    style: [styles.quickChoicePillText, serviceRadius === rad && styles.quickChoicePillTextActive],
-                    children: [rad, " km"]
-                  })]
-                }, rad))
+                style: styles.presetPillRow,
+                children: [5, 10, 15, 25, 50, 75].map(rad => {
+                  var isSelected = serviceRadius === rad;
+                  return /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
+                    style: [styles.distancePill, isSelected && styles.distancePillSelected],
+                    onPress: () => setServiceRadius(rad),
+                    activeOpacity: 0.75,
+                    children: /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.Text, {
+                      style: [styles.distancePillText, isSelected && styles.distancePillTextSelected],
+                      children: [rad, " km"]
+                    })
+                  }, rad);
+                })
               })
               ]
             }),
@@ -3406,7 +3644,7 @@ function WorkerDashboardScreen({
               /* Save Button */
               /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
               style: [styles.saveSettingsBtn, { marginBottom: 30 }],
-              onPress: () => setSettingsSubScreen(null),
+              onPress: handleSaveLocationSettings,
               activeOpacity: 0.85,
               children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
                 style: styles.saveSettingsBtnText,

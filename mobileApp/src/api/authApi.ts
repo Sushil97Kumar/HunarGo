@@ -3,6 +3,7 @@ import { API_BASE_URL, ENDPOINTS, defaultHeaders, setAuthToken, setActiveUserPho
 export interface SendOtpPayload {
   phoneNumber: string;
   role?: string;
+  isLogin?: boolean;
 }
 
 export interface VerifyOtpPayload {
