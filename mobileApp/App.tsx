@@ -27,6 +27,7 @@ import { launchImageLibrary } from 'react-native-image-picker';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { authApi } from './src/api/authApi';
 import { workerApi } from './src/api/workerApi';
+import { CustomerHomeScreen } from './src/screens/customer/CustomerHomeScreen';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const BASE_WIDTH = 390;
@@ -4847,12 +4848,12 @@ function WorkerDashboardScreen({
 }
 function HomeScreen({
   onBackToOnboarding
-}) {
-  var [searchQuery, setSearchQuery] = useState('');
-  var [activeTab, setActiveTab] = useState('home');
-  var [userLocation, setUserLocation] = useState('Current GPS Location');
-  var [isLocating, setIsLocating] = useState(false);
+}: { onBackToOnboarding: () => void }) {
+  return <CustomerHomeScreen onBackToOnboarding={onBackToOnboarding} />;
+}
 
+/* Old HomeScreen code removed */
+function _OldHomeScreenUnused() {
   var handleDetectLocation = () => {
     setIsLocating(true);
     setTimeout(() => {
