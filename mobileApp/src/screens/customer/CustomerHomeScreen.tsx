@@ -513,22 +513,23 @@ export const CustomerHomeScreen: React.FC<Props> = ({ onBackToOnboarding }) => {
             ref={chipsScrollRef}
             horizontal
             showsHorizontalScrollIndicator={false}
-            style={{ height: 50, flexGrow: 0, marginTop: 4, marginBottom: 6 }}
+            style={{ height: 50, flexGrow: 0, marginTop: 2, marginBottom: 4 }}
             contentContainerStyle={localStyles.chipsScrollContent}
             onContentSizeChange={(w) => {
               totalContentWidth.current = w;
             }}
           >
             {loopingCategories.map((cat, idx) => (
-              <TouchableOpacity
-                key={`${cat.id}-${idx}`}
-                style={[localStyles.chipPill, { backgroundColor: cat.bg, borderColor: cat.border }]}
-                activeOpacity={0.8}
-                onPress={() => handleOpenAllWorkersModal(cat.title)}
-              >
-                <Text style={localStyles.chipEmoji}>{cat.emoji}</Text>
-                <Text style={[localStyles.chipText, { color: cat.color }]}>{cat.title}</Text>
-              </TouchableOpacity>
+              <View key={`${cat.id}-${idx}`} style={{ paddingVertical: 8, justifyContent: 'center' }}>
+                <TouchableOpacity
+                  style={[localStyles.chipPill, { backgroundColor: cat.bg, borderColor: cat.border }]}
+                  activeOpacity={0.8}
+                  onPress={() => handleOpenAllWorkersModal(cat.title)}
+                >
+                  <Text style={localStyles.chipEmoji}>{cat.emoji}</Text>
+                  <Text style={[localStyles.chipText, { color: cat.color }]}>{cat.title}</Text>
+                </TouchableOpacity>
+              </View>
             ))}
           </ScrollView>
 
@@ -1586,7 +1587,7 @@ const localStyles = StyleSheet.create({
   },
   chipsScrollContent: {
     paddingHorizontal: 16,
-    paddingVertical: 8,
+    flexDirection: 'row',
     alignItems: 'center',
   },
   chipPill: {
