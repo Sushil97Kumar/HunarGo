@@ -454,23 +454,7 @@ export const CustomerHomeScreen: React.FC<Props> = ({ onBackToOnboarding }) => {
 
         {activeTab === 'dashboard' && (
           <View style={localStyles.homeFixedContent}>
-            {/* Current GPS Location Card */}
-          <TouchableOpacity style={localStyles.locationCard} activeOpacity={0.85} onPress={handleDetectLocation}>
-            <View style={localStyles.locationLeft}>
-              <View style={localStyles.redPinContainer}>
-                <View style={localStyles.redPinHead}>
-                  <View style={localStyles.redPinDot} />
-                </View>
-                <View style={localStyles.redPinTail} />
-              </View>
-              <Text style={localStyles.locationLabel} numberOfLines={1}>
-                Current GPS Location: <Text style={localStyles.locationValue}>{isLocating ? 'Locating...' : userLocation}</Text>
-              </Text>
-            </View>
-            <Text style={localStyles.locationChevron}>›</Text>
-          </TouchableOpacity>
-
-          {/* Search Bar */}
+            {/* Search Bar */}
           <View style={localStyles.searchRow}>
             <View style={localStyles.searchInputBox}>
               <Text style={localStyles.searchLens}>🔍</Text>
