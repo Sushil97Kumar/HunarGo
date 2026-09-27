@@ -513,7 +513,7 @@ export const CustomerHomeScreen: React.FC<Props> = ({ onBackToOnboarding }) => {
             ref={chipsScrollRef}
             horizontal
             showsHorizontalScrollIndicator={false}
-            style={{ height: 44, minHeight: 44, flexGrow: 0, marginTop: 2, marginBottom: 4 }}
+            style={{ height: 38, minHeight: 38, flexGrow: 0, marginTop: 1, marginBottom: 2 }}
             contentContainerStyle={localStyles.chipsScrollContent}
             onContentSizeChange={(w) => {
               totalContentWidth.current = w;
@@ -1460,18 +1460,18 @@ const localStyles = StyleSheet.create({
     justifyContent: 'space-between',
     backgroundColor: '#FFFBF7',
     marginHorizontal: 24,
-    marginTop: 4,
-    marginBottom: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 5,
-    borderRadius: 18,
+    marginTop: 2,
+    marginBottom: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderRadius: 14,
     borderWidth: 1.2,
     borderColor: '#FFE3D3',
     shadowColor: '#F97316',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.04,
-    shadowRadius: 4,
-    elevation: 2,
+    shadowRadius: 3,
+    elevation: 1,
   },
   locationLeft: {
     flexDirection: 'row',
@@ -1585,7 +1585,7 @@ const localStyles = StyleSheet.create({
   },
   chipsScrollContent: {
     paddingHorizontal: 16,
-    paddingVertical: 6,
+    paddingVertical: 4,
     flexDirection: 'row',
     alignItems: 'center',
   },
@@ -1593,21 +1593,21 @@ const localStyles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    height: 34,
-    minHeight: 34,
-    paddingHorizontal: 12,
-    borderRadius: 17,
-    marginRight: 8,
-    borderWidth: 1.5,
+    height: 30,
+    minHeight: 30,
+    paddingHorizontal: 10,
+    borderRadius: 15,
+    marginRight: 6,
+    borderWidth: 1.2,
   },
   chipEmoji: {
-    fontSize: 14,
-    lineHeight: 18,
-    marginRight: 5,
-  },
-  chipText: {
     fontSize: 12,
     lineHeight: 16,
+    marginRight: 4,
+  },
+  chipText: {
+    fontSize: 11,
+    lineHeight: 15,
     fontWeight: '700',
   },
   sectionHeaderRow: {
