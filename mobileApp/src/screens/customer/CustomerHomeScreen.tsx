@@ -453,7 +453,7 @@ export const CustomerHomeScreen: React.FC<Props> = ({ onBackToOnboarding }) => {
         </View>
 
         {activeTab === 'dashboard' && (
-          <View style={localStyles.homeFixedContent}>
+          <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
             {/* Current GPS Location Card */}
           <TouchableOpacity style={localStyles.locationCard} activeOpacity={0.85} onPress={handleDetectLocation}>
             <View style={localStyles.locationLeft}>
@@ -720,7 +720,7 @@ export const CustomerHomeScreen: React.FC<Props> = ({ onBackToOnboarding }) => {
               </View>
             ))}
           </View>
-        </View>
+        </ScrollView>
       )}
 
       {/* ALL NEAREST WORKERS MODAL WITH PAGINATION */}
