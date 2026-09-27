@@ -1,8 +1,11 @@
 import React, { useState } from 'react';
 import {
+  Alert,
   Image,
   ImageBackground,
   Keyboard,
+  PermissionsAndroid,
+  Platform,
   SafeAreaView,
   ScrollView,
   Text,
@@ -87,13 +90,70 @@ export const SelectLocationDistanceScreen: React.FC<Props> = ({
 
   const suggestions = getFilteredSuggestions();
 
-  const handleCurrentLocation = () => {
+  const handleCurrentLocation = async () => {
     setIsLocating(true);
-    setTimeout(() => {
-      setLocationText('Current GPS Location (Delhi NCR)');
-      setIsLocating(false);
-      setShowSuggestions(false);
-    }, 800);
+    if (Platform.OS === 'android') {
+      try {
+        const granted = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+          {
+            title: 'HunarGo GPS Permission Required 📍',
+            message: 'HunarGo needs device GPS location to show job requests near you.',
+            buttonNeutral: 'Ask Me Later',
+            buttonNegative: 'Cancel',
+            buttonPositive: 'Turn ON / Allow',
+          }
+        );
+        if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
+          setIsLocating(false);
+          Alert.alert(
+            'GPS Permission Required 📍',
+            'Mobile ki Location/GPS ON karne ki zaroorat hai. Kripya phone settings me Location ON karein.'
+          );
+          return;
+        }
+      } catch (err) {
+        console.warn('Permission error:', err);
+      }
+    }
+
+    if (typeof navigator !== 'undefined' && navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords;
+          setLocationText(`GPS Location (${latitude.toFixed(4)}, ${longitude.toFixed(4)})`);
+          setIsLocating(false);
+          setShowSuggestions(false);
+          Alert.alert('Location Detected 📍', 'Your GPS location has been updated!');
+        },
+        (error) => {
+          console.warn('Geolocation error:', error);
+          setIsLocating(false);
+          Alert.alert(
+            'Turn ON Device Location (GPS) 📍',
+            'Aapke mobile ki Location (GPS) OFF hai ya detected nahi ho rahi hai. Kripya phone ki Location ON karein aur dobara try karein.',
+            [
+              { text: 'Turn ON / Retry', onPress: () => handleCurrentLocation() },
+              {
+                text: 'Use Default Location',
+                onPress: () => {
+                  setLocationText('Current GPS Location (Delhi NCR)');
+                  setShowSuggestions(false);
+                },
+              },
+              { text: 'Cancel', style: 'cancel' },
+            ]
+          );
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 5000 }
+      );
+    } else {
+      setTimeout(() => {
+        setLocationText('Current GPS Location (Delhi NCR)');
+        setIsLocating(false);
+        setShowSuggestions(false);
+      }, 800);
+    }
   };
 
   const handleFinish = async () => {

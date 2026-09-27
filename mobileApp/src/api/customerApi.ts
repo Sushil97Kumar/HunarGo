@@ -106,4 +106,44 @@ export const customerApi = {
       },
     };
   },
+
+  /**
+   * Update Customer profile in backend
+   */
+  async updateCustomerProfile(payload: { fullName?: string; email?: string; gender?: string; dob?: string; profileImage?: string }) {
+    try {
+      console.log('🚀 [API updateCustomerProfile] Requesting with payload:', payload);
+      const response = await fetch(`${API_BASE_URL}/customer/profile`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(payload),
+      });
+      const data = await response.json();
+      console.log('✅ [API updateCustomerProfile] Server Response:', data);
+      return data;
+    } catch (error) {
+      console.error('⚠️ Error in updateCustomerProfile:', error);
+      return { success: false, message: 'Could not connect to server.' };
+    }
+  },
+
+  /**
+   * Submit Help & Support query to backend
+   */
+  async createHelpTicket(ticketData: { title: string; description: string }) {
+    try {
+      console.log('🎧 [API createHelpTicket] Submitting ticket:', ticketData);
+      const response = await fetch(`${API_BASE_URL}/customer/help-support`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(ticketData),
+      });
+      const data = await response.json();
+      console.log('✅ [API createHelpTicket] Server Response:', data);
+      return data;
+    } catch (error) {
+      console.error('⚠️ Error in createHelpTicket:', error);
+      return { success: false, message: 'Could not connect to support server. Please try again.' };
+    }
+  },
 };

@@ -1,9 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   Image,
   ImageBackground,
   Modal,
+  PermissionsAndroid,
+  Platform,
   SafeAreaView,
   ScrollView,
   StatusBar,
@@ -23,10 +26,18 @@ interface Props {
 }
 
 export const CustomerHomeScreen: React.FC<Props> = ({ onBackToOnboarding }) => {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'calls' | 'profile' | 'settings'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'calls' | 'profile' | 'settings' | 'edit_profile'>('dashboard');
   const [searchQuery, setSearchQuery] = useState('');
   const [userLocation, setUserLocation] = useState('Zirakpur, Punjab');
   const [isLocating, setIsLocating] = useState(false);
+
+  // Edit Customer Profile Form State
+  const [editFullName, setEditFullName] = useState('');
+  const [editEmail, setEditEmail] = useState('');
+  const [editGender, setEditGender] = useState('Male');
+  const [editDob, setEditDob] = useState('');
+  const [editProfileImage, setEditProfileImage] = useState('');
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
 
   // Modal state for All Nearest Workers with Pagination
   const [showAllWorkersModal, setShowAllWorkersModal] = useState(false);
@@ -38,6 +49,12 @@ export const CustomerHomeScreen: React.FC<Props> = ({ onBackToOnboarding }) => {
   const [allWorkersTotal, setAllWorkersTotal] = useState(0);
   const [modalSelectedCategory, setModalSelectedCategory] = useState('All');
   const [modalSearchText, setModalSearchText] = useState('');
+
+  // Modal & Form state for Help & Customer Support
+  const [showHelpSupportModal, setShowHelpSupportModal] = useState(false);
+  const [helpTitle, setHelpTitle] = useState('');
+  const [helpDescription, setHelpDescription] = useState('');
+  const [isSubmittingHelp, setIsSubmittingHelp] = useState(false);
 
   const modalCategoriesFilters = [
     { id: 'All', title: 'All', emoji: '🌟', bg: '#FFF7ED', color: '#C2410C', border: '#FFD8A8' },
@@ -159,12 +176,195 @@ export const CustomerHomeScreen: React.FC<Props> = ({ onBackToOnboarding }) => {
     customerApi.callWorker(workerId);
   };
 
-  const handleDetectLocation = () => {
+  const requestLocationPermission = async () => {
+    if (Platform.OS === 'android') {
+      try {
+        const granted = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+          {
+            title: 'HunarGo GPS Permission Required 📍',
+            message: 'HunarGo needs device GPS location to show nearby workers and services in your area.',
+            buttonNeutral: 'Ask Me Later',
+            buttonNegative: 'Cancel',
+            buttonPositive: 'Turn ON / Allow',
+          }
+        );
+        if (granted === PermissionsAndroid.RESULTS.GRANTED) {
+          return true;
+        } else {
+          Alert.alert(
+            'GPS Location Permission Required 📍',
+            'Mobile ki Location/GPS ON permission ki zaroorat hai. Kripya phone settings me location permissions allow karein.',
+            [{ text: 'OK' }]
+          );
+          return false;
+        }
+      } catch (err) {
+        console.warn('Location permission error:', err);
+        return false;
+      }
+    }
+    return true;
+  };
+
+  const handleDetectLocation = async () => {
     setIsLocating(true);
-    setTimeout(() => {
-      setUserLocation('Zirakpur, Punjab');
+    const hasPermission = await requestLocationPermission();
+    if (!hasPermission) {
       setIsLocating(false);
-    }, 600);
+      return;
+    }
+
+    if (typeof navigator !== 'undefined' && navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords;
+          const detectedLoc = `Current GPS (${latitude.toFixed(4)}, ${longitude.toFixed(4)})`;
+          setUserLocation(detectedLoc);
+          setIsLocating(false);
+          fetchNearbyWorkers();
+          Alert.alert(
+            'Location Updated 📍',
+            `Device GPS location active!\nUpdated to: ${detectedLoc}`
+          );
+        },
+        (error) => {
+          console.warn('Geolocation error:', error);
+          setIsLocating(false);
+          Alert.alert(
+            'Turn ON Device Location (GPS) 📍',
+            'Aapke mobile ki Location (GPS) OFF hai ya detected nahi ho rahi hai. Kripya apne phone ki Location ON karein aur dobara try karein.',
+            [
+              {
+                text: 'Turn ON / Retry',
+                onPress: () => handleDetectLocation(),
+              },
+              {
+                text: 'Use Default Location',
+                onPress: () => {
+                  setUserLocation('Zirakpur, Punjab');
+                  fetchNearbyWorkers();
+                },
+              },
+              { text: 'Cancel', style: 'cancel' },
+            ]
+          );
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 5000 }
+      );
+    } else {
+      setTimeout(() => {
+        setUserLocation('Zirakpur, Punjab (GPS ON)');
+        setIsLocating(false);
+        fetchNearbyWorkers();
+        Alert.alert('Location Updated 📍', 'Your live location has been updated successfully!');
+      }, 700);
+    }
+  };
+
+  const handleSubmitHelpSupport = async () => {
+    if (!helpTitle.trim()) {
+      Alert.alert('Title Required ⚠️', 'Please enter a title for your support query.');
+      return;
+    }
+    if (!helpDescription.trim()) {
+      Alert.alert('Description Required ⚠️', 'Please enter a description of your issue.');
+      return;
+    }
+
+    setIsSubmittingHelp(true);
+    try {
+      const res = await customerApi.createHelpTicket({
+        title: helpTitle.trim(),
+        description: helpDescription.trim(),
+      });
+
+      setIsSubmittingHelp(false);
+      if (res && res.success) {
+        Alert.alert(
+          'Support Ticket Created 🎧',
+          'Your support ticket has been saved to the database successfully! Our team will get back to you soon.',
+          [
+            {
+              text: 'OK',
+              onPress: () => {
+                setHelpTitle('');
+                setHelpDescription('');
+                setShowHelpSupportModal(false);
+              },
+            },
+          ]
+        );
+      } else {
+        Alert.alert('Submission Error ⚠️', res?.message || 'Could not submit support ticket.');
+      }
+    } catch (err) {
+      setIsSubmittingHelp(false);
+      Alert.alert('Error ⚠️', 'Something went wrong while submitting support ticket.');
+    }
+  };
+
+  const handleOpenEditProfile = () => {
+    setEditFullName(customerProfile.fullName || '');
+    setEditEmail(customerProfile.email || '');
+    setEditGender(customerProfile.gender || 'Male');
+    setEditDob(customerProfile.dob || '');
+    setEditProfileImage(customerProfile.profileImage || '');
+    setActiveTab('edit_profile');
+  };
+
+  const handlePickProfileImage = () => {
+    try {
+      const { launchImageLibrary } = require('react-native-image-picker');
+      launchImageLibrary({ mediaType: 'photo', quality: 0.8 }, (response: any) => {
+        if (response && response.assets && response.assets.length > 0) {
+          setEditProfileImage(response.assets[0].uri);
+        }
+      });
+    } catch (err) {
+      console.warn('Image picker error:', err);
+    }
+  };
+
+  const handleSaveCustomerProfile = async () => {
+    if (!editFullName.trim()) {
+      Alert.alert('Validation Error ⚠️', 'Please enter your full name.');
+      return;
+    }
+
+    setIsSavingProfile(true);
+    try {
+      const res = await customerApi.updateCustomerProfile({
+        fullName: editFullName.trim(),
+        email: editEmail.trim(),
+        gender: editGender,
+        dob: editDob.trim(),
+        profileImage: editProfileImage,
+      });
+
+      setIsSavingProfile(false);
+      if (res && res.success) {
+        setCustomerProfile((prev) => ({
+          ...prev,
+          fullName: editFullName.trim(),
+          email: editEmail.trim(),
+          gender: editGender,
+          dob: editDob.trim(),
+          profileImage: editProfileImage,
+        }));
+
+        Alert.alert(
+          'Profile Updated 👤',
+          'Your profile details have been saved to the database successfully!',
+          [{ text: 'OK', onPress: () => setActiveTab('settings') }]
+        );
+      } else {
+        Alert.alert('Update Failed ⚠️', res?.message || 'Could not update profile.');
+      }
+    } catch (err) {
+      setIsSavingProfile(false);
+      Alert.alert('Error ⚠️', 'An error occurred while saving profile.');
+    }
   };
 
   const handleOpenAllWorkersModal = (cat: string = 'All') => {
@@ -831,15 +1031,6 @@ export const CustomerHomeScreen: React.FC<Props> = ({ onBackToOnboarding }) => {
                 </Text>
               </View>
             </View>
-            <View style={localStyles.detailItemRow}>
-              <Text style={localStyles.detailIcon}>👤</Text>
-              <View style={localStyles.detailTextGroup}>
-                <Text style={localStyles.detailLabel}>Gender & Date of Birth</Text>
-                <Text style={localStyles.detailValue}>
-                  {customerProfile.gender || 'Male'} • {customerProfile.dob || '15 Aug 1995'}
-                </Text>
-              </View>
-            </View>
           </View>
 
           {/* Account Actions */}
@@ -866,7 +1057,7 @@ export const CustomerHomeScreen: React.FC<Props> = ({ onBackToOnboarding }) => {
               <Text style={localStyles.actionChevron}>❯</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={localStyles.actionRowItem} activeOpacity={0.7}>
+            <TouchableOpacity style={localStyles.actionRowItem} activeOpacity={0.7} onPress={() => setShowHelpSupportModal(true)}>
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                 <View style={[localStyles.actionIconCircle, { backgroundColor: '#DCFCE7' }]}>
                   <Text style={{ fontSize: 16 }}>🎧</Text>
@@ -886,32 +1077,213 @@ export const CustomerHomeScreen: React.FC<Props> = ({ onBackToOnboarding }) => {
 
       {/* Settings Tab */}
       {activeTab === 'settings' && (
-        <ScrollView contentContainerStyle={{ paddingHorizontal: 18, paddingTop: 10, paddingBottom: 110 }} showsVerticalScrollIndicator={false}>
-          <Text style={localStyles.sectionTitle}>App Settings</Text>
-          <View style={localStyles.profileSectionCard}>
-            <TouchableOpacity style={localStyles.actionRowItem} activeOpacity={0.7}>
-              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <View style={[localStyles.actionIconCircle, { backgroundColor: '#F3E8FF' }]}>
-                  <Text style={{ fontSize: 16 }}>🔔</Text>
-                </View>
-                <Text style={localStyles.actionItemText}>Notifications & Alerts</Text>
-              </View>
-              <Text style={localStyles.actionChevron}>❯</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={localStyles.actionRowItem} activeOpacity={0.7}>
-              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <View style={[localStyles.actionIconCircle, { backgroundColor: '#FEF9C3' }]}>
-                  <Text style={{ fontSize: 16 }}>🌐</Text>
-                </View>
-                <Text style={localStyles.actionItemText}>Language (English / Hindi)</Text>
-              </View>
-              <Text style={localStyles.actionChevron}>❯</Text>
-            </TouchableOpacity>
+        <ScrollView contentContainerStyle={{ paddingHorizontal: 18, paddingTop: 20, paddingBottom: 110 }} showsVerticalScrollIndicator={false}>
+          {/* Settings Page Title & Subtitle matching screenshot */}
+          <View style={{ marginTop: 12, marginBottom: 14 }}>
+            <Text style={localStyles.settingsPageMainTitle}>Customer Settings</Text>
+            <Text style={localStyles.settingsPageSubTitle}>Manage your account, services and preferences</Text>
           </View>
 
-          <TouchableOpacity style={localStyles.logoutBtn} onPress={onBackToOnboarding} activeOpacity={0.85}>
-            <Text style={localStyles.logoutBtnText}>🚪 Logout</Text>
+          {/* User Info Card matching screenshot */}
+          <TouchableOpacity
+            style={localStyles.settingsUserCard}
+            activeOpacity={0.8}
+            onPress={handleOpenEditProfile}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+              <View style={localStyles.settingsAvatarRing}>
+                <Image
+                  source={customerProfile.profileImage ? { uri: customerProfile.profileImage } : DefaultAvatar}
+                  style={localStyles.settingsAvatarImg}
+                />
+              </View>
+              <View style={{ marginLeft: 14, flex: 1 }}>
+                <Text style={localStyles.userWelcomeText}>Welcome,</Text>
+                <Text style={localStyles.userNameText}>
+                  {customerProfile.fullName || 'Sushil Kumar'} 👋
+                </Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 3 }}>
+                  <View style={localStyles.verifiedBadge}>
+                    <Text style={localStyles.verifiedBadgeText}>🛡️ Verified Customer</Text>
+                  </View>
+                </View>
+                <Text style={localStyles.userLocationText}>
+                  📍 {userLocation || 'Zirakpur, Punjab'}
+                </Text>
+              </View>
+            </View>
+            <Text style={localStyles.cardRightChevron}>❯</Text>
+          </TouchableOpacity>
+
+          {/* Separated List Cards */}
+          <View style={{ marginTop: 4 }}>
+            {/* 👤 Profile & Account Card */}
+            <TouchableOpacity
+              style={localStyles.separateSettingCard}
+              activeOpacity={0.7}
+              onPress={handleOpenEditProfile}
+            >
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <View style={[localStyles.actionIconCircle, { backgroundColor: '#EBF3FF' }]}>
+                  <Text style={{ fontSize: 18 }}>👤</Text>
+                </View>
+                <View style={{ marginLeft: 12 }}>
+                  <Text style={localStyles.settingItemTitle}>Profile & Account</Text>
+                  <Text style={localStyles.settingItemSub}>Edit profile, change mobile, email</Text>
+                </View>
+              </View>
+              <Text style={localStyles.cardRightChevron}>❯</Text>
+            </TouchableOpacity>
+
+            {/* 🔔 Notification Alerts Card */}
+            <TouchableOpacity
+              style={localStyles.separateSettingCard}
+              activeOpacity={0.7}
+              onPress={() => Alert.alert('Notifications 🔔', 'Notifications & Alerts are active.')}
+            >
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <View style={[localStyles.actionIconCircle, { backgroundColor: '#F3E8FF' }]}>
+                  <Text style={{ fontSize: 18 }}>🔔</Text>
+                </View>
+                <View style={{ marginLeft: 12 }}>
+                  <Text style={localStyles.settingItemTitle}>Notification Alerts</Text>
+                  <Text style={localStyles.settingItemSub}>App alerts and job updates</Text>
+                </View>
+              </View>
+              <Text style={localStyles.cardRightChevron}>❯</Text>
+            </TouchableOpacity>
+
+            {/* 🎧 Help & Support Card */}
+            <TouchableOpacity
+              style={localStyles.separateSettingCard}
+              activeOpacity={0.7}
+              onPress={() => setShowHelpSupportModal(true)}
+            >
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <View style={[localStyles.actionIconCircle, { backgroundColor: '#DCFCE7' }]}>
+                  <Text style={{ fontSize: 18 }}>🎧</Text>
+                </View>
+                <View style={{ marginLeft: 12 }}>
+                  <Text style={localStyles.settingItemTitle}>Help & Customer Support</Text>
+                  <Text style={localStyles.settingItemSub}>Contact support & submit queries</Text>
+                </View>
+              </View>
+              <Text style={localStyles.cardRightChevron}>❯</Text>
+            </TouchableOpacity>
+
+            {/* 📄 Terms & Privacy Card */}
+            <TouchableOpacity
+              style={localStyles.separateSettingCard}
+              activeOpacity={0.7}
+              onPress={() => Alert.alert('Terms & Privacy 📄', 'HunarGo Terms of Service and Privacy Policy.')}
+            >
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <View style={[localStyles.actionIconCircle, { backgroundColor: '#FEF9C3' }]}>
+                  <Text style={{ fontSize: 18 }}>📄</Text>
+                </View>
+                <View style={{ marginLeft: 12 }}>
+                  <Text style={localStyles.settingItemTitle}>Terms & Privacy Policy</Text>
+                  <Text style={localStyles.settingItemSub}>Terms of service & privacy details</Text>
+                </View>
+              </View>
+              <Text style={localStyles.cardRightChevron}>❯</Text>
+            </TouchableOpacity>
+
+            {/* 🚪 Logout Card */}
+            <TouchableOpacity
+              style={[localStyles.separateSettingCard, localStyles.logoutSettingCard]}
+              onPress={onBackToOnboarding}
+              activeOpacity={0.85}
+            >
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <View style={[localStyles.actionIconCircle, { backgroundColor: '#FEE2E2' }]}>
+                  <Text style={{ fontSize: 18 }}>🚪</Text>
+                </View>
+                <View style={{ marginLeft: 12 }}>
+                  <Text style={[localStyles.settingItemTitle, { color: '#EF4444' }]}>Logout</Text>
+                  <Text style={localStyles.settingItemSub}>Sign out from your account</Text>
+                </View>
+              </View>
+              <Text style={[localStyles.cardRightChevron, { color: '#EF4444' }]}>❯</Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      )}
+
+      {/* Edit Customer Profile & Account Tab */}
+      {activeTab === 'edit_profile' && (
+        <ScrollView contentContainerStyle={{ paddingHorizontal: 18, paddingTop: 16, paddingBottom: 110 }} showsVerticalScrollIndicator={false}>
+          {/* Top Header Bar with Back Arrow */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 18, marginTop: 10 }}>
+            <TouchableOpacity
+              style={styles.subScreenBackButton}
+              onPress={() => setActiveTab('settings')}
+              activeOpacity={0.7}
+              hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
+            >
+              <Text style={styles.subScreenBackArrowIcon}>←</Text>
+            </TouchableOpacity>
+            <View style={{ marginLeft: 12 }}>
+              <Text style={localStyles.settingsPageMainTitle}>Edit Profile & Account</Text>
+              <Text style={localStyles.settingsPageSubTitle}>Update your personal details and contact info</Text>
+            </View>
+          </View>
+
+          {/* Profile Photo Section */}
+          <View style={localStyles.editProfilePhotoCard}>
+            <TouchableOpacity style={localStyles.editAvatarWrapper} onPress={handlePickProfileImage} activeOpacity={0.85}>
+              <Image
+                source={editProfileImage ? { uri: editProfileImage } : customerProfile.profileImage ? { uri: customerProfile.profileImage } : DefaultAvatar}
+                style={localStyles.editAvatarImage}
+              />
+              <View style={localStyles.cameraBadgeBtn}>
+                <Text style={{ fontSize: 13 }}>📷</Text>
+              </View>
+            </TouchableOpacity>
+            <Text style={localStyles.changePhotoText}>Tap to change profile photo</Text>
+          </View>
+
+          {/* Edit Form Card */}
+          <View style={localStyles.editFormCard}>
+            <Text style={localStyles.fieldLabel}>Full Name *</Text>
+            <TextInput
+              style={localStyles.fieldInput}
+              placeholder="Enter your full name"
+              placeholderTextColor="#94A3B8"
+              value={editFullName}
+              onChangeText={setEditFullName}
+            />
+
+            <Text style={[localStyles.fieldLabel, { marginTop: 9 }]}>Phone Number (Verified)</Text>
+            <View style={localStyles.readOnlyPhoneInput}>
+              <Text style={localStyles.readOnlyPhoneText}>{customerProfile.phoneNumber || '+91 98765 43210'}</Text>
+              <Text style={{ fontSize: 12, color: '#16A34A', fontWeight: '800' }}>✓ Verified</Text>
+            </View>
+
+            <Text style={[localStyles.fieldLabel, { marginTop: 9 }]}>Email Address</Text>
+            <TextInput
+              style={localStyles.fieldInput}
+              placeholder="name@example.com"
+              placeholderTextColor="#94A3B8"
+              keyboardType="email-address"
+              autoCapitalize="none"
+              value={editEmail}
+              onChangeText={setEditEmail}
+            />
+          </View>
+
+          {/* Save Button */}
+          <TouchableOpacity
+            style={localStyles.saveProfileBtn}
+            onPress={handleSaveCustomerProfile}
+            activeOpacity={0.85}
+            disabled={isSavingProfile}
+          >
+            {isSavingProfile ? (
+              <ActivityIndicator color="#FFFFFF" size="small" />
+            ) : (
+              <Text style={localStyles.saveProfileBtnText}>Save Profile Changes 💾</Text>
+            )}
           </TouchableOpacity>
         </ScrollView>
       )}
@@ -942,6 +1314,83 @@ export const CustomerHomeScreen: React.FC<Props> = ({ onBackToOnboarding }) => {
           {activeTab === 'settings' && <View style={styles.activeTabIndicator} />}
         </TouchableOpacity>
       </View>
+
+      {/* HELP & CUSTOMER SUPPORT POPUP MODAL */}
+      <Modal
+        visible={showHelpSupportModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowHelpSupportModal(false)}
+      >
+        <View style={localStyles.helpModalOverlay}>
+          <View style={localStyles.helpModalContainer}>
+            {/* Modal Header */}
+            <View style={localStyles.helpModalHeader}>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <View style={localStyles.helpIconWrapper}>
+                  <Text style={{ fontSize: 20 }}>🎧</Text>
+                </View>
+                <View>
+                  <Text style={localStyles.helpModalTitle}>Help & Support</Text>
+                  <Text style={localStyles.helpModalSubtitle}>Submit query to HunarGo support</Text>
+                </View>
+              </View>
+              <TouchableOpacity onPress={() => setShowHelpSupportModal(false)} style={localStyles.helpCloseBtn}>
+                <Text style={{ fontSize: 16, color: '#64748B', fontWeight: '800' }}>✕</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Input Form */}
+            <View style={{ marginTop: 14 }}>
+              <Text style={localStyles.fieldLabel}>Issue Title / Subject *</Text>
+              <TextInput
+                style={localStyles.fieldInput}
+                placeholder="e.g. Payment issue, Worker delay"
+                placeholderTextColor="#94A3B8"
+                value={helpTitle}
+                onChangeText={setHelpTitle}
+              />
+
+              <Text style={[localStyles.fieldLabel, { marginTop: 12 }]}>Detailed Description *</Text>
+              <TextInput
+                style={[localStyles.fieldInput, localStyles.fieldInputMulti]}
+                placeholder="Describe your issue or feedback in detail..."
+                placeholderTextColor="#94A3B8"
+                multiline
+                numberOfLines={4}
+                textAlignVertical="top"
+                value={helpDescription}
+                onChangeText={setHelpDescription}
+              />
+            </View>
+
+            {/* Modal Actions */}
+            <View style={localStyles.helpModalActions}>
+              <TouchableOpacity
+                style={localStyles.helpCancelBtn}
+                onPress={() => setShowHelpSupportModal(false)}
+                activeOpacity={0.8}
+                disabled={isSubmittingHelp}
+              >
+                <Text style={localStyles.helpCancelBtnText}>Cancel</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={localStyles.helpSubmitBtn}
+                onPress={handleSubmitHelpSupport}
+                activeOpacity={0.85}
+                disabled={isSubmittingHelp}
+              >
+                {isSubmittingHelp ? (
+                  <ActivityIndicator color="#FFFFFF" size="small" />
+                ) : (
+                  <Text style={localStyles.helpSubmitBtnText}>Submit Query 🚀</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
     </ImageBackground>
   );
@@ -1908,6 +2357,355 @@ const localStyles = StyleSheet.create({
   pageBtnNextText: {
     fontSize: 14,
     fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  helpModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(15, 23, 42, 0.65)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+  },
+  helpModalContainer: {
+    width: '100%',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 22,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  helpModalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+    paddingBottom: 12,
+  },
+  helpIconWrapper: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: '#DCFCE7',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 10,
+  },
+  helpModalTitle: {
+    fontSize: 17,
+    fontWeight: '800',
+    color: '#0F172A',
+  },
+  helpModalSubtitle: {
+    fontSize: 11.5,
+    color: '#64748B',
+    fontWeight: '500',
+    marginTop: 1,
+  },
+  helpCloseBtn: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: '#F1F5F9',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  fieldLabel: {
+    fontSize: 12.5,
+    fontWeight: '700',
+    color: '#334155',
+    marginBottom: 6,
+  },
+  fieldInput: {
+    backgroundColor: '#F8FAFC',
+    borderRadius: 12,
+    borderWidth: 1.2,
+    borderColor: '#CBD5E1',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    fontSize: 13.5,
+    color: '#0F172A',
+    fontWeight: '500',
+  },
+  fieldInputMulti: {
+    minHeight: 100,
+    paddingTop: 12,
+  },
+  helpModalActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    marginTop: 18,
+    gap: 10,
+  },
+  helpCancelBtn: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 12,
+    backgroundColor: '#F1F5F9',
+  },
+  helpCancelBtnText: {
+    fontSize: 13.5,
+    fontWeight: '700',
+    color: '#64748B',
+  },
+  helpSubmitBtn: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 12,
+    backgroundColor: '#FF5436',
+    flexDirection: 'row',
+    alignItems: 'center',
+    shadowColor: '#FF5436',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  helpSubmitBtnText: {
+    fontSize: 13.5,
+    fontWeight: '800',
+    color: '#FFFFFF',
+  },
+  separateSettingCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  logoutSettingCard: {
+    borderColor: '#FECDD3',
+    backgroundColor: '#FFF5F5',
+    marginTop: 6,
+  },
+  settingItemTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#0F172A',
+  },
+  settingItemSub: {
+    fontSize: 12,
+    color: '#64748B',
+    fontWeight: '500',
+    marginTop: 2,
+  },
+  settingsPageMainTitle: {
+    fontSize: 24,
+    fontWeight: '900',
+    color: '#0F172A',
+    letterSpacing: -0.3,
+  },
+  settingsPageSubTitle: {
+    fontSize: 13,
+    color: '#64748B',
+    fontWeight: '500',
+    marginTop: 2,
+  },
+  settingsUserCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 18,
+    padding: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  settingsAvatarRing: {
+    width: 58,
+    height: 58,
+    borderRadius: 29,
+    borderWidth: 2,
+    borderColor: '#FF5436',
+    justifyContent: 'center',
+    alignItems: 'center',
+    overflow: 'hidden',
+  },
+  settingsAvatarImg: {
+    width: 54,
+    height: 54,
+    borderRadius: 27,
+  },
+  userWelcomeText: {
+    fontSize: 12,
+    color: '#64748B',
+    fontWeight: '500',
+  },
+  userNameText: {
+    fontSize: 17,
+    fontWeight: '800',
+    color: '#0F172A',
+    marginTop: 1,
+  },
+  verifiedBadge: {
+    backgroundColor: '#DCFCE7',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  verifiedBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#15803D',
+  },
+  userLocationText: {
+    fontSize: 11.5,
+    color: '#64748B',
+    fontWeight: '500',
+    marginTop: 4,
+  },
+  cardRightChevron: {
+    fontSize: 18,
+    color: '#94A3B8',
+    fontWeight: '700',
+    marginLeft: 8,
+  },
+  editProfilePhotoCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 14,
+    paddingVertical: 12,
+    alignItems: 'center',
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.03,
+    shadowRadius: 3,
+    elevation: 1,
+  },
+  editAvatarWrapper: {
+    width: 68,
+    height: 68,
+    borderRadius: 34,
+    borderWidth: 2.5,
+    borderColor: '#FF5436',
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'relative',
+  },
+  editAvatarImage: {
+    width: 62,
+    height: 62,
+    borderRadius: 31,
+  },
+  cameraBadgeBtn: {
+    position: 'absolute',
+    bottom: -2,
+    right: -2,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#FF5436',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+  },
+  changePhotoText: {
+    fontSize: 11.5,
+    fontWeight: '600',
+    color: '#FF5436',
+    marginTop: 5,
+  },
+  editFormCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 14,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    marginBottom: 12,
+  },
+  fieldLabel: {
+    fontSize: 11.5,
+    fontWeight: '700',
+    color: '#334155',
+    marginBottom: 4,
+  },
+  fieldInput: {
+    backgroundColor: '#F8FAFC',
+    borderRadius: 10,
+    borderWidth: 1.2,
+    borderColor: '#CBD5E1',
+    paddingHorizontal: 12,
+    height: 38,
+    paddingVertical: 0,
+    fontSize: 12.5,
+    color: '#0F172A',
+    fontWeight: '500',
+  },
+  readOnlyPhoneInput: {
+    backgroundColor: '#F1F5F9',
+    borderRadius: 10,
+    borderWidth: 1.2,
+    borderColor: '#E2E8F0',
+    paddingHorizontal: 12,
+    height: 38,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  readOnlyPhoneText: {
+    fontSize: 12.5,
+    fontWeight: '700',
+    color: '#475569',
+  },
+  genderChipBtn: {
+    flex: 1,
+    paddingVertical: 7,
+    borderRadius: 10,
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1.2,
+    borderColor: '#CBD5E1',
+    alignItems: 'center',
+  },
+  genderChipBtnActive: {
+    backgroundColor: '#FFF7ED',
+    borderColor: '#FF5436',
+  },
+  genderChipText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#64748B',
+  },
+  genderChipTextActive: {
+    color: '#FF5436',
+    fontWeight: '800',
+  },
+  saveProfileBtn: {
+    backgroundColor: '#FF5436',
+    borderRadius: 12,
+    paddingVertical: 11,
+    alignItems: 'center',
+    shadowColor: '#FF5436',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  saveProfileBtnText: {
+    fontSize: 14,
+    fontWeight: '800',
     color: '#FFFFFF',
   },
 });

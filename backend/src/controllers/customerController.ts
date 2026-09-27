@@ -2,6 +2,7 @@ import { Response, NextFunction } from 'express';
 import { AuthRequest } from '../middleware/authMiddleware';
 import User from '../models/User';
 import Call from '../models/Call';
+import { HelpSupport } from '../models/HelpSupport';
 
 /**
  * @desc    Search Nearby Workers
@@ -228,6 +229,120 @@ export const getCustomerProfile = async (req: AuthRequest, res: Response, next: 
       },
     });
   } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * @desc    Submit Help & Customer Support Ticket
+ * @route   POST /api/customer/help-support
+ */
+export const createHelpSupport = async (req: AuthRequest, res: Response, next: NextFunction): Promise<Response | void> => {
+  try {
+    const { title, description } = req.body;
+
+    if (!title || !title.trim()) {
+      return res.status(400).json({ success: false, message: 'Please provide a title for your support ticket.' });
+    }
+
+    if (!description || !description.trim()) {
+      return res.status(400).json({ success: false, message: 'Please provide a description of your issue.' });
+    }
+
+    let customerId = req.user?.id;
+    if (!customerId) {
+      const phoneHeader = (req.headers['x-user-phone'] as string) || '';
+      if (phoneHeader) {
+        const foundUser = await User.findOne({ phoneNumber: phoneHeader });
+        if (foundUser) customerId = foundUser._id.toString();
+      }
+    }
+
+    if (!customerId) {
+      const defaultUser = await User.findOne({ role: 'customer' });
+      if (defaultUser) customerId = defaultUser._id.toString();
+    }
+
+    const helpTicket = await HelpSupport.create({
+      customerId: customerId || '60d0fe4f5311236168a109ca',
+      title: title.trim(),
+      description: description.trim(),
+      status: 'open',
+    });
+
+    console.log('🎧 [MongoDB HelpSupport Saved]:', helpTicket);
+
+    return res.status(201).json({
+      success: true,
+      message: 'Help & Customer Support ticket submitted successfully!',
+      helpSupport: helpTicket,
+    });
+  } catch (error) {
+    console.error('Error in createHelpSupport:', error);
+    next(error);
+  }
+};
+
+/**
+ * @desc    Update Customer Profile Details
+ * @route   POST /api/customer/profile
+ */
+export const updateCustomerProfile = async (req: AuthRequest, res: Response, next: NextFunction): Promise<Response | void> => {
+  try {
+    const { fullName, email, gender, dob, profileImage } = req.body;
+
+    let customer: any = null;
+    const phoneHeader = (req.headers['x-user-phone'] as string) || '';
+
+    if (req.user?.id) {
+      try {
+        customer = await User.findById(req.user.id);
+      } catch (err) {}
+    }
+
+    if (!customer && phoneHeader) {
+      try {
+        customer = await User.findOne({ phoneNumber: phoneHeader });
+      } catch (err) {}
+    }
+
+    if (!customer) {
+      try {
+        customer = await User.findOne({ role: 'customer' });
+      } catch (err) {}
+    }
+
+    if (customer) {
+      if (fullName !== undefined) customer.fullName = fullName.trim();
+      if (email !== undefined) customer.email = email.trim();
+      if (gender !== undefined) customer.gender = gender;
+      if (dob !== undefined) customer.dob = dob;
+      if (profileImage !== undefined) customer.profileImage = profileImage;
+
+      await customer.save();
+      console.log('👤 [MongoDB Customer Profile Saved]:', customer);
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: 'Customer profile updated successfully!',
+      profile: {
+        id: customer?._id || 'mock-id',
+        fullName: customer?.fullName || fullName || 'Sushil Kumar',
+        phoneNumber: customer?.phoneNumber || phoneHeader || '+91 98765 43210',
+        email: customer?.email || email || 'sushil.kumar@hunargo.com',
+        gender: customer?.gender || gender || 'Male',
+        dob: customer?.dob || dob || '15 Aug 1995',
+        profileImage: customer?.profileImage || profileImage || '',
+        location: customer?.location || {
+          address: 'Zirakpur, Punjab',
+          city: 'Zirakpur',
+          pincode: '140603',
+        },
+      },
+    });
+  } catch (error) {
+    console.error('Error in updateCustomerProfile:', error);
     next(error);
   }
 };

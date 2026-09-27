@@ -8,4 +8,6 @@ router.get('/search-workers', authMiddleware_1.authMiddleware, customerControlle
 router.get('/calls', authMiddleware_1.authMiddleware, customerController_1.getCallHistory);
 router.post('/call-worker', authMiddleware_1.authMiddleware, customerController_1.callWorker);
 router.get('/profile', authMiddleware_1.authMiddleware, customerController_1.getCustomerProfile);
+router.post('/profile', authMiddleware_1.authMiddleware, customerController_1.updateCustomerProfile);
+router.post('/help-support', authMiddleware_1.authMiddleware, customerController_1.createHelpSupport);
 exports.default = router;
