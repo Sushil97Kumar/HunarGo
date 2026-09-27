@@ -81,6 +81,7 @@ export const CustomerHomeScreen: React.FC<Props> = ({ onBackToOnboarding }) => {
   const chipsScrollRef = useRef<ScrollView>(null);
   const chipsScrollX = useRef(0);
   const totalContentWidth = useRef(2400);
+  const modalSearchInputRef = useRef<TextInput>(null);
 
   const [customerProfile, setCustomerProfile] = useState({
     fullName: 'Sushil Kumar',
@@ -173,6 +174,25 @@ export const CustomerHomeScreen: React.FC<Props> = ({ onBackToOnboarding }) => {
     fetchPaginatedWorkers(1, cat, '');
   };
 
+  const handleDashboardSearchChange = (text: string) => {
+    setSearchQuery(text);
+    setModalSelectedCategory('All');
+    setModalSearchText(text);
+    setShowAllWorkersModal(true);
+    fetchPaginatedWorkers(1, 'All', text);
+    setTimeout(() => {
+      modalSearchInputRef.current?.focus();
+    }, 120);
+  };
+
+  const handleDashboardSearchFocus = () => {
+    setShowAllWorkersModal(true);
+    fetchPaginatedWorkers(1, 'All', searchQuery);
+    setTimeout(() => {
+      modalSearchInputRef.current?.focus();
+    }, 120);
+  };
+
   const fetchPaginatedWorkers = async (page: number, category?: string, query?: string) => {
     setAllWorkersLoading(true);
     try {
@@ -256,13 +276,30 @@ export const CustomerHomeScreen: React.FC<Props> = ({ onBackToOnboarding }) => {
               <Text style={localStyles.searchLens}>🔍</Text>
               <TextInput
                 style={localStyles.searchTextInput}
-                placeholder="What service do you need?"
+                placeholder="Search worker by name or service..."
                 placeholderTextColor="#94A3B8"
                 value={searchQuery}
-                onChangeText={setSearchQuery}
+                onChangeText={handleDashboardSearchChange}
+                onFocus={handleDashboardSearchFocus}
               />
+              {searchQuery.length > 0 && (
+                <TouchableOpacity
+                  style={localStyles.stylishClearBtn}
+                  onPress={() => {
+                    setSearchQuery('');
+                    setModalSearchText('');
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Text style={localStyles.stylishClearText}>✕</Text>
+                </TouchableOpacity>
+              )}
             </View>
-            <TouchableOpacity style={localStyles.filterButton} activeOpacity={0.85}>
+            <TouchableOpacity
+              style={localStyles.filterButton}
+              activeOpacity={0.85}
+              onPress={() => handleOpenAllWorkersModal('All')}
+            >
               <View style={localStyles.funnelIconContainer}>
                 <View style={[localStyles.funnelLine, { width: 16 }]} />
                 <View style={[localStyles.funnelLine, { width: 11 }]} />
@@ -287,7 +324,7 @@ export const CustomerHomeScreen: React.FC<Props> = ({ onBackToOnboarding }) => {
                 key={`${cat.id}-${idx}`}
                 style={[localStyles.chipPill, { backgroundColor: cat.bg, borderColor: cat.border }]}
                 activeOpacity={0.8}
-                onPress={() => setSearchQuery(cat.title)}
+                onPress={() => handleOpenAllWorkersModal(cat.title)}
               >
                 <Text style={localStyles.chipEmoji}>{cat.emoji}</Text>
                 <Text style={[localStyles.chipText, { color: cat.color }]}>{cat.title}</Text>
@@ -492,6 +529,11 @@ export const CustomerHomeScreen: React.FC<Props> = ({ onBackToOnboarding }) => {
         animationType="slide"
         transparent={false}
         onRequestClose={() => setShowAllWorkersModal(false)}
+        onShow={() => {
+          setTimeout(() => {
+            modalSearchInputRef.current?.focus();
+          }, 100);
+        }}
       >
         <ImageBackground source={OnboardingBg} style={{ flex: 1 }} resizeMode="cover">
           <SafeAreaView style={localStyles.modalSafeArea}>
@@ -529,6 +571,7 @@ export const CustomerHomeScreen: React.FC<Props> = ({ onBackToOnboarding }) => {
               <View style={localStyles.stylishSearchBox}>
                 <Text style={localStyles.stylishSearchLens}>🔍</Text>
                 <TextInput
+                  ref={modalSearchInputRef}
                   style={localStyles.stylishSearchInput}
                   placeholder="Search worker by name or service..."
                   placeholderTextColor="#94A3B8"
@@ -836,7 +879,7 @@ export const CustomerHomeScreen: React.FC<Props> = ({ onBackToOnboarding }) => {
 
           {/* Logout / Switch Role */}
           <TouchableOpacity style={localStyles.logoutBtn} onPress={onBackToOnboarding} activeOpacity={0.85}>
-            <Text style={localStyles.logoutBtnText}>🚪 Switch Role / Logout</Text>
+            <Text style={localStyles.logoutBtnText}>🚪 Logout</Text>
           </TouchableOpacity>
         </ScrollView>
       )}
@@ -868,7 +911,7 @@ export const CustomerHomeScreen: React.FC<Props> = ({ onBackToOnboarding }) => {
           </View>
 
           <TouchableOpacity style={localStyles.logoutBtn} onPress={onBackToOnboarding} activeOpacity={0.85}>
-            <Text style={localStyles.logoutBtnText}>🚪 Switch Role / Logout</Text>
+            <Text style={localStyles.logoutBtnText}>🚪 Logout</Text>
           </TouchableOpacity>
         </ScrollView>
       )}

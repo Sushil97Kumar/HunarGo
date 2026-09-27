@@ -2003,32 +2003,44 @@ export const styles = StyleSheet.create({
   },
   callSearchBox: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
+    borderRadius: 22,
+    borderWidth: 1.8,
+    borderColor: '#F97316',
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    height: 38,
-    marginBottom: 8,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 1
-    },
-    shadowOpacity: 0.03,
-    shadowRadius: 3,
-    elevation: 1
+    paddingHorizontal: 14,
+    height: 42,
+    marginBottom: 12,
+    shadowColor: '#F97316',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 6,
+    elevation: 3,
   },
   callSearchIcon: {
-    fontSize: 18,
-    marginRight: 8
+    fontSize: 15,
+    marginRight: 8,
   },
   callSearchInput: {
     flex: 1,
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#0F172A'
+    fontSize: 13.5,
+    fontWeight: '600',
+    color: '#1E293B',
+    paddingVertical: 0,
+  },
+  stylishClearBtn: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: '#F1F5F9',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 6,
+  },
+  stylishClearText: {
+    fontSize: 12,
+    color: '#64748B',
+    fontWeight: '800',
   },
   callStatsRow: {
     flexDirection: 'row',
@@ -3585,5 +3597,56 @@ export const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
     color: '#EF4444'
-  }
+  },
+  paginationInlineRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 4,
+    paddingVertical: 14,
+    marginTop: 6,
+    marginBottom: 10,
+  },
+  pageBtnPrev: {
+    backgroundColor: '#E2E8F0',
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    borderRadius: 14,
+  },
+  pageBtnDisabled: {
+    backgroundColor: '#E2E8F0',
+    opacity: 0.6,
+  },
+  pageBtnPrevText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#475569',
+  },
+  pageBtnTextDisabled: {
+    color: '#94A3B8',
+  },
+  pageBadgeCenter: {
+    backgroundColor: '#F1F5F9',
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    borderRadius: 14,
+  },
+  pageBadgeText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#0F172A',
+  },
+  pageBtnNext: {
+    backgroundColor: '#FF5436',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 14,
+  },
+  pageBtnNextText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
 });
