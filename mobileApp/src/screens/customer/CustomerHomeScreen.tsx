@@ -69,7 +69,7 @@ export const CustomerHomeScreen: React.FC<Props> = ({ onBackToOnboarding }) => {
 
   useEffect(() => {
     loadCustomerProfile();
-  }, []);
+  }, [activeTab]);
 
   const loadCustomerProfile = async () => {
     try {

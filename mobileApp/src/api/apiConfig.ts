@@ -28,6 +28,7 @@ export const ENDPOINTS = {
 
 let currentAuthToken: string | null = null;
 let currentActiveUserPhone: string | null = null;
+let currentLoggedInUser: any = null;
 
 export const setAuthToken = (token: string | null) => {
   currentAuthToken = token;
@@ -37,8 +38,13 @@ export const setActiveUserPhone = (phone: string | null) => {
   currentActiveUserPhone = phone;
 };
 
+export const setLoggedInUser = (user: any) => {
+  currentLoggedInUser = user;
+};
+
 export const getAuthToken = () => currentAuthToken;
 export const getActiveUserPhone = () => currentActiveUserPhone;
+export const getLoggedInUser = () => currentLoggedInUser;
 
 export const getAuthHeaders = () => {
   const headers: Record<string, string> = {

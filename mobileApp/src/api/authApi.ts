@@ -1,4 +1,4 @@
-import { API_BASE_URL, ENDPOINTS, defaultHeaders, setAuthToken, setActiveUserPhone } from './apiConfig';
+import { API_BASE_URL, ENDPOINTS, defaultHeaders, setAuthToken, setActiveUserPhone, setLoggedInUser } from './apiConfig';
 
 export interface SendOtpPayload {
   phoneNumber: string;
@@ -55,6 +55,9 @@ export const authApi = {
       if (data && data.success) {
         if (data.token) {
           setAuthToken(data.token);
+        }
+        if (data.user) {
+          setLoggedInUser(data.user);
         }
         if (data.user?.phoneNumber) {
           setActiveUserPhone(data.user.phoneNumber);

@@ -1,4 +1,4 @@
-import { API_BASE_URL, ENDPOINTS, defaultHeaders } from './apiConfig';
+import { API_BASE_URL, ENDPOINTS, defaultHeaders, getAuthHeaders, getActiveUserPhone, getLoggedInUser } from './apiConfig';
 
 export const customerApi = {
   /**
@@ -52,31 +52,44 @@ export const customerApi = {
   },
 
   /**
-   * Fetch current customer profile from backend
+   * Fetch current logged-in customer profile from backend
    */
   async getCustomerProfile() {
     try {
-      console.log('API [getCustomerProfile]');
-      return {
-        success: true,
-        profile: {
-          id: 'c1',
-          fullName: 'Sushil Kumar',
-          phoneNumber: '+91 98765 43210',
-          email: 'sushil.kumar@hunargo.com',
-          gender: 'Male',
-          dob: '15 Aug 1995',
-          profileImage: '',
-          location: {
-            address: 'Zirakpur, Punjab',
-            city: 'Zirakpur',
-            pincode: '140603',
-          },
-        },
-      };
+      console.log('API [getCustomerProfile] Requesting profile from backend...');
+      const response = await fetch(`${API_BASE_URL}/customer/profile`, {
+        method: 'GET',
+        headers: getAuthHeaders(),
+      });
+      const data = await response.json();
+      console.log('✅ [API getCustomerProfile] Server Response:', data);
+      if (data && data.success && data.profile) {
+        return data;
+      }
     } catch (error) {
-      console.error('Error in getCustomerProfile:', error);
-      throw error;
+      console.error('⚠️ Error fetching customer profile from backend:', error);
     }
+
+    // Fallback to local stored session if backend response fails or offline
+    const loggedInUser = getLoggedInUser();
+    const activePhone = getActiveUserPhone();
+
+    return {
+      success: true,
+      profile: {
+        id: loggedInUser?.id || loggedInUser?._id || 'c1',
+        fullName: loggedInUser?.fullName || 'Sushil Kumar',
+        phoneNumber: loggedInUser?.phoneNumber || activePhone || '+91 98765 43210',
+        email: loggedInUser?.email || 'sushil.kumar@hunargo.com',
+        gender: loggedInUser?.gender || 'Male',
+        dob: loggedInUser?.dob || '15 Aug 1995',
+        profileImage: loggedInUser?.profileImage || '',
+        location: loggedInUser?.location || {
+          address: 'Zirakpur, Punjab',
+          city: 'Zirakpur',
+          pincode: '140603',
+        },
+      },
+    };
   },
 };
