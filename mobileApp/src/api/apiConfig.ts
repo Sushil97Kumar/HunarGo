@@ -1,14 +1,16 @@
 /**
  * HunarGo API Configuration
- * Update BASE_URL with your actual backend server endpoint
+ * 
+ * - For Android Emulator: 'http://10.0.2.2:5000/api'
+ * - For Physical Phone (Wi-Fi): 'http://192.168.1.103:5000/api'
  */
-export const API_BASE_URL = 'http://10.0.2.2:5000/api'; // Default Android Emulator localhost API
+export const API_BASE_URL = 'http://192.168.1.103:5000/api';
 
 export const ENDPOINTS = {
   // Auth & OTP
   SEND_OTP: '/auth/send-otp',
   VERIFY_OTP: '/auth/verify-otp',
-  
+
   // Worker Flow
   WORKER_PROFILE: '/worker/profile',
   WORKER_UPLOAD_IMAGE: '/worker/upload-profile-image',
@@ -19,7 +21,7 @@ export const ENDPOINTS = {
   WORKER_DASHBOARD_STATS: '/worker/dashboard-stats',
   WORKER_CUSTOMER_CALLS: '/worker/customer-calls',
   WORKER_WALLET: '/worker/wallet',
-  
+
   // Customer Flow
   SEARCH_WORKERS: '/customer/search-workers',
   CUSTOMER_CALLS: '/customer/calls',
