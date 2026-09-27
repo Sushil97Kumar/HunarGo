@@ -398,7 +398,7 @@ export const CustomerHomeScreen: React.FC<Props> = ({ onBackToOnboarding }) => {
     try {
       const selectedCat = category !== undefined ? category : modalSelectedCategory;
       const searchQueryText = query !== undefined ? query : modalSearchText;
-      const res = await customerApi.searchWorkers(selectedCat, searchQueryText, 30.6425, 76.8173, page, 6);
+      const res = await customerApi.searchWorkers(selectedCat, searchQueryText, 30.6425, 76.8173, page, 5);
       if (res && Array.isArray(res.workers)) {
         setAllWorkersList(res.workers);
         if (res.pagination) {
@@ -823,7 +823,7 @@ export const CustomerHomeScreen: React.FC<Props> = ({ onBackToOnboarding }) => {
                 </Text>
               </View>
             ) : (
-              <ScrollView contentContainerStyle={localStyles.modalListScrollContent} showsVerticalScrollIndicator={false}>
+              <View style={localStyles.modalListScrollContent}>
                 {allWorkersList.map((worker) => (
                   <View key={worker.id} style={localStyles.modalWorkerCard}>
                     <View style={localStyles.modalWorkerLeft}>
@@ -895,7 +895,7 @@ export const CustomerHomeScreen: React.FC<Props> = ({ onBackToOnboarding }) => {
                     </Text>
                   </TouchableOpacity>
                 </View>
-              </ScrollView>
+              </View>
             )}
 
             {/* Customer Dashboard Footer Navigation Bar */}
@@ -958,7 +958,7 @@ export const CustomerHomeScreen: React.FC<Props> = ({ onBackToOnboarding }) => {
 
       {/* Profile Tab */}
       {activeTab === 'profile' && (
-        <ScrollView contentContainerStyle={{ paddingHorizontal: 18, paddingTop: 10, paddingBottom: 110 }} showsVerticalScrollIndicator={false}>
+        <View style={{ paddingHorizontal: 16, paddingTop: 4, paddingBottom: 72 }}>
           {/* Main Profile Header Card */}
           <View style={localStyles.profileHeaderCard}>
             <View style={localStyles.profileAvatarWrapper}>
@@ -967,14 +967,14 @@ export const CustomerHomeScreen: React.FC<Props> = ({ onBackToOnboarding }) => {
                 style={localStyles.profileAvatarImage}
               />
               <TouchableOpacity style={localStyles.avatarCameraBadge} activeOpacity={0.8}>
-                <Text style={{ fontSize: 11 }}>📷</Text>
+                <Text style={{ fontSize: 9 }}>📷</Text>
               </TouchableOpacity>
             </View>
             <View style={localStyles.profileHeaderInfo}>
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                 <Text style={localStyles.profileHeaderName}>{customerProfile.fullName || 'Sushil Kumar'}</Text>
                 <View style={localStyles.verifiedBadgeCircle}>
-                  <Text style={{ fontSize: 10, color: '#FFFFFF', fontWeight: '800' }}>✓</Text>
+                  <Text style={{ fontSize: 9, color: '#FFFFFF', fontWeight: '800' }}>✓</Text>
                 </View>
               </View>
               <Text style={localStyles.profileHeaderSub}>{customerProfile.phoneNumber || '+91 98765 43210'}</Text>
@@ -1024,7 +1024,7 @@ export const CustomerHomeScreen: React.FC<Props> = ({ onBackToOnboarding }) => {
             <TouchableOpacity style={localStyles.actionRowItem} activeOpacity={0.7} onPress={() => setActiveTab('calls')}>
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                 <View style={[localStyles.actionIconCircle, { backgroundColor: '#E0F2FE' }]}>
-                  <Text style={{ fontSize: 16 }}>📞</Text>
+                  <Text style={{ fontSize: 13 }}>📞</Text>
                 </View>
                 <Text style={localStyles.actionItemText}>Call History & Saved Workers</Text>
               </View>
@@ -1034,7 +1034,7 @@ export const CustomerHomeScreen: React.FC<Props> = ({ onBackToOnboarding }) => {
             <TouchableOpacity style={localStyles.actionRowItem} activeOpacity={0.7} onPress={() => handleDetectLocation()}>
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                 <View style={[localStyles.actionIconCircle, { backgroundColor: '#FFEDD5' }]}>
-                  <Text style={{ fontSize: 16 }}>📍</Text>
+                  <Text style={{ fontSize: 13 }}>📍</Text>
                 </View>
                 <Text style={localStyles.actionItemText}>Update Location / GPS</Text>
               </View>
@@ -1044,7 +1044,7 @@ export const CustomerHomeScreen: React.FC<Props> = ({ onBackToOnboarding }) => {
             <TouchableOpacity style={localStyles.actionRowItem} activeOpacity={0.7} onPress={() => setShowHelpSupportModal(true)}>
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                 <View style={[localStyles.actionIconCircle, { backgroundColor: '#DCFCE7' }]}>
-                  <Text style={{ fontSize: 16 }}>🎧</Text>
+                  <Text style={{ fontSize: 13 }}>🎧</Text>
                 </View>
                 <Text style={localStyles.actionItemText}>Help & Customer Support</Text>
               </View>
@@ -1056,14 +1056,14 @@ export const CustomerHomeScreen: React.FC<Props> = ({ onBackToOnboarding }) => {
           <TouchableOpacity style={localStyles.logoutBtn} onPress={onBackToOnboarding} activeOpacity={0.85}>
             <Text style={localStyles.logoutBtnText}>🚪 Logout</Text>
           </TouchableOpacity>
-        </ScrollView>
+        </View>
       )}
 
       {/* Settings Tab */}
       {activeTab === 'settings' && (
-        <ScrollView contentContainerStyle={{ paddingHorizontal: 18, paddingTop: 20, paddingBottom: 110 }} showsVerticalScrollIndicator={false}>
+        <View style={{ paddingHorizontal: 16, paddingTop: 4, paddingBottom: 72 }}>
           {/* Settings Page Title & Subtitle matching screenshot */}
-          <View style={{ marginTop: 12, marginBottom: 14 }}>
+          <View style={{ marginTop: 2, marginBottom: 4 }}>
             <Text style={localStyles.settingsPageMainTitle}>Customer Settings</Text>
             <Text style={localStyles.settingsPageSubTitle}>Manage your account, services and preferences</Text>
           </View>
@@ -1081,12 +1081,12 @@ export const CustomerHomeScreen: React.FC<Props> = ({ onBackToOnboarding }) => {
                   style={localStyles.settingsAvatarImg}
                 />
               </View>
-              <View style={{ marginLeft: 14, flex: 1 }}>
+              <View style={{ marginLeft: 10, flex: 1 }}>
                 <Text style={localStyles.userWelcomeText}>Welcome,</Text>
                 <Text style={localStyles.userNameText}>
                   {customerProfile.fullName || 'Sushil Kumar'} 👋
                 </Text>
-                <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 3 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 1 }}>
                   <View style={localStyles.verifiedBadge}>
                     <Text style={localStyles.verifiedBadgeText}>🛡️ Verified Customer</Text>
                   </View>
@@ -1100,7 +1100,7 @@ export const CustomerHomeScreen: React.FC<Props> = ({ onBackToOnboarding }) => {
           </TouchableOpacity>
 
           {/* Separated List Cards */}
-          <View style={{ marginTop: 4 }}>
+          <View style={{ marginTop: 2 }}>
             {/* 👤 Profile & Account Card */}
             <TouchableOpacity
               style={localStyles.separateSettingCard}
@@ -1109,9 +1109,9 @@ export const CustomerHomeScreen: React.FC<Props> = ({ onBackToOnboarding }) => {
             >
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                 <View style={[localStyles.actionIconCircle, { backgroundColor: '#EBF3FF' }]}>
-                  <Text style={{ fontSize: 18 }}>👤</Text>
+                  <Text style={{ fontSize: 13 }}>👤</Text>
                 </View>
-                <View style={{ marginLeft: 12 }}>
+                <View style={{ marginLeft: 10 }}>
                   <Text style={localStyles.settingItemTitle}>Profile & Account</Text>
                   <Text style={localStyles.settingItemSub}>Edit profile, change mobile, email</Text>
                 </View>
@@ -1127,9 +1127,9 @@ export const CustomerHomeScreen: React.FC<Props> = ({ onBackToOnboarding }) => {
             >
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                 <View style={[localStyles.actionIconCircle, { backgroundColor: '#F3E8FF' }]}>
-                  <Text style={{ fontSize: 18 }}>🔔</Text>
+                  <Text style={{ fontSize: 13 }}>🔔</Text>
                 </View>
-                <View style={{ marginLeft: 12 }}>
+                <View style={{ marginLeft: 10 }}>
                   <Text style={localStyles.settingItemTitle}>Notification Alerts</Text>
                   <Text style={localStyles.settingItemSub}>App alerts and job updates</Text>
                 </View>
@@ -1145,9 +1145,9 @@ export const CustomerHomeScreen: React.FC<Props> = ({ onBackToOnboarding }) => {
             >
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                 <View style={[localStyles.actionIconCircle, { backgroundColor: '#DCFCE7' }]}>
-                  <Text style={{ fontSize: 18 }}>🎧</Text>
+                  <Text style={{ fontSize: 13 }}>🎧</Text>
                 </View>
-                <View style={{ marginLeft: 12 }}>
+                <View style={{ marginLeft: 10 }}>
                   <Text style={localStyles.settingItemTitle}>Help & Customer Support</Text>
                   <Text style={localStyles.settingItemSub}>Contact support & submit queries</Text>
                 </View>
@@ -1163,9 +1163,9 @@ export const CustomerHomeScreen: React.FC<Props> = ({ onBackToOnboarding }) => {
             >
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                 <View style={[localStyles.actionIconCircle, { backgroundColor: '#FEF9C3' }]}>
-                  <Text style={{ fontSize: 18 }}>📄</Text>
+                  <Text style={{ fontSize: 13 }}>📄</Text>
                 </View>
-                <View style={{ marginLeft: 12 }}>
+                <View style={{ marginLeft: 10 }}>
                   <Text style={localStyles.settingItemTitle}>Terms & Privacy Policy</Text>
                   <Text style={localStyles.settingItemSub}>Terms of service & privacy details</Text>
                 </View>
@@ -1181,9 +1181,9 @@ export const CustomerHomeScreen: React.FC<Props> = ({ onBackToOnboarding }) => {
             >
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                 <View style={[localStyles.actionIconCircle, { backgroundColor: '#FEE2E2' }]}>
-                  <Text style={{ fontSize: 18 }}>🚪</Text>
+                  <Text style={{ fontSize: 13 }}>🚪</Text>
                 </View>
-                <View style={{ marginLeft: 12 }}>
+                <View style={{ marginLeft: 10 }}>
                   <Text style={[localStyles.settingItemTitle, { color: '#EF4444' }]}>Logout</Text>
                   <Text style={localStyles.settingItemSub}>Sign out from your account</Text>
                 </View>
@@ -1191,7 +1191,7 @@ export const CustomerHomeScreen: React.FC<Props> = ({ onBackToOnboarding }) => {
               <Text style={[localStyles.cardRightChevron, { color: '#EF4444' }]}>❯</Text>
             </TouchableOpacity>
           </View>
-        </ScrollView>
+        </View>
       )}
 
       {/* Edit Customer Profile & Account Tab */}
@@ -1867,16 +1867,16 @@ const localStyles = StyleSheet.create({
     fontWeight: '800',
   },
   logoutBtn: {
-    marginTop: 20,
+    marginTop: 6,
     backgroundColor: '#FEE2E2',
-    padding: 14,
-    borderRadius: 14,
+    padding: 8,
+    borderRadius: 10,
     alignItems: 'center',
   },
   logoutBtnText: {
     color: '#991B1B',
-    fontWeight: '700',
-    fontSize: 14,
+    fontWeight: '800',
+    fontSize: 12.5,
   },
   bottomNavbar: {
     position: 'absolute',
@@ -1932,28 +1932,28 @@ const localStyles = StyleSheet.create({
   /* Customer Profile Screen Styles */
   profileHeaderCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    padding: 16,
+    borderRadius: 14,
+    padding: 10,
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 6,
     borderWidth: 1,
     borderColor: '#F1F5F9',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.05,
-    shadowRadius: 6,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    elevation: 2,
   },
   profileAvatarWrapper: {
     position: 'relative',
-    marginRight: 14,
+    marginRight: 10,
   },
   profileAvatarImage: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    borderWidth: 2,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    borderWidth: 1.5,
     borderColor: '#FF5436',
   },
   avatarCameraBadge: {
@@ -1961,129 +1961,130 @@ const localStyles = StyleSheet.create({
     bottom: -2,
     right: -2,
     backgroundColor: '#FFFFFF',
-    width: 22,
-    height: 22,
-    borderRadius: 11,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 1.5,
+    borderWidth: 1.2,
     borderColor: '#FF5436',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 2,
+    shadowRadius: 2,
+    elevation: 1,
   },
   profileHeaderInfo: {
     flex: 1,
   },
   profileHeaderName: {
-    fontSize: 17,
+    fontSize: 14.5,
     fontWeight: '800',
     color: '#1E293B',
-    marginRight: 6,
+    marginRight: 4,
   },
   verifiedBadgeCircle: {
-    width: 16,
-    height: 16,
-    borderRadius: 8,
+    width: 14,
+    height: 14,
+    borderRadius: 7,
     backgroundColor: '#22C55E',
     justifyContent: 'center',
     alignItems: 'center',
   },
   profileHeaderSub: {
-    fontSize: 12.5,
+    fontSize: 11,
     color: '#64748B',
     fontWeight: '600',
-    marginTop: 2,
+    marginTop: 1,
   },
   profileHeaderEmail: {
-    fontSize: 11.5,
+    fontSize: 10.5,
     color: '#94A3B8',
-    marginTop: 1,
+    marginTop: 0.5,
   },
   customerRoleTag: {
     backgroundColor: '#FFEDD5',
     alignSelf: 'flex-start',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 10,
-    marginTop: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 8,
+    marginTop: 3,
     borderWidth: 1,
     borderColor: '#FFD8A8',
   },
   customerRoleTagText: {
-    fontSize: 10.5,
+    fontSize: 9.5,
     fontWeight: '800',
     color: '#C2410C',
   },
   profileStatsRow: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
+    borderRadius: 12,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 12,
+    marginBottom: 6,
     borderWidth: 1,
     borderColor: '#F1F5F9',
-    elevation: 2,
+    elevation: 1,
   },
   profileStatBox: {
     flex: 1,
     alignItems: 'center',
   },
   profileStatValue: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '800',
     color: '#1E293B',
   },
   profileStatLabel: {
-    fontSize: 10.5,
+    fontSize: 9.5,
     color: '#64748B',
     fontWeight: '600',
-    marginTop: 2,
+    marginTop: 1,
   },
   statDivider: {
     width: 1,
-    height: 24,
+    height: 18,
     backgroundColor: '#E2E8F0',
   },
   profileSectionCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 14,
-    marginBottom: 12,
+    borderRadius: 12,
+    padding: 8,
+    paddingHorizontal: 12,
+    marginBottom: 6,
     borderWidth: 1,
     borderColor: '#F1F5F9',
-    elevation: 2,
+    elevation: 1,
   },
   cardSectionHeaderTitle: {
-    fontSize: 14,
+    fontSize: 12.5,
     fontWeight: '800',
     color: '#1E293B',
-    marginBottom: 10,
+    marginBottom: 4,
   },
   detailItemRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: 2,
   },
   detailIcon: {
-    fontSize: 18,
-    marginRight: 10,
+    fontSize: 14,
+    marginRight: 8,
   },
   detailTextGroup: {
     flex: 1,
   },
   detailLabel: {
-    fontSize: 10.5,
+    fontSize: 9.5,
     color: '#94A3B8',
     fontWeight: '600',
   },
   detailValue: {
-    fontSize: 12.5,
+    fontSize: 11.5,
     fontWeight: '700',
     color: '#1E293B',
     marginTop: 1,
@@ -2092,25 +2093,25 @@ const localStyles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 8,
+    paddingVertical: 5,
     borderBottomWidth: 1,
     borderBottomColor: '#F8FAFC',
   },
   actionIconCircle: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 10,
+    marginRight: 8,
   },
   actionItemText: {
-    fontSize: 13,
+    fontSize: 11.5,
     fontWeight: '700',
     color: '#334155',
   },
   actionChevron: {
-    fontSize: 13,
+    fontSize: 11,
     color: '#94A3B8',
     fontWeight: '800',
   },
@@ -2216,18 +2217,18 @@ const localStyles = StyleSheet.create({
   },
   modalListScrollContent: {
     paddingHorizontal: 12,
-    paddingTop: 6,
-    paddingBottom: 20,
+    paddingTop: 4,
+    paddingBottom: 4,
   },
   modalWorkerCard: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     backgroundColor: '#FFFFFF',
-    borderRadius: 14,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    marginBottom: 7,
+    borderRadius: 10,
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    marginBottom: 5,
     borderWidth: 1,
     borderColor: '#E5E7EB',
     shadowColor: '#000',
@@ -2242,52 +2243,52 @@ const localStyles = StyleSheet.create({
     flex: 1,
   },
   modalAvatarBox: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     backgroundColor: '#F3F4F6',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 10,
+    marginRight: 8,
   },
   modalAvatarImg: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
   },
   modalWorkerInfo: {
     justifyContent: 'center',
   },
   modalWorkerName: {
-    fontSize: 13.5,
+    fontSize: 12.5,
     fontWeight: '700',
     color: '#111827',
   },
   modalDistanceRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 2,
+    marginTop: 1,
   },
   modalPinEmoji: {
-    fontSize: 11,
+    fontSize: 10,
     marginRight: 2,
   },
   modalDistanceText: {
-    fontSize: 11.5,
+    fontSize: 10.5,
     color: '#6B7280',
     fontWeight: '500',
   },
   modalCallBtn: {
     backgroundColor: '#10B981',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
     flexDirection: 'row',
     alignItems: 'center',
   },
   modalCallBtnText: {
     color: '#FFFFFF',
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '700',
   },
   paginationInlineRow: {
@@ -2295,22 +2296,22 @@ const localStyles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 4,
-    paddingVertical: 14,
-    marginTop: 6,
-    marginBottom: 10,
+    paddingVertical: 8,
+    marginTop: 4,
+    marginBottom: 4,
   },
   pageBtnPrev: {
     backgroundColor: '#E2E8F0',
-    paddingHorizontal: 18,
-    paddingVertical: 10,
-    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 10,
   },
   pageBtnDisabled: {
     backgroundColor: '#E2E8F0',
     opacity: 0.6,
   },
   pageBtnPrevText: {
-    fontSize: 14,
+    fontSize: 12.5,
     fontWeight: '700',
     color: '#475569',
   },
@@ -2321,23 +2322,23 @@ const localStyles = StyleSheet.create({
     backgroundColor: '#F1F5F9',
     borderWidth: 1,
     borderColor: '#CBD5E1',
-    paddingHorizontal: 18,
-    paddingVertical: 10,
-    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 10,
   },
   pageBadgeText: {
-    fontSize: 14,
+    fontSize: 12.5,
     fontWeight: '700',
     color: '#0F172A',
   },
   pageBtnNext: {
     backgroundColor: '#FF5436',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 10,
   },
   pageBtnNextText: {
-    fontSize: 14,
+    fontSize: 12.5,
     fontWeight: '700',
     color: '#FFFFFF',
   },
@@ -2457,10 +2458,55 @@ const localStyles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    marginBottom: 12,
+    borderRadius: 10,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    marginBottom: 4,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.03,
+    shadowRadius: 3,
+    elevation: 1,
+  },
+  logoutSettingCard: {
+    borderColor: '#FECDD3',
+    backgroundColor: '#FFF5F5',
+    marginTop: 2,
+  },
+  settingItemTitle: {
+    fontSize: 12.5,
+    fontWeight: '700',
+    color: '#0F172A',
+  },
+  settingItemSub: {
+    fontSize: 10,
+    color: '#64748B',
+    fontWeight: '500',
+    marginTop: 0.5,
+  },
+  settingsPageMainTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#0F172A',
+    letterSpacing: -0.3,
+  },
+  settingsPageSubTitle: {
+    fontSize: 11,
+    color: '#64748B',
+    fontWeight: '500',
+    marginTop: 1,
+  },
+  settingsUserCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 8,
+    paddingHorizontal: 10,
+    marginBottom: 6,
     borderWidth: 1,
     borderColor: '#E2E8F0',
     shadowColor: '#000',
@@ -2469,92 +2515,48 @@ const localStyles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
   },
-  logoutSettingCard: {
-    borderColor: '#FECDD3',
-    backgroundColor: '#FFF5F5',
-    marginTop: 6,
-  },
-  settingItemTitle: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#0F172A',
-  },
-  settingItemSub: {
-    fontSize: 12,
-    color: '#64748B',
-    fontWeight: '500',
-    marginTop: 2,
-  },
-  settingsPageMainTitle: {
-    fontSize: 24,
-    fontWeight: '900',
-    color: '#0F172A',
-    letterSpacing: -0.3,
-  },
-  settingsPageSubTitle: {
-    fontSize: 13,
-    color: '#64748B',
-    fontWeight: '500',
-    marginTop: 2,
-  },
-  settingsUserCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 18,
-    padding: 16,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.05,
-    shadowRadius: 6,
-    elevation: 3,
-  },
   settingsAvatarRing: {
-    width: 58,
-    height: 58,
-    borderRadius: 29,
-    borderWidth: 2,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    borderWidth: 1.5,
     borderColor: '#FF5436',
     justifyContent: 'center',
     alignItems: 'center',
     overflow: 'hidden',
   },
   settingsAvatarImg: {
-    width: 54,
-    height: 54,
-    borderRadius: 27,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
   },
   userWelcomeText: {
-    fontSize: 12,
+    fontSize: 10.5,
     color: '#64748B',
     fontWeight: '500',
   },
   userNameText: {
-    fontSize: 17,
+    fontSize: 13.5,
     fontWeight: '800',
     color: '#0F172A',
-    marginTop: 1,
+    marginTop: 0.5,
   },
   verifiedBadge: {
     backgroundColor: '#DCFCE7',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 1.5,
+    borderRadius: 5,
   },
   verifiedBadgeText: {
-    fontSize: 11,
+    fontSize: 9.5,
     fontWeight: '700',
     color: '#15803D',
   },
   userLocationText: {
-    fontSize: 11.5,
+    fontSize: 10,
     color: '#64748B',
     fontWeight: '500',
-    marginTop: 4,
+    marginTop: 1,
   },
   cardRightChevron: {
     fontSize: 18,

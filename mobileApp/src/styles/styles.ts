@@ -2445,60 +2445,60 @@ export const styles = StyleSheet.create({
   },
   profileHeroCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    paddingVertical: 4,
-    paddingHorizontal: 8,
+    borderRadius: 12,
+    paddingVertical: 3,
+    paddingHorizontal: 6,
     alignItems: 'center',
-    marginBottom: 4,
+    marginBottom: 3,
     borderWidth: 1,
     borderColor: '#E2E8F0',
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
-      height: 2
+      height: 1
     },
-    shadowOpacity: 0.04,
-    shadowRadius: 6,
-    elevation: 2
+    shadowOpacity: 0.03,
+    shadowRadius: 4,
+    elevation: 1
   },
   heroAvatarContainer: {
     position: 'relative',
-    marginBottom: 6
+    marginBottom: 2
   },
   heroAvatarImg: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    borderWidth: 2,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    borderWidth: 1.5,
     borderColor: '#FFDCD4'
   },
   heroCameraBadge: {
     position: 'absolute',
-    bottom: 0,
-    right: 0,
-    width: 16,
-    height: 16,
-    borderRadius: 8,
+    bottom: -1,
+    right: -1,
+    width: 14,
+    height: 14,
+    borderRadius: 7,
     backgroundColor: '#FF5436',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1.5,
+    borderWidth: 1.2,
     borderColor: '#FFFFFF'
   },
   heroCameraIcon: {
-    fontSize: 8
+    fontSize: 7
   },
   heroWorkerName: {
-    fontSize: 14,
+    fontSize: 12.5,
     fontWeight: '800',
     color: '#0F172A'
   },
   heroWorkerSkill: {
-    fontSize: 10.5,
+    fontSize: 9.5,
     fontWeight: '700',
     color: '#0F52BA',
-    marginTop: 1,
-    marginBottom: 2
+    marginTop: 0.5,
+    marginBottom: 1.5
   },
   heroBadgesRow: {
     flexDirection: 'row',
@@ -2509,21 +2509,21 @@ export const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#DCFCE7',
-    paddingHorizontal: 8,
-    paddingVertical: 1,
-    borderRadius: 10,
-    marginRight: 6,
+    paddingHorizontal: 5,
+    paddingVertical: 0.5,
+    borderRadius: 8,
+    marginRight: 4,
     borderWidth: 1,
     borderColor: '#86EFAC'
   },
   heroVerifiedCheck: {
-    fontSize: 10,
+    fontSize: 8.5,
     color: '#15803D',
     fontWeight: '900',
-    marginRight: 3
+    marginRight: 2
   },
   heroVerifiedText: {
-    fontSize: 9.5,
+    fontSize: 8.5,
     fontWeight: '800',
     color: '#15803D'
   },
@@ -2531,18 +2531,18 @@ export const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FEF9C3',
-    paddingHorizontal: 8,
-    paddingVertical: 1,
-    borderRadius: 10,
+    paddingHorizontal: 5,
+    paddingVertical: 0.5,
+    borderRadius: 8,
     borderWidth: 1,
     borderColor: '#FDE047'
   },
   heroRatingStar: {
-    fontSize: 10,
-    marginRight: 3
+    fontSize: 8.5,
+    marginRight: 2
   },
   heroRatingText: {
-    fontSize: 9.5,
+    fontSize: 8.5,
     fontWeight: '800',
     color: '#A16207'
   },
@@ -2552,9 +2552,9 @@ export const styles = StyleSheet.create({
     justifyContent: 'space-around',
     width: '100%',
     backgroundColor: '#F8FAFC',
-    borderRadius: 12,
-    paddingVertical: 6,
-    paddingHorizontal: 6,
+    borderRadius: 8,
+    paddingVertical: 3,
+    paddingHorizontal: 4,
     borderWidth: 1,
     borderColor: '#F1F5F9'
   },
@@ -2563,19 +2563,19 @@ export const styles = StyleSheet.create({
     flex: 1
   },
   heroStatVal: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '900',
     color: '#0F172A'
   },
   heroStatLbl: {
-    fontSize: 9,
+    fontSize: 8,
     fontWeight: '600',
     color: '#64748B',
-    marginTop: 1
+    marginTop: 0.5
   },
   heroStatDivider: {
     width: 1,
-    height: 18,
+    height: 14,
     backgroundColor: '#CBD5E1'
   },
   profileAvailabilityCard: {

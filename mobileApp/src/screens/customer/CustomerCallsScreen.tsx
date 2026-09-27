@@ -44,7 +44,7 @@ export const CustomerCallsScreen: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [callHistory, setCallHistory] = useState<CallRecord[]>(INITIAL_CALLS);
   const [currentPage, setCurrentPage] = useState(1);
-  const ITEMS_PER_PAGE = 6;
+  const ITEMS_PER_PAGE = 5;
 
   useEffect(() => {
     fetchHistory();
@@ -75,7 +75,7 @@ export const CustomerCallsScreen: React.FC = () => {
   const displayedCalls = filteredCalls.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
 
   return (
-    <ScrollView contentContainerStyle={styles.callsTabScrollContent} showsVerticalScrollIndicator={false}>
+    <View style={styles.callsTabScrollContent}>
       <View style={styles.callsTabHeader}>
         <View>
           <Text style={styles.callsTabTitle}>Outgoing Call History</Text>
@@ -175,6 +175,6 @@ export const CustomerCallsScreen: React.FC = () => {
           </TouchableOpacity>
         </View>
       </View>
-    </ScrollView>
+    </View>
   );
 };
