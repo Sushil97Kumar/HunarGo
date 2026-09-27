@@ -546,7 +546,7 @@ export const CustomerHomeScreen: React.FC<Props> = ({ onBackToOnboarding }) => {
             <View style={localStyles.categoryGridRow}>
               <TouchableOpacity style={[localStyles.categoryCard, { backgroundColor: '#FEF9C3' }]} onPress={() => handleOpenAllWorkersModal('All')}>
                 <View style={localStyles.categoryIconWrapper}>
-                  <Text style={{ fontSize: 16 }}>🏠</Text>
+                  <Text style={{ fontSize: 14 }}>🏠</Text>
                 </View>
                 <Text style={localStyles.categoryCardTitle}>Home Repair</Text>
                 <View style={localStyles.categoryChevronBtn}>
@@ -556,7 +556,7 @@ export const CustomerHomeScreen: React.FC<Props> = ({ onBackToOnboarding }) => {
 
               <TouchableOpacity style={[localStyles.categoryCard, { backgroundColor: '#FEE2E2' }]} onPress={() => handleOpenAllWorkersModal('Car Mechanic')}>
                 <View style={localStyles.categoryIconWrapper}>
-                  <Text style={{ fontSize: 16 }}>🚗</Text>
+                  <Text style={{ fontSize: 14 }}>🚗</Text>
                 </View>
                 <Text style={localStyles.categoryCardTitle}>Vehicle Services</Text>
                 <View style={localStyles.categoryChevronBtn}>
@@ -566,7 +566,7 @@ export const CustomerHomeScreen: React.FC<Props> = ({ onBackToOnboarding }) => {
 
               <TouchableOpacity style={[localStyles.categoryCard, { backgroundColor: '#F3E8FF' }]} onPress={() => handleOpenAllWorkersModal('Barber')}>
                 <View style={localStyles.categoryIconWrapper}>
-                  <Text style={{ fontSize: 16 }}>💇‍♀️</Text>
+                  <Text style={{ fontSize: 14 }}>💇‍♀️</Text>
                 </View>
                 <Text style={localStyles.categoryCardTitle}>Personal & Beauty</Text>
                 <View style={localStyles.categoryChevronBtn}>
@@ -576,10 +576,10 @@ export const CustomerHomeScreen: React.FC<Props> = ({ onBackToOnboarding }) => {
             </View>
 
             {/* Bottom Row: 2 cards */}
-            <View style={[localStyles.categoryGridRow, { marginTop: 4 }]}>
+            <View style={[localStyles.categoryGridRow, { marginTop: 3 }]}>
               <TouchableOpacity style={[localStyles.categoryCardWide, { backgroundColor: '#DCFCE7' }]} onPress={() => handleOpenAllWorkersModal('Cleaner')}>
                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                  <Text style={{ fontSize: 18, marginRight: 4 }}>🧹</Text>
+                  <Text style={{ fontSize: 15, marginRight: 4 }}>🧹</Text>
                   <Text style={localStyles.categoryCardTitle}>Cleaning</Text>
                 </View>
                 <View style={localStyles.categoryChevronBtn}>
@@ -589,7 +589,7 @@ export const CustomerHomeScreen: React.FC<Props> = ({ onBackToOnboarding }) => {
 
               <TouchableOpacity style={[localStyles.categoryCardWide, { backgroundColor: '#F0FDF4' }]} onPress={() => handleOpenAllWorkersModal('Daily Labour')}>
                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                  <Text style={{ fontSize: 18, marginRight: 4 }}>🍃</Text>
+                  <Text style={{ fontSize: 15, marginRight: 4 }}>🍃</Text>
                   <Text style={localStyles.categoryCardTitle}>Outdoor & Labour</Text>
                 </View>
                 <View style={localStyles.categoryChevronBtn}>
@@ -1408,7 +1408,7 @@ const localStyles = StyleSheet.create({
   },
   homeFixedContent: {
     flex: 1,
-    paddingBottom: 70,
+    paddingBottom: 72,
   },
   topBar: {
     flexDirection: 'row',
@@ -1638,41 +1638,41 @@ const localStyles = StyleSheet.create({
   },
   categoryCard: {
     width: '31%',
-    borderRadius: 14,
-    padding: 8,
+    borderRadius: 12,
+    padding: 6,
     position: 'relative',
-    minHeight: 80,
+    minHeight: 58,
     justifyContent: 'space-between',
   },
   categoryCardWide: {
     width: '48.5%',
-    borderRadius: 14,
-    padding: 8,
+    borderRadius: 12,
+    padding: 6,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    minHeight: 50,
+    minHeight: 40,
   },
   categoryIconWrapper: {
-    marginBottom: 2,
+    marginBottom: 1,
   },
   categoryCardTitle: {
-    fontSize: 11.5,
+    fontSize: 10.5,
     fontWeight: '800',
     color: '#1E293B',
-    lineHeight: 14,
+    lineHeight: 12.5,
   },
   categoryChevronBtn: {
-    width: 18,
-    height: 18,
-    borderRadius: 9,
+    width: 15,
+    height: 15,
+    borderRadius: 7.5,
     backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
     alignSelf: 'flex-end',
   },
   categoryChevronText: {
-    fontSize: 9,
+    fontSize: 8,
     color: '#64748B',
     fontWeight: '800',
   },
@@ -1798,7 +1798,7 @@ const localStyles = StyleSheet.create({
   },
   workersListContainer: {
     paddingHorizontal: 18,
-    marginBottom: 2,
+    marginBottom: 6,
   },
   workerCard: {
     backgroundColor: '#FFFFFF',
