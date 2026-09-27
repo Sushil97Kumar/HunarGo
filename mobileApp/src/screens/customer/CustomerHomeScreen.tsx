@@ -513,7 +513,7 @@ export const CustomerHomeScreen: React.FC<Props> = ({ onBackToOnboarding }) => {
             ref={chipsScrollRef}
             horizontal
             showsHorizontalScrollIndicator={false}
-            style={{ flexGrow: 0, marginTop: 4, marginBottom: 14 }}
+            style={{ height: 46, minHeight: 46, flexGrow: 0, marginTop: 6, marginBottom: 10 }}
             contentContainerStyle={localStyles.chipsScrollContent}
             onContentSizeChange={(w) => {
               totalContentWidth.current = w;
@@ -1586,8 +1586,9 @@ const localStyles = StyleSheet.create({
   },
   chipsScrollContent: {
     paddingHorizontal: 16,
-    paddingVertical: 4,
+    paddingVertical: 6,
     flexDirection: 'row',
+    alignItems: 'center',
   },
   chipPill: {
     flexDirection: 'row',
