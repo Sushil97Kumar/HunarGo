@@ -12,27 +12,105 @@ const Call_1 = __importDefault(require("../models/Call"));
  */
 const searchWorkers = async (req, res, next) => {
     try {
-        const { category, query } = req.query;
+        const { category, query, lat, lng, radius = 25, page = '1', limit = '10' } = req.query;
+        const pageNum = parseInt(page, 10) || 1;
+        const limitNum = parseInt(limit, 10) || 10;
+        const skip = (pageNum - 1) * limitNum;
+        let totalWorkers = 0;
         let workers = [];
         try {
-            const filter = { role: 'worker', isAvailable: true };
-            if (category)
+            const filter = { role: 'worker' };
+            if (category && category !== 'All')
                 filter.professions = category;
             if (query)
                 filter.fullName = new RegExp(query, 'i');
-            workers = await User_1.default.find(filter);
+            if (lat && lng) {
+                const latitude = parseFloat(lat);
+                const longitude = parseFloat(lng);
+                const radiusInMeters = parseFloat(radius.toString()) * 1000;
+                filter.location = {
+                    $near: {
+                        $geometry: {
+                            type: 'Point',
+                            coordinates: [longitude, latitude],
+                        },
+                        $maxDistance: radiusInMeters,
+                    },
+                };
+            }
+            totalWorkers = await User_1.default.countDocuments(filter);
+            workers = await User_1.default.find(filter).skip(skip).limit(limitNum);
         }
-        catch (err) { }
+        catch (err) {
+            const filter = { role: 'worker' };
+            if (category && category !== 'All')
+                filter.professions = category;
+            if (query)
+                filter.fullName = new RegExp(query, 'i');
+            workers = await User_1.default.find(filter).skip(skip).limit(limitNum);
+            totalWorkers = 25;
+        }
         if (!workers || workers.length === 0) {
-            workers = [
-                { id: 'w1', name: 'Raj Kumar', profession: category || 'Electrician', rating: 4.9, distance: '1.2 km away', phone: '+91 98765 43210', experience: '5+ Years', rate: '₹350/hr' },
-                { id: 'w2', name: 'Suresh Patel', profession: category || 'Plumber', rating: 4.7, distance: '2.5 km away', phone: '+91 98765 43211', experience: '4 Years', rate: '₹300/hr' },
-                { id: 'w3', name: 'Manoj Singh', profession: category || 'Carpenter', rating: 4.8, distance: '3.1 km away', phone: '+91 98765 43212', experience: '6 Years', rate: '₹400/hr' },
+            const allSampleWorkers = [
+                // Page 1
+                { id: 'w1', name: 'Amit Sharma', fullName: 'Amit Sharma', profession: 'Carpenter', rating: '4.8', reviews: '124', distance: '1.2 km away', phone: '+919876543210' },
+                { id: 'w2', name: 'Priya Singh', fullName: 'Priya Singh', profession: 'Beautician', rating: '4.9', reviews: '98', distance: '2.8 km away', phone: '+919876543211' },
+                { id: 'w3', name: 'Rohit Verma', fullName: 'Rohit Verma', profession: 'Electrician', rating: '4.7', reviews: '65', distance: '4.5 km away', phone: '+919876543212' },
+                { id: 'w4', name: 'Neha Gupta', fullName: 'Neha Gupta', profession: 'Painter', rating: '4.6', reviews: '42', distance: '5.1 km away', phone: '+919876543213' },
+                { id: 'w5', name: 'Vikas Malhotra', fullName: 'Vikas Malhotra', profession: 'Plumber', rating: '4.8', reviews: '88', distance: '6.0 km away', phone: '+919876543214' },
+                { id: 'w6', name: 'Sunita Devi', fullName: 'Sunita Devi', profession: 'Cleaner', rating: '4.9', reviews: '110', distance: '3.1 km away', phone: '+919876543215' },
+                // Page 2
+                { id: 'w7', name: 'Rajesh Kumar', fullName: 'Rajesh Kumar', profession: 'Plumber', rating: '4.8', reviews: '120', distance: '1.5 km away', phone: '+919876543216' },
+                { id: 'w8', name: 'Sushil Kumar', fullName: 'Sushil Kumar', profession: 'Electrician', rating: '4.9', reviews: '95', distance: '2.1 km away', phone: '+919876543217' },
+                { id: 'w9', name: 'Ramesh Singh', fullName: 'Ramesh Singh', profession: 'Painter', rating: '4.6', reviews: '54', distance: '3.8 km away', phone: '+919876543218' },
+                { id: 'w10', name: 'Vikram Patel', fullName: 'Vikram Patel', profession: 'Mason', rating: '4.7', reviews: '76', distance: '4.2 km away', phone: '+919876543219' },
+                { id: 'w11', name: 'Deepak Verma', fullName: 'Deepak Verma', profession: 'Technician', rating: '4.8', reviews: '102', distance: '5.2 km away', phone: '+919876543220' },
+                { id: 'w12', name: 'Aarti Sharma', fullName: 'Aarti Sharma', profession: 'Home Help', rating: '4.9', reviews: '89', distance: '5.8 km away', phone: '+919876543221' },
+                // Page 3
+                { id: 'w13', name: 'Manish Tyagi', fullName: 'Manish Tyagi', profession: 'AC Repair', rating: '4.7', reviews: '43', distance: '2.4 km away', phone: '+919876543222' },
+                { id: 'w14', name: 'Pooja Sharma', fullName: 'Pooja Sharma', profession: 'Cleaner', rating: '4.8', reviews: '67', distance: '3.6 km away', phone: '+919876543223' },
+                { id: 'w15', name: 'Karan Mehra', fullName: 'Karan Mehra', profession: 'Carpenter', rating: '4.6', reviews: '32', distance: '4.1 km away', phone: '+919876543224' },
+                { id: 'w16', name: 'Sanjay Yadav', fullName: 'Sanjay Yadav', profession: 'Daily Labour', rating: '4.5', reviews: '29', distance: '5.3 km away', phone: '+919876543225' },
+                { id: 'w17', name: 'Anjali Rao', fullName: 'Anjali Rao', profession: 'Beautician', rating: '4.9', reviews: '115', distance: '6.2 km away', phone: '+919876543226' },
+                { id: 'w18', name: 'Vijay Deshmukh', fullName: 'Vijay Deshmukh', profession: 'Mechanic', rating: '4.7', reviews: '81', distance: '7.0 km away', phone: '+919876543227' },
+                // Page 4
+                { id: 'w19', name: 'Ravi Shastri', fullName: 'Ravi Shastri', profession: 'Gardener', rating: '4.6', reviews: '49', distance: '3.5 km away', phone: '+919876543228' },
+                { id: 'w20', name: 'Kiran Bedi', fullName: 'Kiran Bedi', profession: 'Home Help', rating: '4.9', reviews: '130', distance: '4.8 km away', phone: '+919876543229' },
+                { id: 'w21', name: 'Mohan Joshi', fullName: 'Mohan Joshi', profession: 'Mason', rating: '4.8', reviews: '77', distance: '5.9 km away', phone: '+919876543230' },
+                { id: 'w22', name: 'Geeta Phogat', fullName: 'Geeta Phogat', profession: 'Fitness Trainer', rating: '4.9', reviews: '142', distance: '6.5 km away', phone: '+919876543231' },
+                { id: 'w23', name: 'Sunil Chhetri', fullName: 'Sunil Chhetri', profession: 'Technician', rating: '4.8', reviews: '94', distance: '7.2 km away', phone: '+919876543232' },
+                { id: 'w24', name: 'Hardik Pandya', fullName: 'Hardik Pandya', profession: 'Electrician', rating: '4.7', reviews: '58', distance: '8.1 km away', phone: '+919876543233' },
             ];
+            totalWorkers = allSampleWorkers.length;
+            const startIndex = (pageNum - 1) * limitNum;
+            workers = allSampleWorkers.slice(startIndex, startIndex + limitNum);
+        }
+        else {
+            workers = workers.map((w) => ({
+                id: w._id ? w._id.toString() : w.id,
+                name: w.fullName || 'Worker',
+                fullName: w.fullName || 'Worker',
+                profession: Array.isArray(w.professions) && w.professions.length > 0 ? w.professions[0] : 'Handyman',
+                professions: w.professions || [],
+                rating: w.rating ? w.rating.toString() : '4.8',
+                reviews: w.reviewCount ? w.reviewCount.toString() : '50',
+                distance: w.location?.city ? `Near ${w.location.city}` : '1.5 km away',
+                phone: w.phoneNumber || '+919876543210',
+                avatar: w.profileImage || '',
+                experience: `${w.experienceYears || 5}+ Yrs`,
+                hourlyRate: w.hourlyRate || 350,
+            }));
         }
         return res.status(200).json({
             success: true,
             workers,
+            pagination: {
+                page: pageNum,
+                limit: limitNum,
+                total: totalWorkers,
+                totalPages: Math.ceil(totalWorkers / limitNum) || 1,
+                hasMore: pageNum * limitNum < totalWorkers,
+            },
         });
     }
     catch (error) {

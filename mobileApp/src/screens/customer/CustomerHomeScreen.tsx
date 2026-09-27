@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
+  ActivityIndicator,
   Image,
   ImageBackground,
+  Modal,
   SafeAreaView,
   ScrollView,
   StatusBar,
@@ -25,6 +27,33 @@ export const CustomerHomeScreen: React.FC<Props> = ({ onBackToOnboarding }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [userLocation, setUserLocation] = useState('Zirakpur, Punjab');
   const [isLocating, setIsLocating] = useState(false);
+
+  // Modal state for All Nearest Workers with Pagination
+  const [showAllWorkersModal, setShowAllWorkersModal] = useState(false);
+  const [allWorkersList, setAllWorkersList] = useState<any[]>([]);
+  const [allWorkersLoading, setAllWorkersLoading] = useState(false);
+  const [allWorkersPage, setAllWorkersPage] = useState(1);
+  const [allWorkersTotalPages, setAllWorkersTotalPages] = useState(1);
+  const [allWorkersHasMore, setAllWorkersHasMore] = useState(false);
+  const [allWorkersTotal, setAllWorkersTotal] = useState(0);
+  const [modalSelectedCategory, setModalSelectedCategory] = useState('All');
+  const [modalSearchText, setModalSearchText] = useState('');
+
+  const modalCategoriesFilters = [
+    { id: 'All', title: 'All', emoji: '🌟', bg: '#FFF7ED', color: '#C2410C', border: '#FFD8A8' },
+    { id: 'Plumber', title: 'Plumber', emoji: '🔧', bg: '#EBF3FF', color: '#1E40AF', border: '#BFDBFE' },
+    { id: 'Electrician', title: 'Electrician', emoji: '⚡', bg: '#FEF9C3', color: '#854D0E', border: '#FDE047' },
+    { id: 'Carpenter', title: 'Carpenter', emoji: '🔨', bg: '#FFEDD5', color: '#9A3412', border: '#FFC599' },
+    { id: 'Painter', title: 'Painter', emoji: '🎨', bg: '#FCE7F3', color: '#9D174D', border: '#F9A8D4' },
+    { id: 'Mason', title: 'Mason', emoji: '🧱', bg: '#F3E8FF', color: '#6B21A8', border: '#D8B4FE' },
+    { id: 'Technician', title: 'Technician', emoji: '🧰', bg: '#DCFCE7', color: '#166534', border: '#86EFAC' },
+    { id: 'AC Repair', title: 'AC Repair', emoji: '❄️', bg: '#CCFBF1', color: '#115E59', border: '#5EEAD4' },
+    { id: 'Car Mechanic', title: 'Car Mechanic', emoji: '🚗', bg: '#E0F2FE', color: '#075985', border: '#7DD3FC' },
+    { id: 'Bike Mechanic', title: 'Bike Mechanic', emoji: '🏍️', bg: '#F3E8FF', color: '#6B21A8', border: '#D8B4FE' },
+    { id: 'Barber', title: 'Barber', emoji: '✂️', bg: '#FCE7F3', color: '#9D174D', border: '#F9A8D4' },
+    { id: 'Cleaner', title: 'Cleaner', emoji: '🧹', bg: '#DCFCE7', color: '#166534', border: '#86EFAC' },
+    { id: 'Daily Labour', title: 'Daily Labour', emoji: '🧑‍🔧', bg: '#FFE4E6', color: '#9F1239', border: '#FECDD3' },
+  ];
 
   const quickCategories = [
     { id: 'plumber', title: 'Plumber', emoji: '🔧', bg: '#EBF3FF', color: '#1E40AF', border: '#BFDBFE' },
@@ -97,7 +126,7 @@ export const CustomerHomeScreen: React.FC<Props> = ({ onBackToOnboarding }) => {
     return () => clearInterval(timer);
   }, []);
 
-  const workers = [
+  const [nearbyWorkers, setNearbyWorkers] = useState<any[]>([
     {
       id: '1',
       name: 'Rajesh Kumar',
@@ -108,17 +137,22 @@ export const CustomerHomeScreen: React.FC<Props> = ({ onBackToOnboarding }) => {
       phone: '+919876543210',
       avatar: DefaultAvatar,
     },
-    {
-      id: '2',
-      name: 'Sushil Kumar',
-      profession: 'Electrician & Plumber',
-      rating: '4.9',
-      reviews: '98',
-      distance: '2.1 km away',
-      phone: '+919876543211',
-      avatar: DefaultAvatar,
-    },
-  ];
+  ]);
+
+  useEffect(() => {
+    fetchNearbyWorkers();
+  }, [searchQuery, userLocation]);
+
+  const fetchNearbyWorkers = async () => {
+    try {
+      const res = await customerApi.searchWorkers(undefined, searchQuery, 30.6425, 76.8173);
+      if (res && Array.isArray(res.workers) && res.workers.length > 0) {
+        setNearbyWorkers(res.workers);
+      }
+    } catch (err) {
+      console.error('Error fetching nearby workers:', err);
+    }
+  };
 
   const handleCallWorker = (workerId: string) => {
     customerApi.callWorker(workerId);
@@ -130,6 +164,55 @@ export const CustomerHomeScreen: React.FC<Props> = ({ onBackToOnboarding }) => {
       setUserLocation('Zirakpur, Punjab');
       setIsLocating(false);
     }, 600);
+  };
+
+  const handleOpenAllWorkersModal = (cat: string = 'All') => {
+    setModalSelectedCategory(cat);
+    setModalSearchText('');
+    setShowAllWorkersModal(true);
+    fetchPaginatedWorkers(1, cat, '');
+  };
+
+  const fetchPaginatedWorkers = async (page: number, category?: string, query?: string) => {
+    setAllWorkersLoading(true);
+    try {
+      const selectedCat = category !== undefined ? category : modalSelectedCategory;
+      const searchQueryText = query !== undefined ? query : modalSearchText;
+      const res = await customerApi.searchWorkers(selectedCat, searchQueryText, 30.6425, 76.8173, page, 6);
+      if (res && Array.isArray(res.workers)) {
+        setAllWorkersList(res.workers);
+        if (res.pagination) {
+          setAllWorkersPage(res.pagination.page || page);
+          setAllWorkersTotalPages(res.pagination.totalPages || 1);
+          setAllWorkersHasMore(!!res.pagination.hasMore);
+          setAllWorkersTotal(res.pagination.total || res.workers.length);
+        } else {
+          setAllWorkersPage(page);
+          setAllWorkersTotalPages(1);
+          setAllWorkersHasMore(false);
+          setAllWorkersTotal(res.workers.length);
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching paginated workers:', err);
+    } finally {
+      setAllWorkersLoading(false);
+    }
+  };
+
+  const handlePageChange = (newPage: number) => {
+    if (newPage < 1 || newPage > allWorkersTotalPages || allWorkersLoading) return;
+    fetchPaginatedWorkers(newPage);
+  };
+
+  const handleModalCategorySelect = (catTitle: string) => {
+    setModalSelectedCategory(catTitle);
+    fetchPaginatedWorkers(1, catTitle, modalSearchText);
+  };
+
+  const handleModalSearchChange = (text: string) => {
+    setModalSearchText(text);
+    fetchPaginatedWorkers(1, modalSelectedCategory, text);
   };
 
   return (
@@ -215,7 +298,7 @@ export const CustomerHomeScreen: React.FC<Props> = ({ onBackToOnboarding }) => {
           {/* Browse Services Section */}
           <View style={localStyles.sectionHeaderRow}>
             <Text style={localStyles.sectionTitle}>Browse Services</Text>
-            <TouchableOpacity activeOpacity={0.7}>
+            <TouchableOpacity activeOpacity={0.7} onPress={() => handleOpenAllWorkersModal('All')}>
               <Text style={localStyles.viewAllLink}>View All ➔</Text>
             </TouchableOpacity>
           </View>
@@ -224,7 +307,7 @@ export const CustomerHomeScreen: React.FC<Props> = ({ onBackToOnboarding }) => {
           <View style={localStyles.categoryContainer}>
             {/* Top Row: 3 cards */}
             <View style={localStyles.categoryGridRow}>
-              <TouchableOpacity style={[localStyles.categoryCard, { backgroundColor: '#FEF9C3' }]}>
+              <TouchableOpacity style={[localStyles.categoryCard, { backgroundColor: '#FEF9C3' }]} onPress={() => handleOpenAllWorkersModal('All')}>
                 <View style={localStyles.categoryIconWrapper}>
                   <Text style={{ fontSize: 16 }}>🏠</Text>
                 </View>
@@ -234,7 +317,7 @@ export const CustomerHomeScreen: React.FC<Props> = ({ onBackToOnboarding }) => {
                 </View>
               </TouchableOpacity>
 
-              <TouchableOpacity style={[localStyles.categoryCard, { backgroundColor: '#FEE2E2' }]}>
+              <TouchableOpacity style={[localStyles.categoryCard, { backgroundColor: '#FEE2E2' }]} onPress={() => handleOpenAllWorkersModal('Car Mechanic')}>
                 <View style={localStyles.categoryIconWrapper}>
                   <Text style={{ fontSize: 16 }}>🚗</Text>
                 </View>
@@ -244,7 +327,7 @@ export const CustomerHomeScreen: React.FC<Props> = ({ onBackToOnboarding }) => {
                 </View>
               </TouchableOpacity>
 
-              <TouchableOpacity style={[localStyles.categoryCard, { backgroundColor: '#F3E8FF' }]}>
+              <TouchableOpacity style={[localStyles.categoryCard, { backgroundColor: '#F3E8FF' }]} onPress={() => handleOpenAllWorkersModal('Barber')}>
                 <View style={localStyles.categoryIconWrapper}>
                   <Text style={{ fontSize: 16 }}>💇‍♀️</Text>
                 </View>
@@ -257,7 +340,7 @@ export const CustomerHomeScreen: React.FC<Props> = ({ onBackToOnboarding }) => {
 
             {/* Bottom Row: 2 cards */}
             <View style={[localStyles.categoryGridRow, { marginTop: 4 }]}>
-              <TouchableOpacity style={[localStyles.categoryCardWide, { backgroundColor: '#DCFCE7' }]}>
+              <TouchableOpacity style={[localStyles.categoryCardWide, { backgroundColor: '#DCFCE7' }]} onPress={() => handleOpenAllWorkersModal('Cleaner')}>
                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                   <Text style={{ fontSize: 18, marginRight: 4 }}>🧹</Text>
                   <Text style={localStyles.categoryCardTitle}>Cleaning</Text>
@@ -267,7 +350,7 @@ export const CustomerHomeScreen: React.FC<Props> = ({ onBackToOnboarding }) => {
                 </View>
               </TouchableOpacity>
 
-              <TouchableOpacity style={[localStyles.categoryCardWide, { backgroundColor: '#F0FDF4' }]}>
+              <TouchableOpacity style={[localStyles.categoryCardWide, { backgroundColor: '#F0FDF4' }]} onPress={() => handleOpenAllWorkersModal('Daily Labour')}>
                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                   <Text style={{ fontSize: 18, marginRight: 4 }}>🍃</Text>
                   <Text style={localStyles.categoryCardTitle}>Outdoor & Labour</Text>
@@ -284,7 +367,7 @@ export const CustomerHomeScreen: React.FC<Props> = ({ onBackToOnboarding }) => {
             <View style={localStyles.promoLeft}>
               <Text style={localStyles.promoTitle}>Need help at home?</Text>
               <Text style={localStyles.promoSubtitle}>Find skilled workers near you</Text>
-              <TouchableOpacity style={localStyles.promoButton} activeOpacity={0.85}>
+              <TouchableOpacity style={localStyles.promoButton} activeOpacity={0.85} onPress={() => handleOpenAllWorkersModal('All')}>
                 <Text style={localStyles.promoButtonText}>Find a Worker ➔</Text>
               </TouchableOpacity>
             </View>
@@ -294,13 +377,13 @@ export const CustomerHomeScreen: React.FC<Props> = ({ onBackToOnboarding }) => {
           {/* Popular Services Section */}
           <View style={localStyles.sectionHeaderRow}>
             <Text style={localStyles.sectionTitle}>Popular Services</Text>
-            <TouchableOpacity activeOpacity={0.7}>
+            <TouchableOpacity activeOpacity={0.7} onPress={() => handleOpenAllWorkersModal('All')}>
               <Text style={localStyles.viewAllLink}>View All ➔</Text>
             </TouchableOpacity>
           </View>
 
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 0 }} contentContainerStyle={localStyles.popularScrollContent}>
-            <TouchableOpacity style={localStyles.popularCard} activeOpacity={0.85} onPress={() => setSearchQuery('Plumber')}>
+            <TouchableOpacity style={localStyles.popularCard} activeOpacity={0.85} onPress={() => handleOpenAllWorkersModal('Plumber')}>
               <View style={localStyles.popularImgBox}>
                 <Image source={HeroIllustration} style={localStyles.popularImg} resizeMode="cover" />
                 <View style={localStyles.ratingBadgeOverlay}>
@@ -318,7 +401,7 @@ export const CustomerHomeScreen: React.FC<Props> = ({ onBackToOnboarding }) => {
               </View>
             </TouchableOpacity>
 
-            <TouchableOpacity style={localStyles.popularCard} activeOpacity={0.85} onPress={() => setSearchQuery('Technician')}>
+            <TouchableOpacity style={localStyles.popularCard} activeOpacity={0.85} onPress={() => handleOpenAllWorkersModal('Technician')}>
               <View style={localStyles.popularImgBox}>
                 <Image source={Screen2Illustration} style={localStyles.popularImg} resizeMode="cover" />
                 <View style={localStyles.ratingBadgeOverlay}>
@@ -336,7 +419,7 @@ export const CustomerHomeScreen: React.FC<Props> = ({ onBackToOnboarding }) => {
               </View>
             </TouchableOpacity>
 
-            <TouchableOpacity style={localStyles.popularCard} activeOpacity={0.85} onPress={() => setSearchQuery('Maid')}>
+            <TouchableOpacity style={localStyles.popularCard} activeOpacity={0.85} onPress={() => handleOpenAllWorkersModal('Cleaner')}>
               <View style={localStyles.popularImgBox}>
                 <Image source={HeroIllustration} style={localStyles.popularImg} resizeMode="cover" />
                 <View style={localStyles.ratingBadgeOverlay}>
@@ -358,27 +441,43 @@ export const CustomerHomeScreen: React.FC<Props> = ({ onBackToOnboarding }) => {
           {/* Workers Near You Section */}
           <View style={localStyles.sectionHeaderRow}>
             <Text style={localStyles.sectionTitle}>Workers Near You</Text>
-            <TouchableOpacity activeOpacity={0.7}>
+            <TouchableOpacity activeOpacity={0.7} onPress={() => handleOpenAllWorkersModal('All')}>
               <Text style={localStyles.viewAllLink}>View All ➔</Text>
             </TouchableOpacity>
           </View>
 
           <View style={localStyles.workersListContainer}>
-            {workers.slice(0, 1).map((worker) => (
+            {nearbyWorkers.slice(0, 1).map((worker) => (
               <View key={worker.id} style={localStyles.workerCard}>
                 <View style={localStyles.workerAvatarWrapper}>
-                  <Image source={worker.avatar} style={localStyles.workerAvatar} />
+                  <Image
+                    source={
+                      worker.avatar && typeof worker.avatar === 'string' && worker.avatar.startsWith('http')
+                        ? { uri: worker.avatar }
+                        : DefaultAvatar
+                    }
+                    style={localStyles.workerAvatar}
+                  />
                   <View style={localStyles.onlineDot} />
                 </View>
                 <View style={localStyles.workerInfo}>
-                  <Text style={localStyles.workerName}>{worker.name}</Text>
-                  <Text style={localStyles.workerProfession}>{worker.profession}</Text>
+                  <Text style={localStyles.workerName}>{worker.name || worker.fullName || 'Rajesh Kumar'}</Text>
+                  <Text style={localStyles.workerProfession}>
+                    {worker.profession || (Array.isArray(worker.professions) ? worker.professions[0] : 'Handyman')}
+                  </Text>
                   <View style={localStyles.workerMetaRow}>
-                    <Text style={localStyles.workerRating}>⭐ {worker.rating} <Text style={localStyles.reviewsText}>({worker.reviews} reviews)</Text></Text>
-                    <Text style={localStyles.workerDistance}>📍 {worker.distance}</Text>
+                    <Text style={localStyles.workerRating}>
+                      ⭐ {worker.rating || '4.8'}{' '}
+                      <Text style={localStyles.reviewsText}>({worker.reviews || '124'} reviews)</Text>
+                    </Text>
+                    <Text style={localStyles.workerDistance}>📍 {worker.distance || worker.distanceText || '1.2 km away'}</Text>
                   </View>
                 </View>
-                <TouchableOpacity style={localStyles.callPillBtn} activeOpacity={0.85} onPress={() => handleCallWorker(worker.id)}>
+                <TouchableOpacity
+                  style={localStyles.callPillBtn}
+                  activeOpacity={0.85}
+                  onPress={() => handleCallWorker(worker.id)}
+                >
                   <Text style={localStyles.callPillText}>📞 Call</Text>
                 </TouchableOpacity>
               </View>
@@ -386,6 +485,246 @@ export const CustomerHomeScreen: React.FC<Props> = ({ onBackToOnboarding }) => {
           </View>
         </View>
       )}
+
+      {/* ALL NEAREST WORKERS MODAL WITH PAGINATION */}
+      <Modal
+        visible={showAllWorkersModal}
+        animationType="slide"
+        transparent={false}
+        onRequestClose={() => setShowAllWorkersModal(false)}
+      >
+        <ImageBackground source={OnboardingBg} style={{ flex: 1 }} resizeMode="cover">
+          <SafeAreaView style={localStyles.modalSafeArea}>
+            <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent={true} />
+
+            {/* Top Bar Header with HunarGo Logo & Notification Bell (Same dimensions as Customer Dashboard) */}
+            <View style={localStyles.topBar}>
+              <TouchableOpacity
+                style={styles.subScreenBackButton}
+                onPress={() => setShowAllWorkersModal(false)}
+                activeOpacity={0.7}
+                hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
+              >
+                <Text style={styles.subScreenBackArrowIcon}>←</Text>
+              </TouchableOpacity>
+
+              <Image source={HunarGoLogo} style={localStyles.logoImage} resizeMode="contain" />
+
+              <TouchableOpacity style={localStyles.topIconButton} activeOpacity={0.8}>
+                <Text style={localStyles.bellIcon}>🔔</Text>
+                <View style={localStyles.redBadgeDot} />
+              </TouchableOpacity>
+            </View>
+
+            {/* Sub-Header Banner with Title & Location */}
+            <View style={localStyles.modalSubHeaderRow}>
+              <Text style={localStyles.modalHeaderTitle}>Nearest Workers</Text>
+              <Text style={localStyles.modalHeaderSub}>
+                📍 {userLocation} • <Text style={{ color: '#FF5436', fontWeight: '700' }}>{allWorkersTotal} Available</Text>
+              </Text>
+            </View>
+
+            {/* Stylish Modern Search Bar */}
+            <View style={localStyles.modalSearchContainer}>
+              <View style={localStyles.stylishSearchBox}>
+                <Text style={localStyles.stylishSearchLens}>🔍</Text>
+                <TextInput
+                  style={localStyles.stylishSearchInput}
+                  placeholder="Search worker by name or service..."
+                  placeholderTextColor="#94A3B8"
+                  value={modalSearchText}
+                  onChangeText={handleModalSearchChange}
+                />
+                {modalSearchText.length > 0 && (
+                  <TouchableOpacity
+                    style={localStyles.stylishClearBtn}
+                    onPress={() => handleModalSearchChange('')}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={localStyles.stylishClearText}>✕</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            </View>
+
+            {/* Category Filter Chips Carousel */}
+            <View style={localStyles.modalCategoryWrapper}>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, gap: 8 }}>
+                {modalCategoriesFilters.map((cat) => {
+                  const isActive = modalSelectedCategory === cat.id;
+                  return (
+                    <TouchableOpacity
+                      key={cat.id}
+                      style={[
+                        localStyles.modalStylishChip,
+                        { backgroundColor: isActive ? '#FF5436' : cat.bg, borderColor: isActive ? '#FF5436' : cat.border },
+                        isActive && localStyles.modalChipActiveGlow
+                      ]}
+                      onPress={() => handleModalCategorySelect(cat.id)}
+                      activeOpacity={0.8}
+                    >
+                      <Text style={localStyles.modalChipEmoji}>{cat.emoji}</Text>
+                      <Text style={[
+                        localStyles.modalChipTitle,
+                        { color: isActive ? '#FFFFFF' : cat.color },
+                        isActive && { fontWeight: '800' }
+                      ]}>
+                        {cat.title}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            </View>
+
+            {/* Worker List / Loading / Empty State */}
+            {allWorkersLoading ? (
+              <View style={localStyles.loadingCenterState}>
+                <ActivityIndicator size="large" color="#FF5436" />
+                <Text style={{ marginTop: 12, fontSize: 14, color: '#64748B', fontWeight: '600' }}>
+                  Searching nearest workers around {userLocation}...
+                </Text>
+              </View>
+            ) : allWorkersList.length === 0 ? (
+              <View style={localStyles.emptyCenterState}>
+                <Text style={{ fontSize: 44, marginBottom: 12 }}>🔍</Text>
+                <Text style={{ fontSize: 18, fontWeight: '700', color: '#1E293B', marginBottom: 6 }}>
+                  No Workers Found
+                </Text>
+                <Text style={{ fontSize: 14, color: '#64748B', textAlign: 'center', paddingHorizontal: 32 }}>
+                  We couldn't find any active workers matching "{modalSelectedCategory !== 'All' ? modalSelectedCategory : modalSearchText}" near {userLocation}.
+                </Text>
+              </View>
+            ) : (
+              <ScrollView contentContainerStyle={localStyles.modalListScrollContent} showsVerticalScrollIndicator={false}>
+                {allWorkersList.map((worker) => (
+                  <View key={worker.id} style={localStyles.modalWorkerCard}>
+                    <View style={localStyles.modalWorkerLeft}>
+                      <View style={localStyles.modalAvatarBox}>
+                        <Image
+                          source={
+                            worker.avatar && typeof worker.avatar === 'string' && worker.avatar.startsWith('http')
+                              ? { uri: worker.avatar }
+                              : DefaultAvatar
+                          }
+                          style={localStyles.modalAvatarImg}
+                        />
+                      </View>
+                      <View style={localStyles.modalWorkerInfo}>
+                        <Text style={localStyles.modalWorkerName}>{worker.name || worker.fullName || 'Worker'}</Text>
+                        <View style={localStyles.modalDistanceRow}>
+                          <Text style={localStyles.modalPinEmoji}>📍</Text>
+                          <Text style={localStyles.modalDistanceText}>{worker.distance || worker.distanceText || '1.2 km away'}</Text>
+                        </View>
+                      </View>
+                    </View>
+
+                    <TouchableOpacity
+                      style={localStyles.modalCallBtn}
+                      activeOpacity={0.85}
+                      onPress={() => handleCallWorker(worker.id)}
+                    >
+                      <Text style={localStyles.modalCallBtnText}>📞 Call Back</Text>
+                    </TouchableOpacity>
+                  </View>
+                ))}
+
+                {/* Bottom Pagination Controller Bar matching screenshot */}
+                <View style={localStyles.paginationInlineRow}>
+                  <TouchableOpacity
+                    style={[
+                      localStyles.pageBtnPrev,
+                      (allWorkersPage <= 1 || allWorkersLoading) && localStyles.pageBtnDisabled
+                    ]}
+                    disabled={allWorkersPage <= 1 || allWorkersLoading}
+                    onPress={() => handlePageChange(allWorkersPage - 1)}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={[
+                      localStyles.pageBtnPrevText,
+                      (allWorkersPage <= 1 || allWorkersLoading) && localStyles.pageBtnTextDisabled
+                    ]}>
+                      ◄ Prev
+                    </Text>
+                  </TouchableOpacity>
+
+                  <View style={localStyles.pageBadgeCenter}>
+                    <Text style={localStyles.pageBadgeText}>
+                      Page {allWorkersPage} of {allWorkersTotalPages}
+                    </Text>
+                  </View>
+
+                  <TouchableOpacity
+                    style={[
+                      localStyles.pageBtnNext,
+                      (allWorkersPage >= allWorkersTotalPages || allWorkersLoading) && localStyles.pageBtnDisabled
+                    ]}
+                    disabled={allWorkersPage >= allWorkersTotalPages || allWorkersLoading}
+                    onPress={() => handlePageChange(allWorkersPage + 1)}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={localStyles.pageBtnNextText}>
+                      Next ►
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </ScrollView>
+            )}
+
+            {/* Customer Dashboard Footer Navigation Bar */}
+            <View style={styles.bottomTabBarContainer}>
+              <TouchableOpacity
+                style={styles.tabItem}
+                onPress={() => {
+                  setShowAllWorkersModal(false);
+                  setActiveTab('dashboard');
+                }}
+                activeOpacity={0.75}
+              >
+                <Text style={[styles.tabIcon, styles.tabIconActive]}>🏠</Text>
+                <Text style={[styles.tabLabel, styles.tabLabelActive]}>Dashboard</Text>
+                <View style={styles.activeTabIndicator} />
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.tabItem}
+                onPress={() => {
+                  setShowAllWorkersModal(false);
+                  setActiveTab('calls');
+                }}
+                activeOpacity={0.75}
+              >
+                <Text style={styles.tabIcon}>📞</Text>
+                <Text style={styles.tabLabel}>Calls</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.tabItem}
+                onPress={() => {
+                  setShowAllWorkersModal(false);
+                  setActiveTab('profile');
+                }}
+                activeOpacity={0.75}
+              >
+                <Text style={styles.tabIcon}>👤</Text>
+                <Text style={styles.tabLabel}>Profile</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.tabItem}
+                onPress={() => {
+                  setShowAllWorkersModal(false);
+                  setActiveTab('settings');
+                }}
+                activeOpacity={0.75}
+              >
+                <Text style={styles.tabIcon}>⚙️</Text>
+                <Text style={styles.tabLabel}>Settings</Text>
+              </TouchableOpacity>
+            </View>
+          </SafeAreaView>
+        </ImageBackground>
+      </Modal>
 
       {/* Customer Calls History */}
       {activeTab === 'calls' && <CustomerCallsScreen />}
@@ -1300,5 +1639,232 @@ const localStyles = StyleSheet.create({
     fontSize: 13,
     color: '#94A3B8',
     fontWeight: '800',
+  },
+  modalSafeArea: {
+    flex: 1,
+    backgroundColor: 'transparent',
+  },
+  modalSubHeaderRow: {
+    paddingHorizontal: 20,
+    paddingVertical: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  modalHeaderTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#0F172A',
+  },
+  modalHeaderSub: {
+    fontSize: 11.5,
+    color: '#64748B',
+    fontWeight: '500',
+  },
+  modalSearchContainer: {
+    paddingHorizontal: 16,
+    paddingTop: 4,
+    paddingBottom: 6,
+  },
+  stylishSearchBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 22,
+    paddingHorizontal: 14,
+    height: 42,
+    borderWidth: 1.8,
+    borderColor: '#F97316',
+    shadowColor: '#F97316',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  stylishSearchLens: {
+    fontSize: 15,
+    marginRight: 8,
+  },
+  stylishSearchInput: {
+    flex: 1,
+    fontSize: 13.5,
+    fontWeight: '600',
+    color: '#1E293B',
+    paddingVertical: 0,
+  },
+  stylishClearBtn: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: '#F1F5F9',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 6,
+  },
+  stylishClearText: {
+    fontSize: 12,
+    color: '#64748B',
+    fontWeight: '800',
+  },
+  modalCategoryWrapper: {
+    paddingVertical: 6,
+    backgroundColor: 'transparent',
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(241, 245, 249, 0.6)',
+  },
+  modalStylishChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 13,
+    paddingVertical: 6.5,
+    borderRadius: 20,
+    borderWidth: 1.2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  modalChipActiveGlow: {
+    shadowColor: '#FF5436',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
+    elevation: 4,
+  },
+  modalChipEmoji: {
+    fontSize: 13.5,
+    marginRight: 6,
+  },
+  modalChipTitle: {
+    fontSize: 12.5,
+    fontWeight: '700',
+  },
+  modalListScrollContent: {
+    paddingHorizontal: 12,
+    paddingTop: 6,
+    paddingBottom: 20,
+  },
+  modalWorkerCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 14,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    marginBottom: 7,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.03,
+    shadowRadius: 3,
+    elevation: 1,
+  },
+  modalWorkerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  modalAvatarBox: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: '#F3F4F6',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 10,
+  },
+  modalAvatarImg: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+  },
+  modalWorkerInfo: {
+    justifyContent: 'center',
+  },
+  modalWorkerName: {
+    fontSize: 13.5,
+    fontWeight: '700',
+    color: '#111827',
+  },
+  modalDistanceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 2,
+  },
+  modalPinEmoji: {
+    fontSize: 11,
+    marginRight: 2,
+  },
+  modalDistanceText: {
+    fontSize: 11.5,
+    color: '#6B7280',
+    fontWeight: '500',
+  },
+  modalCallBtn: {
+    backgroundColor: '#10B981',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  modalCallBtnText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  paginationInlineRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 4,
+    paddingVertical: 14,
+    marginTop: 6,
+    marginBottom: 10,
+  },
+  pageBtnPrev: {
+    backgroundColor: '#E2E8F0',
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    borderRadius: 14,
+  },
+  pageBtnDisabled: {
+    backgroundColor: '#E2E8F0',
+    opacity: 0.6,
+  },
+  pageBtnPrevText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#475569',
+  },
+  pageBtnTextDisabled: {
+    color: '#94A3B8',
+  },
+  pageBadgeCenter: {
+    backgroundColor: '#F1F5F9',
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    borderRadius: 14,
+  },
+  pageBadgeText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#0F172A',
+  },
+  pageBtnNext: {
+    backgroundColor: '#FF5436',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 14,
+  },
+  pageBtnNextText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
 });

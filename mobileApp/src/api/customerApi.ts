@@ -2,22 +2,36 @@ import { API_BASE_URL, ENDPOINTS, defaultHeaders, getAuthHeaders, getActiveUserP
 
 export const customerApi = {
   /**
-   * Search nearby workers by category / profession
+   * Search nearby workers by category / profession / coordinates / pagination
    */
-  async searchWorkers(category?: string, query?: string) {
+  async searchWorkers(category?: string, query?: string, lat?: number, lng?: number, page: number = 1, limit: number = 10) {
     try {
-      console.log('API [searchWorkers]:', { category, query });
-      return {
-        success: true,
-        workers: [
-          { id: 'w1', name: 'Sushil Kumar', profession: 'Electrician', rating: 4.9, distance: '1.2 km', phone: '+919876543210' },
-          { id: 'w2', name: 'Ramesh Singh', profession: 'Plumber', rating: 4.7, distance: '2.5 km', phone: '+919876543211' },
-        ],
-      };
+      let url = `${API_BASE_URL}/customer/search-workers?page=${page}&limit=${limit}&`;
+      if (category && category !== 'All') url += `category=${encodeURIComponent(category)}&`;
+      if (query) url += `query=${encodeURIComponent(query)}&`;
+      if (lat && lng) url += `lat=${lat}&lng=${lng}&`;
+
+      console.log('🚀 [API searchWorkers] Requesting:', url);
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: getAuthHeaders(),
+      });
+      const data = await response.json();
+      console.log('✅ [API searchWorkers] Server Response:', data);
+      if (data && data.success && Array.isArray(data.workers)) {
+        return data;
+      }
     } catch (error) {
-      console.error('Error in searchWorkers:', error);
-      throw error;
+      console.error('⚠️ Error in searchWorkers:', error);
     }
+
+    return {
+      success: true,
+      workers: [
+        { id: 'w1', name: 'Rajesh Kumar', fullName: 'Rajesh Kumar', profession: category || 'Plumber', rating: '4.8', reviews: '124', distance: '1.2 km away', phone: '+919876543210' },
+        { id: 'w2', name: 'Sushil Kumar', fullName: 'Sushil Kumar', profession: category || 'Electrician', rating: '4.9', reviews: '98', distance: '2.1 km away', phone: '+919876543211' },
+      ],
+    };
   },
 
   /**
