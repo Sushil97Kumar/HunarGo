@@ -513,7 +513,7 @@ export const CustomerHomeScreen: React.FC<Props> = ({ onBackToOnboarding }) => {
             ref={chipsScrollRef}
             horizontal
             showsHorizontalScrollIndicator={false}
-            style={{ flexGrow: 0 }}
+            style={{ flexGrow: 0, marginBottom: 8, marginTop: 2 }}
             contentContainerStyle={localStyles.chipsScrollContent}
             onContentSizeChange={(w) => {
               totalContentWidth.current = w;
@@ -1586,17 +1586,17 @@ const localStyles = StyleSheet.create({
   },
   chipsScrollContent: {
     paddingHorizontal: 16,
-    paddingVertical: 0,
-    paddingBottom: 0,
+    paddingVertical: 2,
+    alignItems: 'center',
   },
   chipPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    height: 22,
-    paddingHorizontal: 7,
-    paddingVertical: 1,
-    borderRadius: 10,
-    marginRight: 5,
+    height: 28,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderRadius: 14,
+    marginRight: 6,
     borderWidth: 1,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
@@ -1605,20 +1605,20 @@ const localStyles = StyleSheet.create({
     elevation: 1,
   },
   chipEmoji: {
-    fontSize: 10,
-    marginRight: 2,
+    fontSize: 12,
+    marginRight: 4,
   },
   chipText: {
-    fontSize: 9.5,
-    fontWeight: '800',
+    fontSize: 11,
+    fontWeight: '700',
   },
   sectionHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 18,
-    marginTop: 1,
-    marginBottom: 4,
+    marginTop: 4,
+    marginBottom: 6,
   },
   sectionTitle: {
     fontSize: 16,
