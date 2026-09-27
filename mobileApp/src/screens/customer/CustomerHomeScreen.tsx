@@ -1586,26 +1586,28 @@ const localStyles = StyleSheet.create({
   },
   chipsScrollContent: {
     paddingHorizontal: 16,
-    paddingVertical: 6,
+    paddingVertical: 4,
     flexDirection: 'row',
-    alignItems: 'center',
   },
   chipPill: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    height: 34,
+    minHeight: 34,
     paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
+    borderRadius: 17,
     marginRight: 8,
     borderWidth: 1.5,
   },
   chipEmoji: {
     fontSize: 14,
+    lineHeight: 18,
     marginRight: 5,
   },
   chipText: {
     fontSize: 12,
+    lineHeight: 16,
     fontWeight: '700',
   },
   sectionHeaderRow: {
