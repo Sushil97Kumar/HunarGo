@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { HunarGoLogo, DefaultAvatar, Screen2Illustration, HeroIllustration, OnboardingBg } from '../../utils/assets';
 import { CustomerCallsScreen } from './CustomerCallsScreen';
+import { styles } from '../../styles/styles';
 import { customerApi } from '../../api/customerApi';
 
 interface Props {
@@ -20,7 +21,7 @@ interface Props {
 }
 
 export const CustomerHomeScreen: React.FC<Props> = ({ onBackToOnboarding }) => {
-  const [activeTab, setActiveTab] = useState<'home' | 'search' | 'requests' | 'profile'>('home');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'calls' | 'profile' | 'settings'>('dashboard');
   const [searchQuery, setSearchQuery] = useState('');
   const [userLocation, setUserLocation] = useState('Zirakpur, Punjab');
   const [isLocating, setIsLocating] = useState(false);
@@ -51,6 +52,38 @@ export const CustomerHomeScreen: React.FC<Props> = ({ onBackToOnboarding }) => {
   const chipsScrollRef = useRef<ScrollView>(null);
   const chipsScrollX = useRef(0);
   const totalContentWidth = useRef(2400);
+
+  const [customerProfile, setCustomerProfile] = useState({
+    fullName: 'Sushil Kumar',
+    phoneNumber: '+91 98765 43210',
+    email: 'sushil.kumar@hunargo.com',
+    gender: 'Male',
+    dob: '15 Aug 1995',
+    profileImage: '',
+    location: {
+      address: 'Zirakpur, Punjab',
+      city: 'Zirakpur',
+      pincode: '140603',
+    },
+  });
+
+  useEffect(() => {
+    loadCustomerProfile();
+  }, []);
+
+  const loadCustomerProfile = async () => {
+    try {
+      const res = await customerApi.getCustomerProfile();
+      if (res && res.profile) {
+        setCustomerProfile(res.profile);
+        if (res.profile.location && res.profile.location.address) {
+          setUserLocation(res.profile.location.address);
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching customer profile:', err);
+    }
+  };
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -104,21 +137,21 @@ export const CustomerHomeScreen: React.FC<Props> = ({ onBackToOnboarding }) => {
       <SafeAreaView style={localStyles.dashboardContainer}>
         <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent={true} />
 
-      {activeTab === 'home' && (
-        <View style={localStyles.homeFixedContent}>
-          {/* Top Bar Header */}
-          <View style={localStyles.topBar}>
-            <View style={{ width: 40 }} />
+        {/* Top Bar Header (Common for all tabs) */}
+        <View style={localStyles.topBar}>
+          <View style={{ width: 40 }} />
 
-            <Image source={HunarGoLogo} style={localStyles.logoImage} resizeMode="contain" />
+          <Image source={HunarGoLogo} style={localStyles.logoImage} resizeMode="contain" />
 
-            <TouchableOpacity style={localStyles.topIconButton}>
-              <Text style={localStyles.bellIcon}>🔔</Text>
-              <View style={localStyles.redBadgeDot} />
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity style={localStyles.topIconButton}>
+            <Text style={localStyles.bellIcon}>🔔</Text>
+            <View style={localStyles.redBadgeDot} />
+          </TouchableOpacity>
+        </View>
 
-          {/* Current GPS Location Card */}
+        {activeTab === 'dashboard' && (
+          <View style={localStyles.homeFixedContent}>
+            {/* Current GPS Location Card */}
           <TouchableOpacity style={localStyles.locationCard} activeOpacity={0.85} onPress={handleDetectLocation}>
             <View style={localStyles.locationLeft}>
               <View style={localStyles.redPinContainer}>
@@ -267,7 +300,7 @@ export const CustomerHomeScreen: React.FC<Props> = ({ onBackToOnboarding }) => {
           </View>
 
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 0 }} contentContainerStyle={localStyles.popularScrollContent}>
-            <TouchableOpacity style={localStyles.popularCard} activeOpacity={0.85}>
+            <TouchableOpacity style={localStyles.popularCard} activeOpacity={0.85} onPress={() => setSearchQuery('Plumber')}>
               <View style={localStyles.popularImgBox}>
                 <Image source={HeroIllustration} style={localStyles.popularImg} resizeMode="cover" />
                 <View style={localStyles.ratingBadgeOverlay}>
@@ -285,16 +318,16 @@ export const CustomerHomeScreen: React.FC<Props> = ({ onBackToOnboarding }) => {
               </View>
             </TouchableOpacity>
 
-            <TouchableOpacity style={localStyles.popularCard} activeOpacity={0.85}>
+            <TouchableOpacity style={localStyles.popularCard} activeOpacity={0.85} onPress={() => setSearchQuery('Technician')}>
               <View style={localStyles.popularImgBox}>
                 <Image source={Screen2Illustration} style={localStyles.popularImg} resizeMode="cover" />
                 <View style={localStyles.ratingBadgeOverlay}>
-                  <Text style={localStyles.ratingBadgeText}>⭐ 4.7</Text>
+                  <Text style={localStyles.ratingBadgeText}>⭐ 4.9</Text>
                 </View>
               </View>
               <View style={localStyles.popularCardFooter}>
                 <View>
-                  <Text style={localStyles.popularCardTitle}>AC Technician</Text>
+                  <Text style={localStyles.popularCardTitle}>Technician</Text>
                   <Text style={localStyles.popularCardSub}>Available near you</Text>
                 </View>
                 <View style={localStyles.miniChevronBtn}>
@@ -303,16 +336,16 @@ export const CustomerHomeScreen: React.FC<Props> = ({ onBackToOnboarding }) => {
               </View>
             </TouchableOpacity>
 
-            <TouchableOpacity style={localStyles.popularCard} activeOpacity={0.85}>
+            <TouchableOpacity style={localStyles.popularCard} activeOpacity={0.85} onPress={() => setSearchQuery('Maid')}>
               <View style={localStyles.popularImgBox}>
                 <Image source={HeroIllustration} style={localStyles.popularImg} resizeMode="cover" />
                 <View style={localStyles.ratingBadgeOverlay}>
-                  <Text style={localStyles.ratingBadgeText}>⭐ 4.6</Text>
+                  <Text style={localStyles.ratingBadgeText}>⭐ 4.7</Text>
                 </View>
               </View>
               <View style={localStyles.popularCardFooter}>
                 <View>
-                  <Text style={localStyles.popularCardTitle}>Car Mechanic</Text>
+                  <Text style={localStyles.popularCardTitle}>Maid</Text>
                   <Text style={localStyles.popularCardSub}>Available near you</Text>
                 </View>
                 <View style={localStyles.miniChevronBtn}>
@@ -355,53 +388,176 @@ export const CustomerHomeScreen: React.FC<Props> = ({ onBackToOnboarding }) => {
       )}
 
       {/* Customer Calls History */}
-      {activeTab === 'search' && <CustomerCallsScreen />}
-
-      {/* Bookings / Requests */}
-      {activeTab === 'requests' && (
-        <ScrollView contentContainerStyle={localStyles.scrollContent}>
-          <View style={{ padding: 18 }}>
-            <Text style={localStyles.sectionTitle}>My Job Requests</Text>
-          </View>
-        </ScrollView>
-      )}
+      {activeTab === 'calls' && <CustomerCallsScreen />}
 
       {/* Profile Tab */}
       {activeTab === 'profile' && (
-        <ScrollView contentContainerStyle={localStyles.scrollContent}>
-          <View style={{ padding: 18 }}>
-            <Text style={localStyles.sectionTitle}>Customer Account</Text>
-            <TouchableOpacity style={localStyles.logoutBtn} onPress={onBackToOnboarding}>
-              <Text style={localStyles.logoutBtnText}>🚪 Switch Role / Logout</Text>
+        <ScrollView contentContainerStyle={{ paddingHorizontal: 18, paddingTop: 10, paddingBottom: 110 }} showsVerticalScrollIndicator={false}>
+          {/* Main Profile Header Card */}
+          <View style={localStyles.profileHeaderCard}>
+            <View style={localStyles.profileAvatarWrapper}>
+              <Image
+                source={customerProfile.profileImage ? { uri: customerProfile.profileImage } : DefaultAvatar}
+                style={localStyles.profileAvatarImage}
+              />
+              <TouchableOpacity style={localStyles.avatarCameraBadge} activeOpacity={0.8}>
+                <Text style={{ fontSize: 11 }}>📷</Text>
+              </TouchableOpacity>
+            </View>
+            <View style={localStyles.profileHeaderInfo}>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Text style={localStyles.profileHeaderName}>{customerProfile.fullName || 'Sushil Kumar'}</Text>
+                <View style={localStyles.verifiedBadgeCircle}>
+                  <Text style={{ fontSize: 10, color: '#FFFFFF', fontWeight: '800' }}>✓</Text>
+                </View>
+              </View>
+              <Text style={localStyles.profileHeaderSub}>{customerProfile.phoneNumber || '+91 98765 43210'}</Text>
+              <Text style={localStyles.profileHeaderEmail}>{customerProfile.email || 'sushil.kumar@hunargo.com'}</Text>
+              <View style={localStyles.customerRoleTag}>
+                <Text style={localStyles.customerRoleTagText}>👤 Verified Customer</Text>
+              </View>
+            </View>
+          </View>
+
+          {/* Quick Stats Summary Bar */}
+          <View style={localStyles.profileStatsRow}>
+            <View style={localStyles.profileStatBox}>
+              <Text style={localStyles.profileStatValue}>12</Text>
+              <Text style={localStyles.profileStatLabel}>Calls Made</Text>
+            </View>
+            <View style={localStyles.statDivider} />
+            <View style={localStyles.profileStatBox}>
+              <Text style={localStyles.profileStatValue}>8</Text>
+              <Text style={localStyles.profileStatLabel}>Jobs Done</Text>
+            </View>
+            <View style={localStyles.statDivider} />
+            <View style={localStyles.profileStatBox}>
+              <Text style={localStyles.profileStatValue}>4.9 ⭐</Text>
+              <Text style={localStyles.profileStatLabel}>Rating</Text>
+            </View>
+          </View>
+
+          {/* Account Details Card */}
+          <View style={localStyles.profileSectionCard}>
+            <Text style={localStyles.cardSectionHeaderTitle}>Personal & Address Details</Text>
+            <View style={localStyles.detailItemRow}>
+              <Text style={localStyles.detailIcon}>📍</Text>
+              <View style={localStyles.detailTextGroup}>
+                <Text style={localStyles.detailLabel}>Location / Address</Text>
+                <Text style={localStyles.detailValue}>
+                  {customerProfile.location?.address || userLocation} (Pincode: {customerProfile.location?.pincode || '140603'})
+                </Text>
+              </View>
+            </View>
+            <View style={localStyles.detailItemRow}>
+              <Text style={localStyles.detailIcon}>👤</Text>
+              <View style={localStyles.detailTextGroup}>
+                <Text style={localStyles.detailLabel}>Gender & Date of Birth</Text>
+                <Text style={localStyles.detailValue}>
+                  {customerProfile.gender || 'Male'} • {customerProfile.dob || '15 Aug 1995'}
+                </Text>
+              </View>
+            </View>
+          </View>
+
+          {/* Account Actions */}
+          <View style={localStyles.profileSectionCard}>
+            <Text style={localStyles.cardSectionHeaderTitle}>Account Actions</Text>
+
+            <TouchableOpacity style={localStyles.actionRowItem} activeOpacity={0.7} onPress={() => setActiveTab('calls')}>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <View style={[localStyles.actionIconCircle, { backgroundColor: '#E0F2FE' }]}>
+                  <Text style={{ fontSize: 16 }}>📞</Text>
+                </View>
+                <Text style={localStyles.actionItemText}>Call History & Saved Workers</Text>
+              </View>
+              <Text style={localStyles.actionChevron}>❯</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={localStyles.actionRowItem} activeOpacity={0.7} onPress={() => handleDetectLocation()}>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <View style={[localStyles.actionIconCircle, { backgroundColor: '#FFEDD5' }]}>
+                  <Text style={{ fontSize: 16 }}>📍</Text>
+                </View>
+                <Text style={localStyles.actionItemText}>Update Location / GPS</Text>
+              </View>
+              <Text style={localStyles.actionChevron}>❯</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={localStyles.actionRowItem} activeOpacity={0.7}>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <View style={[localStyles.actionIconCircle, { backgroundColor: '#DCFCE7' }]}>
+                  <Text style={{ fontSize: 16 }}>🎧</Text>
+                </View>
+                <Text style={localStyles.actionItemText}>Help & Customer Support</Text>
+              </View>
+              <Text style={localStyles.actionChevron}>❯</Text>
             </TouchableOpacity>
           </View>
+
+          {/* Logout / Switch Role */}
+          <TouchableOpacity style={localStyles.logoutBtn} onPress={onBackToOnboarding} activeOpacity={0.85}>
+            <Text style={localStyles.logoutBtnText}>🚪 Switch Role / Logout</Text>
+          </TouchableOpacity>
         </ScrollView>
       )}
 
-      {/* Bottom Floating Navigation Tab Bar */}
-      <View style={localStyles.bottomNavbar}>
-        <TouchableOpacity style={localStyles.navTabItem} onPress={() => setActiveTab('home')} activeOpacity={0.75}>
-          <Text style={[localStyles.navTabIcon, activeTab === 'home' && localStyles.navTabIconActive]}>🏠</Text>
-          <Text style={[localStyles.navTabLabel, activeTab === 'home' && localStyles.navTabLabelActive]}>Home</Text>
-          {activeTab === 'home' && <View style={localStyles.activeTabIndicator} />}
+      {/* Settings Tab */}
+      {activeTab === 'settings' && (
+        <ScrollView contentContainerStyle={{ paddingHorizontal: 18, paddingTop: 10, paddingBottom: 110 }} showsVerticalScrollIndicator={false}>
+          <Text style={localStyles.sectionTitle}>App Settings</Text>
+          <View style={localStyles.profileSectionCard}>
+            <TouchableOpacity style={localStyles.actionRowItem} activeOpacity={0.7}>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <View style={[localStyles.actionIconCircle, { backgroundColor: '#F3E8FF' }]}>
+                  <Text style={{ fontSize: 16 }}>🔔</Text>
+                </View>
+                <Text style={localStyles.actionItemText}>Notifications & Alerts</Text>
+              </View>
+              <Text style={localStyles.actionChevron}>❯</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={localStyles.actionRowItem} activeOpacity={0.7}>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <View style={[localStyles.actionIconCircle, { backgroundColor: '#FEF9C3' }]}>
+                  <Text style={{ fontSize: 16 }}>🌐</Text>
+                </View>
+                <Text style={localStyles.actionItemText}>Language (English / Hindi)</Text>
+              </View>
+              <Text style={localStyles.actionChevron}>❯</Text>
+            </TouchableOpacity>
+          </View>
+
+          <TouchableOpacity style={localStyles.logoutBtn} onPress={onBackToOnboarding} activeOpacity={0.85}>
+            <Text style={localStyles.logoutBtnText}>🚪 Switch Role / Logout</Text>
+          </TouchableOpacity>
+        </ScrollView>
+      )}
+
+      {/* Bottom Floating Navigation Tab Bar (Identical to Worker Dashboard) */}
+      <View style={styles.bottomTabBarContainer}>
+        <TouchableOpacity style={styles.tabItem} onPress={() => setActiveTab('dashboard')} activeOpacity={0.75}>
+          <Text style={[styles.tabIcon, activeTab === 'dashboard' && styles.tabIconActive]}>🏠</Text>
+          <Text style={[styles.tabLabel, activeTab === 'dashboard' && styles.tabLabelActive]}>Dashboard</Text>
+          {activeTab === 'dashboard' && <View style={styles.activeTabIndicator} />}
         </TouchableOpacity>
 
-        <TouchableOpacity style={localStyles.navTabItem} onPress={() => setActiveTab('search')} activeOpacity={0.75}>
-          <Text style={[localStyles.navTabIcon, activeTab === 'search' && localStyles.navTabIconActive]}>🔍</Text>
-          <Text style={[localStyles.navTabLabel, activeTab === 'search' && localStyles.navTabLabelActive]}>Search</Text>
-          {activeTab === 'search' && <View style={localStyles.activeTabIndicator} />}
+        <TouchableOpacity style={styles.tabItem} onPress={() => setActiveTab('calls')} activeOpacity={0.75}>
+          <Text style={[styles.tabIcon, activeTab === 'calls' && styles.tabIconActive]}>📞</Text>
+          <Text style={[styles.tabLabel, activeTab === 'calls' && styles.tabLabelActive]}>Calls</Text>
+          {activeTab === 'calls' && <View style={styles.activeTabIndicator} />}
         </TouchableOpacity>
 
-        <TouchableOpacity style={localStyles.navTabItem} onPress={() => setActiveTab('requests')} activeOpacity={0.75}>
-          <Text style={[localStyles.navTabIcon, activeTab === 'requests' && localStyles.navTabIconActive]}>📋</Text>
-          <Text style={[localStyles.navTabLabel, activeTab === 'requests' && localStyles.navTabLabelActive]}>Requests</Text>
-          {activeTab === 'requests' && <View style={localStyles.activeTabIndicator} />}
+        <TouchableOpacity style={styles.tabItem} onPress={() => setActiveTab('profile')} activeOpacity={0.75}>
+          <Text style={[styles.tabIcon, activeTab === 'profile' && styles.tabIconActive]}>👤</Text>
+          <Text style={[styles.tabLabel, activeTab === 'profile' && styles.tabLabelActive]}>Profile</Text>
+          {activeTab === 'profile' && <View style={styles.activeTabIndicator} />}
         </TouchableOpacity>
 
-        <TouchableOpacity style={localStyles.navTabItem} onPress={() => setActiveTab('profile')} activeOpacity={0.75}>
-          <Text style={[localStyles.navTabIcon, activeTab === 'profile' && localStyles.navTabIconActive]}>👤</Text>
-          <Text style={[localStyles.navTabLabel, activeTab === 'profile' && localStyles.navTabLabelActive]}>Profile</Text>
-          {activeTab === 'profile' && <View style={localStyles.activeTabIndicator} />}
+        <TouchableOpacity style={styles.tabItem} onPress={() => setActiveTab('settings')} activeOpacity={0.75}>
+          <Text style={[styles.tabIcon, activeTab === 'settings' && styles.tabIconActive]}>⚙️</Text>
+          <Text style={[styles.tabLabel, activeTab === 'settings' && styles.tabLabelActive]}>Settings</Text>
+          {activeTab === 'settings' && <View style={styles.activeTabIndicator} />}
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -421,7 +577,7 @@ const localStyles = StyleSheet.create({
   },
   homeFixedContent: {
     flex: 1,
-    paddingBottom: 125,
+    paddingBottom: 115,
     justifyContent: 'space-between',
   },
   topBar: {
@@ -911,53 +1067,238 @@ const localStyles = StyleSheet.create({
   },
   bottomNavbar: {
     position: 'absolute',
-    bottom: 70,
-    left: 24,
-    right: 24,
-    height: 48,
+    bottom: 60,
+    left: 18,
+    right: 18,
+    height: 52,
     backgroundColor: '#FFFFFF',
-    borderRadius: 18,
+    borderRadius: 26,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-around',
     paddingVertical: 3,
-    paddingHorizontal: 4,
+    paddingHorizontal: 8,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 6,
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 8,
     borderWidth: 1,
     borderColor: '#F1F5F9',
   },
   navTabItem: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 4,
+    paddingHorizontal: 8,
     position: 'relative',
   },
   navTabIcon: {
-    fontSize: 15,
-    color: '#94A3B8',
+    fontSize: 16,
+    color: '#475569',
   },
   navTabIconActive: {
     color: '#FF5436',
   },
   navTabLabel: {
-    fontSize: 9,
+    fontSize: 9.5,
     fontWeight: '600',
-    color: '#94A3B8',
-    marginTop: 0,
+    color: '#64748B',
+    marginTop: 1,
   },
   navTabLabelActive: {
     color: '#FF5436',
     fontWeight: '800',
   },
   activeTabIndicator: {
-    height: 2,
-    width: 12,
+    height: 2.5,
+    width: 16,
     backgroundColor: '#FF5436',
-    borderRadius: 1,
+    borderRadius: 1.5,
+    marginTop: 2,
+  },
+  /* Customer Profile Screen Styles */
+  profileHeaderCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#F1F5F9',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  profileAvatarWrapper: {
+    position: 'relative',
+    marginRight: 14,
+  },
+  profileAvatarImage: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    borderWidth: 2,
+    borderColor: '#FF5436',
+  },
+  avatarCameraBadge: {
+    position: 'absolute',
+    bottom: -2,
+    right: -2,
+    backgroundColor: '#FFFFFF',
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: '#FF5436',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  profileHeaderInfo: {
+    flex: 1,
+  },
+  profileHeaderName: {
+    fontSize: 17,
+    fontWeight: '800',
+    color: '#1E293B',
+    marginRight: 6,
+  },
+  verifiedBadgeCircle: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: '#22C55E',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  profileHeaderSub: {
+    fontSize: 12.5,
+    color: '#64748B',
+    fontWeight: '600',
+    marginTop: 2,
+  },
+  profileHeaderEmail: {
+    fontSize: 11.5,
+    color: '#94A3B8',
     marginTop: 1,
+  },
+  customerRoleTag: {
+    backgroundColor: '#FFEDD5',
+    alignSelf: 'flex-start',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 10,
+    marginTop: 6,
+    borderWidth: 1,
+    borderColor: '#FFD8A8',
+  },
+  customerRoleTagText: {
+    fontSize: 10.5,
+    fontWeight: '800',
+    color: '#C2410C',
+  },
+  profileStatsRow: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#F1F5F9',
+    elevation: 2,
+  },
+  profileStatBox: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  profileStatValue: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#1E293B',
+  },
+  profileStatLabel: {
+    fontSize: 10.5,
+    color: '#64748B',
+    fontWeight: '600',
+    marginTop: 2,
+  },
+  statDivider: {
+    width: 1,
+    height: 24,
+    backgroundColor: '#E2E8F0',
+  },
+  profileSectionCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 14,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#F1F5F9',
+    elevation: 2,
+  },
+  cardSectionHeaderTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#1E293B',
+    marginBottom: 10,
+  },
+  detailItemRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  detailIcon: {
+    fontSize: 18,
+    marginRight: 10,
+  },
+  detailTextGroup: {
+    flex: 1,
+  },
+  detailLabel: {
+    fontSize: 10.5,
+    color: '#94A3B8',
+    fontWeight: '600',
+  },
+  detailValue: {
+    fontSize: 12.5,
+    fontWeight: '700',
+    color: '#1E293B',
+    marginTop: 1,
+  },
+  actionRowItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F8FAFC',
+  },
+  actionIconCircle: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 10,
+  },
+  actionItemText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#334155',
+  },
+  actionChevron: {
+    fontSize: 13,
+    color: '#94A3B8',
+    fontWeight: '800',
   },
 });

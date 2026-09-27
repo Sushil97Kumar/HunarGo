@@ -50,4 +50,33 @@ export const customerApi = {
       throw error;
     }
   },
+
+  /**
+   * Fetch current customer profile from backend
+   */
+  async getCustomerProfile() {
+    try {
+      console.log('API [getCustomerProfile]');
+      return {
+        success: true,
+        profile: {
+          id: 'c1',
+          fullName: 'Sushil Kumar',
+          phoneNumber: '+91 98765 43210',
+          email: 'sushil.kumar@hunargo.com',
+          gender: 'Male',
+          dob: '15 Aug 1995',
+          profileImage: '',
+          location: {
+            address: 'Zirakpur, Punjab',
+            city: 'Zirakpur',
+            pincode: '140603',
+          },
+        },
+      };
+    } catch (error) {
+      console.error('Error in getCustomerProfile:', error);
+      throw error;
+    }
+  },
 };

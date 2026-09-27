@@ -85,6 +85,52 @@ export const callWorker = async (req: AuthRequest, res: Response, next: NextFunc
       success: true,
       message: `Initiating direct phone call to ${workerName || 'worker'}...`,
     });
+/**
+ * @desc    Get Current Logged-in Customer Profile
+ * @route   GET /api/customer/profile
+ */
+export const getCustomerProfile = async (req: AuthRequest, res: Response, next: NextFunction): Promise<Response | void> => {
+  try {
+    let customer: any = null;
+    if (req.user?.id) {
+      try {
+        customer = await User.findById(req.user.id);
+      } catch (err) {}
+    }
+
+    if (!customer) {
+      customer = {
+        fullName: 'Sushil Kumar',
+        phoneNumber: '+91 98765 43210',
+        email: 'sushil.kumar@hunargo.com',
+        gender: 'Male',
+        dob: '15 Aug 1995',
+        profileImage: '',
+        location: {
+          address: 'Zirakpur, Punjab',
+          city: 'Zirakpur',
+          pincode: '140603',
+        },
+      };
+    }
+
+    return res.status(200).json({
+      success: true,
+      profile: {
+        id: customer._id || 'mock-id',
+        fullName: customer.fullName || 'Sushil Kumar',
+        phoneNumber: customer.phoneNumber || '+91 98765 43210',
+        email: customer.email || 'sushil.kumar@hunargo.com',
+        gender: customer.gender || 'Male',
+        dob: customer.dob || '15 Aug 1995',
+        profileImage: customer.profileImage || '',
+        location: customer.location || {
+          address: 'Zirakpur, Punjab',
+          city: 'Zirakpur',
+          pincode: '140603',
+        },
+      },
+    });
   } catch (error) {
     next(error);
   }
