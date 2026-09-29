@@ -106,7 +106,7 @@ export const searchWorkers = async (req: AuthRequest, res: Response, next: NextF
         reviews: w.reviewCount ? w.reviewCount.toString() : '50',
         distance: w.location?.city ? `Near ${w.location.city}` : '1.5 km away',
         phone: w.phoneNumber || '+919876543210',
-        avatar: w.profileImage || '',
+        avatar: (w.profileImage && !w.profileImage.startsWith('file://') && !w.profileImage.startsWith('content://')) ? w.profileImage : '',
         experience: `${w.experienceYears || 5}+ Yrs`,
         hourlyRate: w.hourlyRate || 350,
       }));

@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HunarGo - Find Skilled Workers | Delhi NCR, Dehradun & Chandigarh</title>
+  <meta name="description" content="HunarGo connects you with verified skilled workers for home repairs, vehicle services, cleaning, beauty, and outdoor needs. Direct calls, zero commission.">
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="assets/images/hunargo_logo.png">
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="css/styles.css">
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+  <!-- Header Navigation Bar -->
+  <header class="header">
+    <div class="container header-nav">
+      <!-- Top Left Logo -->
+      <a href="#home" class="logo-wrapper">
+        <img src="assets/images/hunargo_logo.png" alt="HunarGo Official Logo" class="logo-img">
+      </a>
+
+      <!-- Navigation Links -->
+      <nav>
+        <ul class="nav-menu" id="navMenu">
+          <li><a href="#home" class="nav-link active">Home</a></li>
+          <li><a href="#services" class="nav-link">Services</a></li>
+          <li><a href="#for-customers" class="nav-link">For Customers</a></li>
+          <li><a href="#for-workers" class="nav-link">For Workers</a></li>
+          <li><a href="#about" class="nav-link">About Us</a></li>
+          <li><a href="#contact" class="nav-link">Contact</a></li>
+          <li><a href="#demo" class="nav-link">Demo</a></li>
+        </ul>
+      </nav>
+
+      <!-- Action Button -->
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <button class="nav-cta-btn" onclick="openDemoModal()">
+          <span>Get Started</span>
+          <i class="fa-solid fa-arrow-right"></i>
+        </button>
+        <button class="mobile-menu-toggle" id="menuToggle" aria-label="Toggle Navigation Menu">
+          <i class="fa-solid fa-bars"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <section class="hero-section" id="home">
+    <div class="container hero-grid">
+      
+      <!-- Hero Left Content -->
+      <div class="hero-content animate-on-scroll">
+        <div class="hero-badge">
+          <i class="fa-solid fa-bolt" style="color: #ea580c;"></i>
+          <span>Direct Worker Connect Platform</span>
+        </div>
+
+        <h1 class="hero-title">
+          Find Skilled Workers
+          <span class="hero-title-accent">Delhi NCR, Dehradun & Chandigarh</span>
+        </h1>
+        <p class="hero-subtitle">
+          HunarGo connects you with skilled and verified workers for all your home, vehicle, personal and outdoor needs. Find. Call. Get It Done.
+        </p>
+
+        <!-- Feature Pills: Find, Call, Get It Done -->
+        <div class="hero-features">
+          <div class="feature-pill">
+            <div class="feature-icon-box">
+              <i class="fa-solid fa-magnifying-glass"></i>
+            </div>
+            <div class="feature-name">Find</div>
+            <div class="feature-desc">Search nearby skilled workers</div>
+          </div>
+
+          <div class="feature-pill">
+            <div class="feature-icon-box">
+              <i class="fa-solid fa-phone"></i>
+            </div>
+            <div class="feature-name">Call</div>
+            <div class="feature-desc">Connect directly without hassle</div>
+          </div>
+
+          <div class="feature-pill">
+            <div class="feature-icon-box">
+              <i class="fa-solid fa-shield-halved"></i>
+            </div>
+            <div class="feature-name">Get It Done</div>
+            <div class="feature-desc">Trusted, Verified, Reliable</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Hero Right Content: EXACT HunarGo Mobile Screen Recreated -->
+      <div class="hero-visual animate-on-scroll">
+        
+        <!-- Smartphone Frame Mockup -->
+        <div class="phone-mockup-wrapper">
+          <div class="phone-screen">
+            
+            <!-- Phone Status Bar -->
+            <div class="phone-status-bar">
+              <span>2:57</span>
+              <div class="status-icons">
+                <i class="fa-solid fa-bluetooth-b"></i>
+                <i class="fa-solid fa-location-dot"></i>
+                <i class="fa-solid fa-wifi"></i>
+                <i class="fa-solid fa-signal"></i>
+                <span style="font-size: 9px; font-weight: 800;">87%</span>
+              </div>
+            </div>
+
+            <!-- App Top Header with Centered HunarGo Logo & Notification Bell -->
+            <div class="app-header">
+              <div style="width: 34px;"></div> <!-- Spacer -->
+              <img src="assets/images/hunargo_logo.png" alt="HunarGo Logo" class="app-logo">
+              <div class="bell-badge" title="Notifications">
+                <i class="fa-regular fa-bell"></i>
+              </div>
+            </div>
+
+            <!-- Scrollable App Content -->
+            <div class="phone-app-scroll">
+              
+              <!-- Search Bar & Filter Button -->
+              <div class="search-filter-row">
+                <div class="search-input-box">
+                  <i class="fa-solid fa-magnifying-glass"></i>
+                  <span>Search worker by name or service...</span>
+                </div>
+                <div class="filter-btn" title="Filter Services">
+                  <i class="fa-solid fa-sliders"></i>
+                </div>
+              </div>
+
+              <!-- Browse Services Section Header -->
+              <div class="app-section-header">
+                <span class="app-section-title">Browse Services</span>
+                <a href="#services" class="view-all-link">View All <i class="fa-solid fa-arrow-right"></i></a>
+              </div>
+
+              <!-- Browse Services Cards Grid -->
+              <div class="browse-services-grid">
+                <div class="browse-card card-home" onclick="openDemoModal()">
+                  <div class="browse-card-icon">🏠</div>
+                  <div class="browse-card-name">Home Repair</div>
+                  <div class="browse-arrow-btn"><i class="fa-solid fa-chevron-right"></i></div>
+                </div>
+
+                <div class="browse-card card-vehicle" onclick="openDemoModal()">
+                  <div class="browse-card-icon">🚗</div>
+                  <div class="browse-card-name">Vehicle Services</div>
+                  <div class="browse-arrow-btn"><i class="fa-solid fa-chevron-right"></i></div>
+                </div>
+
+                <div class="browse-card card-beauty" onclick="openDemoModal()">
+                  <div class="browse-card-icon">💇</div>
+                  <div class="browse-card-name">Personal & Beauty</div>
+                  <div class="browse-arrow-btn"><i class="fa-solid fa-chevron-right"></i></div>
+                </div>
+
+                <div class="browse-card card-cleaning" onclick="openDemoModal()">
+                  <div class="browse-card-icon">🧹</div>
+                  <div class="browse-card-name">Cleaning</div>
+                  <div class="browse-arrow-btn"><i class="fa-solid fa-chevron-right"></i></div>
+                </div>
+              </div>
+
+              <!-- Outdoor & Labour Card -->
+              <div class="browse-card card-outdoor" style="min-height: 50px; flex-direction: row; align-items: center;" onclick="openDemoModal()">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <span style="font-size: 18px;">🍃</span>
+                  <span class="browse-card-name">Outdoor & Labour</span>
+                </div>
+                <div class="browse-arrow-btn" style="position: static;"><i class="fa-solid fa-chevron-right"></i></div>
+              </div>
+
+              <!-- Need Help At Home Promo Banner Card -->
+              <div class="promo-help-card">
+                <div>
+                  <div class="promo-help-title">Need help at home?</div>
+                  <div class="promo-help-sub">Find skilled workers near you</div>
+                  <button class="find-worker-btn" onclick="openDemoModal()">
+                    <span>Find a Worker</span>
+                    <i class="fa-solid fa-arrow-right"></i>
+                  </button>
+                </div>
+                <div style="font-size: 32px; color: #f2542d;">
+                  <i class="fa-solid fa-users-gear"></i>
+                </div>
+              </div>
+
+              <!-- Workers Near You Section Header -->
+              <div class="app-section-header">
+                <span class="app-section-title">Workers Near You</span>
+                <a href="#demo" class="view-all-link">View All <i class="fa-solid fa-arrow-right"></i></a>
+              </div>
+
+              <!-- Live Worker Profile Card (Sushil Kumar Plumber) -->
+              <div class="app-worker-card">
+                <div class="app-worker-left">
+                  <div class="app-worker-avatar">
+                    <div style="width: 100%; height: 100%; background: #fed7aa; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 15px; color: #ea580c;">
+                      <i class="fa-solid fa-user-doctor"></i>
+                    </div>
+                    <div class="app-online-badge"></div>
+                  </div>
+                  <div>
+                    <div class="app-worker-name">Sushil Kumar</div>
+                    <div class="app-worker-skill">plumber</div>
+                    <div class="app-worker-meta">
+                      <i class="fa-solid fa-star" style="color:#eab308;"></i> <strong>4.8</strong> (38 reviews) • <i class="fa-solid fa-location-dot" style="color:#ef4444;"></i> Near Zirakpur
+                    </div>
+                  </div>
+                </div>
+
+                <button class="call-pill-btn" onclick="openDemoModal()">
+                  <i class="fa-solid fa-phone"></i>
+                  <span>Call</span>
+                </button>
+              </div>
+
+            </div>
+
+            <!-- Floating App Bottom Navigation Bar -->
+            <div class="app-bottom-navbar">
+              <div class="nav-tab-item active">
+                <i class="fa-solid fa-house"></i>
+                <span>Dashboard</span>
+              </div>
+              <div class="nav-tab-item" onclick="openDemoModal()">
+                <i class="fa-solid fa-phone"></i>
+                <span>Calls</span>
+              </div>
+              <div class="nav-tab-item" onclick="openDemoModal()">
+                <i class="fa-solid fa-user"></i>
+                <span>Profile</span>
+              </div>
+              <div class="nav-tab-item" onclick="openDemoModal()">
+                <i class="fa-solid fa-gear"></i>
+                <span>Settings</span>
+              </div>
+            </div>
+
+            <!-- Android System Nav Bar at Bottom -->
+            <div class="android-nav-bar">
+              <i class="fa-solid fa-bars"></i>
+              <i class="fa-regular fa-square"></i>
+              <i class="fa-solid fa-chevron-left"></i>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Floating Worker Orbits around Smartphone -->
+        <div class="worker-orbit-card worker-pos-1" title="Electrician / Plumber">
+          <div style="width:64px; height:64px; border-radius:50%; background:#fef3c7; display:flex; align-items:center; justify-content:center; color:#d97706; font-size:28px;">
+            <i class="fa-solid fa-helmet-safety"></i>
+          </div>
+        </div>
+
+        <div class="worker-orbit-card worker-pos-2" title="Salon & Beautician">
+          <div style="width:64px; height:64px; border-radius:50%; background:#fce7f3; display:flex; align-items:center; justify-content:center; color:#db2777; font-size:28px;">
+            <i class="fa-solid fa-scissors"></i>
+          </div>
+        </div>
+
+        <div class="worker-orbit-card worker-pos-3" title="Housekeeping & Maid">
+          <div style="width:64px; height:64px; border-radius:50%; background:#dcfce7; display:flex; align-items:center; justify-content:center; color:#16a34a; font-size:28px;">
+            <i class="fa-solid fa-spray-can-sparkles"></i>
+          </div>
+        </div>
+
+        <div class="worker-orbit-card worker-pos-4" title="Gardener & Lawn Care">
+          <div style="width:64px; height:64px; border-radius:50%; background:#e0f2fe; display:flex; align-items:center; justify-content:center; color:#0284c7; font-size:28px;">
+            <i class="fa-solid fa-seedling"></i>
+          </div>
+        </div>
+
+        <!-- Glowing Map Pin Indicator -->
+        <div class="map-pin-badge" title="Nearby Worker Location Pin">
+          <i class="fa-solid fa-location-dot"></i>
+        </div>
+
+      </div>
+
+    </div>
+  </section>
+
+  <!-- Diwali Launching Banner Section -->
+  <section class="launch-banner-section">
+    
+    <!-- Bursting Firecrackers & Sparkles Overlay -->
+    <div class="fireworks-overlay">
+      <div class="firework-particle fw-1"></div>
+      <div class="firework-particle fw-2"></div>
+      <div class="firework-particle fw-3"></div>
+      <div class="firework-particle fw-4"></div>
+      <div class="firework-particle fw-5"></div>
+    </div>
+
+    <div class="container launch-banner-wrapper animate-on-scroll">
+      
+      <div class="launch-title-group">
+        <span class="launch-tag">LAUNCHING THIS DIWALI IN:</span>
+      </div>
+
+      <div class="launch-cities">
+        <div class="city-item">
+          <div class="city-icon">
+            <i class="fa-solid fa-mountain-city"></i>
+          </div>
+          <span class="city-name">DEHRADUN</span>
+        </div>
+
+        <div class="city-item">
+          <div class="city-icon">
+            <i class="fa-solid fa-city"></i>
+          </div>
+          <span class="city-name">CHANDIGARH</span>
+        </div>
+
+        <div class="city-item">
+          <div class="city-icon">
+            <i class="fa-solid fa-building-user"></i>
+          </div>
+          <span class="city-name">DELHI NCR</span>
+        </div>
+      </div>
+
+      <!-- Festive Gold Center Badge -->
+      <div class="festive-center-badge">
+        <div class="festive-sub">GRAND DIWALI LAUNCH EVENT</div>
+        <div class="festive-main">BIG CELEBRATION IN CHANDIGARH THIS DIWALI</div>
+        <span class="diya-icon">🪔</span>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- Trust Highlights Bar -->
+  <div class="trust-bar">
+    <div class="container trust-flex animate-on-scroll">
+      <div class="trust-item">
+        <div class="trust-icon"><i class="fa-solid fa-circle-check"></i></div>
+        <div>
+          <div class="trust-title">Verified Workers</div>
+          <div class="trust-sub">Background checked</div>
+        </div>
+      </div>
+
+      <div class="trust-item">
+        <div class="trust-icon"><i class="fa-solid fa-star"></i></div>
+        <div>
+          <div class="trust-title">Transparent Rates</div>
+          <div class="trust-sub">No hidden charges</div>
+        </div>
+      </div>
+
+      <div class="trust-item">
+        <div class="trust-icon"><i class="fa-solid fa-clock"></i></div>
+        <div>
+          <div class="trust-title">Quick & Easy</div>
+          <div class="trust-sub">Book in 1 minute</div>
+        </div>
+      </div>
+
+      <div class="trust-item">
+        <div class="trust-icon"><i class="fa-solid fa-phone-slash"></i></div>
+        <div>
+          <div class="trust-title">Zero Commissions</div>
+          <div class="trust-sub">Pay workers directly</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Interactive Services Showcase -->
+  <section class="section" id="services">
+    <div class="container">
+      <div class="section-header animate-on-scroll">
+        <span class="section-badge">Popular Worker Categories</span>
+        <h2 class="section-title">Explore Skilled Experts Near You</h2>
+        <p class="section-subtitle">Choose from hundreds of verified local specialists ready to take your call.</p>
+      </div>
+
+      <div class="services-grid animate-on-scroll">
+        <div class="service-card">
+          <div class="service-icon-wrapper"><i class="fa-solid fa-plug"></i></div>
+          <h3 class="service-card-title">Electricians</h3>
+          <p class="service-card-desc">Wiring, appliance setup, short circuit repairs & emergency fixes.</p>
+          <div class="service-card-footer">
+            <span>2,400+ Verified</span>
+            <a href="#demo" onclick="openDemoModal()">Hire <i class="fa-solid fa-arrow-right"></i></a>
+          </div>
+        </div>
+
+        <div class="service-card">
+          <div class="service-icon-wrapper" style="background: linear-gradient(135deg, #3b82f6, #1d4ed8);"><i class="fa-solid fa-faucet-drip"></i></div>
+          <h3 class="service-card-title">Plumbers</h3>
+          <p class="service-card-desc">Pipe leakage, tap fitting, motor installation & bathroom repairs.</p>
+          <div class="service-card-footer">
+            <span>1,850+ Verified</span>
+            <a href="#demo" onclick="openDemoModal()">Hire <i class="fa-solid fa-arrow-right"></i></a>
+          </div>
+        </div>
+
+        <div class="service-card">
+          <div class="service-icon-wrapper" style="background: linear-gradient(135deg, #10b981, #047857);"><i class="fa-solid fa-broom"></i></div>
+          <h3 class="service-card-title">House Cleaning & Maid</h3>
+          <p class="service-card-desc">Deep house cleaning, daily domestic help & kitchen sanitation.</p>
+          <div class="service-card-footer">
+            <span>3,100+ Verified</span>
+            <a href="#demo" onclick="openDemoModal()">Hire <i class="fa-solid fa-arrow-right"></i></a>
+          </div>
+        </div>
+
+        <div class="service-card">
+          <div class="service-icon-wrapper" style="background: linear-gradient(135deg, #ec4899, #be185d);"><i class="fa-solid fa-scissors"></i></div>
+          <h3 class="service-card-title">Beauty & Salon</h3>
+          <p class="service-card-desc">At-home haircut, bridal makeup, skincare & parlor services.</p>
+          <div class="service-card-footer">
+            <span>1,420+ Verified</span>
+            <a href="#demo" onclick="openDemoModal()">Hire <i class="fa-solid fa-arrow-right"></i></a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- For Customers Section -->
+  <section class="section section-alt" id="for-customers">
+    <div class="container">
+      <div class="section-header animate-on-scroll">
+        <span class="section-badge">For Customers</span>
+        <h2 class="section-title">Hassle-Free Worker Hiring at Your Fingertips</h2>
+        <p class="section-subtitle">Connect directly with verified local experts for every domestic, maintenance and personal need.</p>
+      </div>
+
+      <div class="cards-grid animate-on-scroll">
+        <div class="card">
+          <div class="card-icon"><i class="fa-solid fa-phone-volume"></i></div>
+          <h3 class="card-title">Direct Phone Calls</h3>
+          <p class="card-desc">No middleman or middle agency delays. Call verified local workers directly to discuss your requirements and lock rates immediately.</p>
+        </div>
+
+        <div class="card">
+          <div class="card-icon"><i class="fa-solid fa-id-card"></i></div>
+          <h3 class="card-title">Verified Profiles</h3>
+          <p class="card-desc">Every worker profile comes with identity verification, background check status, skills badges, and authentic customer ratings.</p>
+        </div>
+
+        <div class="card">
+          <div class="card-icon"><i class="fa-solid fa-indian-rupee-sign"></i></div>
+          <h3 class="card-title">Zero Commission Fees</h3>
+          <p class="card-desc">Pay workers directly for their services without any inflated commission markup or hidden platform charges.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- For Workers Section -->
+  <section class="section" id="for-workers">
+    <div class="container">
+      <div class="section-header animate-on-scroll">
+        <span class="section-badge">For Workers</span>
+        <h2 class="section-title">Grow Your Income & Get Direct Work</h2>
+        <p class="section-subtitle">Join thousands of skilled workers in Delhi NCR, Dehradun & Chandigarh getting daily calls from local customers.</p>
+      </div>
+
+      <div class="cards-grid animate-on-scroll">
+        <div class="card">
+          <div class="card-icon"><i class="fa-solid fa-briefcase"></i></div>
+          <h3 class="card-title">Daily Direct Job Leads</h3>
+          <p class="card-desc">Receive direct phone calls from customers in your area who need your expertise today.</p>
+        </div>
+
+        <div class="card">
+          <div class="card-icon"><i class="fa-solid fa-wallet"></i></div>
+          <h3 class="card-title">Keep 100% Earnings</h3>
+          <p class="card-desc">No percentage cuts or commission deductions on your hard-earned work. Whatever you charge goes straight into your pocket.</p>
+        </div>
+
+        <div class="card">
+          <div class="card-icon"><i class="fa-solid fa-user-shield"></i></div>
+          <h3 class="card-title">Trusted Digital Badge</h3>
+          <p class="card-desc">Build your digital reputation, gather 5-star ratings, and become the top recommended expert in your city.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- About Us Section -->
+  <section class="section section-alt" id="about">
+    <div class="container">
+      <div class="about-grid animate-on-scroll">
+        <div class="about-img-box">
+          <img src="assets/images/workers.jpg" alt="Skilled Indian Workers Collage">
+        </div>
+        <div class="about-content">
+          <span class="section-badge">About HunarGo</span>
+          <h3>Empowering Local Skilled Artisans & Households</h3>
+          <p>
+            HunarGo was founded with a singular mission: bridging the gap between millions of skilled workers seeking dignifying employment and households looking for trustworthy, reliable service providers.
+          </p>
+          <p>
+            With our launch across Chandigarh, Dehradun, and Delhi NCR this festive Diwali season, we are establishing a transparent, tech-enabled ecosystem where quality skills get recognized and rewarded instantly.
+          </p>
+          <button class="nav-cta-btn" onclick="openDemoModal()" style="margin-top: 12px;">
+            <span>Request Platform Demo</span>
+            <i class="fa-solid fa-arrow-right"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Contact & Demo Request API Section -->
+  <section class="section" id="demo">
+    <div class="container">
+      <div class="section-header animate-on-scroll">
+        <span class="section-badge">Request a Demo</span>
+        <h2 class="section-title">Experience HunarGo in Action</h2>
+        <p class="section-subtitle">Fill out the form below to submit a live demo request to our team. Powered by HunarGo API.</p>
+      </div>
+
+      <div class="contact-grid animate-on-scroll" id="contact">
+        <!-- Contact Info Card -->
+        <div class="contact-info-card">
+          <div class="contact-info-header">
+            <h3>Get in Touch</h3>
+            <p>Have questions about HunarGo platform, worker onboarding, or regional launches?</p>
+          </div>
+
+          <ul class="contact-list">
+            <li class="contact-item">
+              <div class="contact-item-icon"><i class="fa-solid fa-envelope"></i></div>
+              <div>
+                <strong>Email Us</strong>
+                <div style="color: #94a3b8; font-size: 13px;">support@hunargo.com</div>
+              </div>
+            </li>
+
+            <li class="contact-item">
+              <div class="contact-item-icon"><i class="fa-solid fa-phone"></i></div>
+              <div>
+                <strong>Helpline Call</strong>
+                <div style="color: #94a3b8; font-size: 13px;">+91 98765 43210</div>
+              </div>
+            </li>
+
+            <li class="contact-item">
+              <div class="contact-item-icon"><i class="fa-solid fa-location-dot"></i></div>
+              <div>
+                <strong>Regional Hubs</strong>
+                <div style="color: #94a3b8; font-size: 13px;">Chandigarh • Dehradun • Delhi NCR</div>
+              </div>
+            </li>
+          </ul>
+
+          <div style="font-size: 13px; color: #64748b;">
+            © 2026 HunarGo Technologies. All rights reserved.
+          </div>
+        </div>
+
+        <!-- Live Demo Request Form (Submits POST to https://api.hunargo.com/api/request-demo) -->
+        <div class="demo-form-box">
+          <form id="demoRequestForm" onsubmit="handleDemoApiSubmit(event)">
+            
+            <div class="form-group">
+              <label class="form-label" for="demoName">Full Name *</label>
+              <input type="text" id="demoName" class="form-control" placeholder="e.g. Rahul Sharma" required>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label" for="demoPhone">Phone Number * (10 Digits)</label>
+                <input type="tel" id="demoPhone" class="form-control" placeholder="10-digit mobile number (e.g. 9876543210)" pattern="[0-9]{10}" maxlength="10" minlength="10" title="Please enter a valid 10-digit mobile number" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10)" required>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="demoEmail">Email Address</label>
+                <input type="email" id="demoEmail" class="form-control" placeholder="rahul@example.com">
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label" for="demoRole">I am a *</label>
+                <select id="demoRole" class="form-control" required>
+                  <option value="Customer">Customer (Looking for Workers)</option>
+                  <option value="Worker">Worker (Looking for Jobs)</option>
+                  <option value="Business/Partner">Business / Franchise Partner</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="demoCity">City *</label>
+                <select id="demoCity" class="form-control" required>
+                  <option value="Chandigarh">Chandigarh</option>
+                  <option value="Dehradun">Dehradun</option>
+                  <option value="Delhi NCR">Delhi NCR</option>
+                  <option value="Other">Other City</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="demoMessage">Message / Request Details</label>
+              <textarea id="demoMessage" class="form-control" placeholder="Tell us how we can help you..."></textarea>
+            </div>
+
+            <button type="submit" class="submit-btn" id="demoSubmitBtn">
+              <span>Submit Demo Request</span>
+              <div class="spinner" id="demoSpinner"></div>
+            </button>
+
+            <div id="demoAlertBox" style="margin-top: 14px; font-size: 14px; text-align: center;"></div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Demo Request Modal Popup -->
+  <div class="modal-overlay" id="demoModal">
+    <div class="modal-card">
+      <button class="modal-close" onclick="closeDemoModal()"><i class="fa-solid fa-xmark"></i></button>
+      <div style="text-align: center; margin-bottom: 24px;">
+        <span class="section-badge">HUNARGO DEMO</span>
+        <h3 style="font-family: var(--font-heading); font-size: 26px; font-weight: 900; color: var(--primary-navy);">Request Live Demo</h3>
+        <p style="font-size: 14px; color: var(--text-muted); margin-top: 4px;">Get exclusive early access & demo walkthrough of the HunarGo app.</p>
+      </div>
+
+      <form id="modalDemoForm" onsubmit="handleModalDemoSubmit(event)">
+        <div class="form-group">
+          <label class="form-label" for="modalName">Full Name *</label>
+          <input type="text" id="modalName" class="form-control" placeholder="Your Full Name" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="modalPhone">Phone Number * (10 Digits)</label>
+          <input type="tel" id="modalPhone" class="form-control" placeholder="10-digit mobile number" pattern="[0-9]{10}" maxlength="10" minlength="10" title="Please enter a valid 10-digit mobile number" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10)" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="modalCity">City *</label>
+          <select id="modalCity" class="form-control" required>
+            <option value="Chandigarh">Chandigarh</option>
+            <option value="Dehradun">Dehradun</option>
+            <option value="Delhi NCR">Delhi NCR</option>
+          </select>
+        </div>
+
+        <button type="submit" class="submit-btn" id="modalSubmitBtn">
+          <span>Submit Request</span>
+          <div class="spinner" id="modalSpinner"></div>
+        </button>
+
+        <div id="modalAlertBox" style="margin-top: 14px; font-size: 14px; text-align: center;"></div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <img src="assets/images/hunargo_logo.png" alt="HunarGo Logo" style="height: 52px; background: white; padding: 6px 12px; border-radius: 12px;">
+          <p>HunarGo connects households and businesses with skilled, verified local workers across Delhi NCR, Dehradun, and Chandigarh.</p>
+        </div>
+
+        <div class="footer-col">
+          <h4>Navigation</h4>
+          <ul class="footer-links">
+            <li><a href="#home">Home</a></li>
+            <li><a href="#services">Services</a></li>
+            <li><a href="#for-customers">For Customers</a></li>
+            <li><a href="#for-workers">For Workers</a></li>
+            <li><a href="#about">About Us</a></li>
+            <li><a href="#demo">Request Demo</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h4>Popular Services</h4>
+          <ul class="footer-links">
+            <li><a href="#services">Electricians</a></li>
+            <li><a href="#services">Plumbers</a></li>
+            <li><a href="#services">House Cleaning</a></li>
+            <li><a href="#services">Beauty & Salon</a></li>
+            <li><a href="#services">Car Mechanics</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h4>Launch Locations</h4>
+          <ul class="footer-links">
+            <li><a href="#home">Chandigarh</a></li>
+            <li><a href="#home">Dehradun</a></li>
+            <li><a href="#home">Delhi NCR</a></li>
+            <li><a href="#home">Gurugram</a></li>
+            <li><a href="#home">Noida</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <p>&copy; 2026 HunarGo Technologies Pvt Ltd. All rights reserved. Find. Call. Get It Done.</p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Main JavaScript Script -->
+  <script src="js/main.js"></script>
+</body>
+</html>

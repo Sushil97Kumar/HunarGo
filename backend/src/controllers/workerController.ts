@@ -85,7 +85,13 @@ export const updateProfile = async (req: AuthRequest, res: Response, next: NextF
     if (gender !== undefined) updateFields.gender = gender;
     if (dob !== undefined) updateFields.dob = dob;
     if (referralCode !== undefined) updateFields.referralCode = referralCode;
-    if (profileImageUri !== undefined) updateFields.profileImage = profileImageUri;
+    if (profileImageUri !== undefined && typeof profileImageUri === 'string' && profileImageUri.trim() !== '') {
+      if (!profileImageUri.startsWith('file://') && !profileImageUri.startsWith('content://')) {
+        updateFields.profileImage = profileImageUri;
+      } else {
+        console.warn('⚠️ [updateProfile] Received local device URI. Skipping profileImage DB overwrite:', profileImageUri);
+      }
+    }
 
     const user = await User.findOneAndUpdate(
       query,
@@ -371,6 +377,7 @@ export const uploadProfileImage = async (req: any, res: Response, next: NextFunc
   try {
     const userId = req.body.userId || req.user?.id || req.query.userId;
     const file = req.file;
+    console.log("888888888888888888888888888")
 
     if (!file) {
       return res.status(400).json({ success: false, message: 'No file uploaded' });
@@ -394,18 +401,36 @@ export const uploadProfileImage = async (req: any, res: Response, next: NextFunc
       return res.status(404).json({ success: false, message: 'User not found' });
     }
 
-    const bucketName = process.env.AWS_BUCKET_NAME || 'hunargo-bucket';
+    const bucketName = (process.env.AWS_BUCKET_NAME || 'hunargo-dev').trim();
+    const region = (process.env.AWS_REGION || 'ap-south-1').trim();
+    console.log(bucketName, 'bucketName=================');
 
     // 1. Delete old image from AWS S3
     if (user.profileImage) {
       try {
-        console.log(`🗑️ [S3 Delete] Deleting old image Key: ${user.profileImage}`);
-        await s3.send(
-          new DeleteObjectCommand({
-            Bucket: bucketName,
-            Key: user.profileImage,
-          })
-        );
+        let oldKey = user.profileImage;
+        if (oldKey.startsWith('http://') || oldKey.startsWith('https://')) {
+          try {
+            const parsedUrl = new URL(oldKey);
+            oldKey = parsedUrl.pathname.startsWith('/') ? parsedUrl.pathname.slice(1) : parsedUrl.pathname;
+          } catch (e) {
+            const parts = oldKey.split('.amazonaws.com/');
+            if (parts.length > 1) {
+              oldKey = parts[1];
+            }
+          }
+        }
+        oldKey = decodeURIComponent(oldKey);
+        if (oldKey && !oldKey.startsWith('file://') && !oldKey.startsWith('content://')) {
+          console.log(`🗑️ [S3 Delete] Deleting old image Key from S3: ${oldKey}`);
+          await s3.send(
+            new DeleteObjectCommand({
+              Bucket: bucketName,
+              Key: oldKey,
+            })
+          );
+          console.log(`✅ [S3 Deleted Successfully]: ${oldKey}`);
+        }
       } catch (err: any) {
         console.warn('⚠️ S3 DeleteObject Warning:', err.message);
       }
@@ -413,8 +438,11 @@ export const uploadProfileImage = async (req: any, res: Response, next: NextFunc
 
     // 2. Upload new image to AWS S3
     const targetUserId = user._id || userId || 'default';
-    const cleanFileName = file.originalname ? file.originalname.replace(/[^a-zA-Z0-9.-]/g, '_') : 'avatar.jpg';
-    const newKey = `workers/profile/${targetUserId}/${Date.now()}-${cleanFileName}`;
+    const rawExt = file.originalname ? file.originalname.split('.').pop() : 'png';
+    const ext = rawExt ? rawExt.replace(/[^a-zA-Z0-9]/g, '').toLowerCase() : 'png';
+    const cleanExt = ['jpg', 'jpeg', 'png', 'webp', 'gif'].includes(ext) ? ext : 'png';
+    const newKey = `workers/profile/${targetUserId}/${Date.now()}-profile.${cleanExt}`;
+    const imageUrl = `https://${bucketName}.s3.${region}.amazonaws.com/${newKey}`;
 
     try {
       console.log(`📤 [S3 Upload] Uploading to Key: ${newKey}`);
@@ -423,30 +451,28 @@ export const uploadProfileImage = async (req: any, res: Response, next: NextFunc
           Bucket: bucketName,
           Key: newKey,
           Body: file.buffer,
-          ContentType: file.mimetype || 'image/jpeg',
+          ContentType: file.mimetype || `image/${cleanExt}`,
         })
       );
     } catch (uploadErr: any) {
       console.error('⚠️ S3 PutObject Error:', uploadErr.message);
-      const fallbackUrl = `https://${bucketName}.s3.${process.env.AWS_REGION || 'ap-south-1'}.amazonaws.com/${newKey}`;
-      user.profileImage = newKey;
+      user.profileImage = imageUrl;
       await user.save();
 
       return res.status(200).json({
         success: true,
         message: 'Profile image updated (Fallback mode)',
         profileImage: user.profileImage,
-        imageUrl: fallbackUrl,
+        imageUrl,
         key: newKey,
       });
     }
 
-    // 3. Update DB
-    user.profileImage = newKey;
+    // 3. Update DB with full S3 URL
+    user.profileImage = imageUrl;
     await user.save();
 
-    const imageUrl = `https://${bucketName}.s3.${process.env.AWS_REGION || 'ap-south-1'}.amazonaws.com/${newKey}`;
-    console.log(`✅ [DB Updated]: profileImage set to ${newKey}`);
+    console.log(`✅ [DB Updated]: profileImage set to ${imageUrl}`);
 
     return res.status(200).json({
       success: true,

@@ -58,7 +58,7 @@ export const CompleteProfileScreen: React.FC<Props> = ({ onBack, onNext }) => {
           if (w.fullName) setFullName(w.fullName);
           if (w.email) setEmail(w.email);
           if (w.aadhaar) setAadhaar(w.aadhaar);
-          if (w.profileImage) {
+          if (w.profileImage && !w.profileImage.startsWith('file://') && !w.profileImage.startsWith('content://')) {
             const imgUri = w.profileImage.startsWith('http')
               ? w.profileImage
               : `https://${process.env.AWS_BUCKET_NAME || 'hunargo-bucket'}.s3.amazonaws.com/${w.profileImage}`;
@@ -172,22 +172,32 @@ export const CompleteProfileScreen: React.FC<Props> = ({ onBack, onNext }) => {
     }
     try {
       setIsSaving(true);
+      let s3ImageUri: string | undefined = undefined;
+
       if (hasProfileImage && profileImageUri) {
-        try {
-          console.log('📸 Uploading profile image to AWS S3 bucket...');
-          const uploadRes = await workerApi.uploadProfileImage(profileImageUri);
-          console.log('✅ AWS S3 Upload Response:', uploadRes);
-        } catch (s3Err) {
-          console.warn('⚠️ S3 upload error:', s3Err);
+        if (profileImageUri.startsWith('file://') || profileImageUri.startsWith('content://')) {
+          try {
+            console.log('📸 Uploading profile image to AWS S3 bucket...');
+            const uploadRes = await workerApi.uploadProfileImage(profileImageUri);
+            console.log('✅ AWS S3 Upload Response:', uploadRes);
+            if (uploadRes && uploadRes.success) {
+              s3ImageUri = uploadRes.imageUrl || uploadRes.profileImage || uploadRes.key;
+            }
+          } catch (s3Err) {
+            console.warn('⚠️ S3 upload error:', s3Err);
+          }
+        } else if (profileImageUri.startsWith('http') || !profileImageUri.startsWith('file://')) {
+          s3ImageUri = profileImageUri;
         }
       }
+
       await workerApi.updateProfile({
         fullName: fullName.trim(),
         email: email ? email.trim() : '',
         aadhaar: aadhaar ? aadhaar.trim() : '',
         gender: '',
         dob: '',
-        profileImageUri,
+        profileImageUri: s3ImageUri,
       });
       onNext();
     } catch (err) {

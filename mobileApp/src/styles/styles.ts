@@ -1503,43 +1503,43 @@ export const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginTop: 2,
-    marginBottom: 6
+    marginBottom: 4
   },
   workerAvatarWrapper: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     position: 'relative',
-    marginRight: 12,
-    borderWidth: 2,
+    marginRight: 10,
+    borderWidth: 1.5,
     borderColor: '#FFDCD4'
   },
   workerAvatarImg: {
     width: '100%',
     height: '100%',
-    borderRadius: 26
+    borderRadius: 20
   },
   cameraBadgeSmall: {
     position: 'absolute',
-    bottom: -2,
-    right: -2,
-    width: 22,
-    height: 22,
-    borderRadius: 11,
+    bottom: -1,
+    right: -1,
+    width: 14,
+    height: 14,
+    borderRadius: 7,
     backgroundColor: '#FF5436',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1.5,
+    borderWidth: 1.2,
     borderColor: '#FFFFFF'
   },
   cameraIconSmall: {
-    fontSize: 10
+    fontSize: 7
   },
   workerInfoContainer: {
     flex: 1
   },
   welcomeLabel: {
-    fontSize: 12,
+    fontSize: 10.5,
     color: '#64748B',
     fontWeight: '500'
   },
@@ -1548,56 +1548,56 @@ export const styles = StyleSheet.create({
     alignItems: 'center'
   },
   workerNameText: {
-    fontSize: 16,
-    fontWeight: '900',
+    fontSize: 14,
+    fontWeight: '800',
     color: '#0F172A'
   },
   waveEmoji: {
-    fontSize: 18
+    fontSize: 14
   },
   workerProfessionText: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '700',
     color: '#0F52BA',
-    marginVertical: 1
+    marginVertical: 0.5
   },
   verifiedBadgeRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginVertical: 1
+    marginVertical: 0.5
   },
   verifiedBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#DCFCE7',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 8,
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+    borderRadius: 6,
     borderWidth: 1,
     borderColor: '#86EFAC'
   },
   verifiedCheckIcon: {
-    fontSize: 10,
+    fontSize: 8.5,
     color: '#15803D',
     fontWeight: '900',
-    marginRight: 3
+    marginRight: 2
   },
   verifiedBadgeText: {
-    fontSize: 10,
+    fontSize: 8.5,
     fontWeight: '700',
     color: '#15803D'
   },
   locationRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 2
+    marginTop: 1
   },
   locationMarkerIcon: {
-    fontSize: 11,
-    marginRight: 3
+    fontSize: 9.5,
+    marginRight: 2
   },
   locationDetailText: {
-    fontSize: 11,
+    fontSize: 9.5,
     color: '#64748B',
     fontWeight: '600'
   },
@@ -2445,11 +2445,11 @@ export const styles = StyleSheet.create({
   },
   profileHeroCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    paddingVertical: 3,
-    paddingHorizontal: 6,
+    borderRadius: 6,
+    paddingVertical: 1.5,
+    paddingHorizontal: 3,
     alignItems: 'center',
-    marginBottom: 3,
+    marginBottom: 1.5,
     borderWidth: 1,
     borderColor: '#E2E8F0',
     shadowColor: '#000',
@@ -2457,73 +2457,73 @@ export const styles = StyleSheet.create({
       width: 0,
       height: 1
     },
-    shadowOpacity: 0.03,
-    shadowRadius: 4,
+    shadowOpacity: 0.02,
+    shadowRadius: 2,
     elevation: 1
   },
   heroAvatarContainer: {
     position: 'relative',
-    marginBottom: 2
+    marginBottom: 0.5
   },
   heroAvatarImg: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    borderWidth: 1.5,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 1,
     borderColor: '#FFDCD4'
   },
   heroCameraBadge: {
     position: 'absolute',
     bottom: -1,
     right: -1,
-    width: 14,
-    height: 14,
-    borderRadius: 7,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
     backgroundColor: '#FF5436',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1.2,
+    borderWidth: 1,
     borderColor: '#FFFFFF'
   },
   heroCameraIcon: {
-    fontSize: 7
+    fontSize: 4
   },
   heroWorkerName: {
-    fontSize: 12.5,
+    fontSize: 9.5,
     fontWeight: '800',
     color: '#0F172A'
   },
   heroWorkerSkill: {
-    fontSize: 9.5,
+    fontSize: 7.5,
     fontWeight: '700',
     color: '#0F52BA',
-    marginTop: 0.5,
-    marginBottom: 1.5
+    marginTop: 0,
+    marginBottom: 0.5
   },
   heroBadgesRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 2
+    marginBottom: 1
   },
   heroVerifiedPill: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#DCFCE7',
-    paddingHorizontal: 5,
-    paddingVertical: 0.5,
-    borderRadius: 8,
-    marginRight: 4,
+    paddingHorizontal: 2,
+    paddingVertical: 0,
+    borderRadius: 4,
+    marginRight: 2,
     borderWidth: 1,
     borderColor: '#86EFAC'
   },
   heroVerifiedCheck: {
-    fontSize: 8.5,
+    fontSize: 6.5,
     color: '#15803D',
     fontWeight: '900',
-    marginRight: 2
+    marginRight: 1
   },
   heroVerifiedText: {
-    fontSize: 8.5,
+    fontSize: 6.5,
     fontWeight: '800',
     color: '#15803D'
   },
@@ -2531,18 +2531,18 @@ export const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FEF9C3',
-    paddingHorizontal: 5,
-    paddingVertical: 0.5,
-    borderRadius: 8,
+    paddingHorizontal: 2,
+    paddingVertical: 0,
+    borderRadius: 4,
     borderWidth: 1,
     borderColor: '#FDE047'
   },
   heroRatingStar: {
-    fontSize: 8.5,
-    marginRight: 2
+    fontSize: 6.5,
+    marginRight: 1
   },
   heroRatingText: {
-    fontSize: 8.5,
+    fontSize: 6.5,
     fontWeight: '800',
     color: '#A16207'
   },
@@ -2552,9 +2552,9 @@ export const styles = StyleSheet.create({
     justifyContent: 'space-around',
     width: '100%',
     backgroundColor: '#F8FAFC',
-    borderRadius: 8,
-    paddingVertical: 3,
-    paddingHorizontal: 4,
+    borderRadius: 4,
+    paddingVertical: 1,
+    paddingHorizontal: 2,
     borderWidth: 1,
     borderColor: '#F1F5F9'
   },
@@ -2563,19 +2563,19 @@ export const styles = StyleSheet.create({
     flex: 1
   },
   heroStatVal: {
-    fontSize: 10,
+    fontSize: 8,
     fontWeight: '900',
     color: '#0F172A'
   },
   heroStatLbl: {
-    fontSize: 8,
+    fontSize: 6.5,
     fontWeight: '600',
     color: '#64748B',
-    marginTop: 0.5
+    marginTop: 0
   },
   heroStatDivider: {
     width: 1,
-    height: 14,
+    height: 8,
     backgroundColor: '#CBD5E1'
   },
   profileAvailabilityCard: {
@@ -2626,10 +2626,10 @@ export const styles = StyleSheet.create({
   },
   profileSectionCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 14,
-    paddingVertical: 7,
-    paddingHorizontal: 12,
-    marginBottom: 5,
+    borderRadius: 8,
+    paddingVertical: 2.5,
+    paddingHorizontal: 6,
+    marginBottom: 3,
     borderWidth: 1,
     borderColor: '#E2E8F0',
     shadowColor: '#000',
@@ -2637,36 +2637,36 @@ export const styles = StyleSheet.create({
       width: 0,
       height: 1
     },
-    shadowOpacity: 0.03,
-    shadowRadius: 3,
+    shadowOpacity: 0.02,
+    shadowRadius: 2,
     elevation: 1
   },
   sectionCardHeaderTitle: {
-    fontSize: 14.5,
-    fontWeight: '900',
+    fontSize: 10.5,
+    fontWeight: '800',
     color: '#0F172A',
-    marginBottom: 6
+    marginBottom: 2
   },
   detailItemRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 4
+    paddingVertical: 1
   },
   detailItemIcon: {
-    fontSize: 16,
-    marginRight: 10,
-    width: 20
+    fontSize: 11,
+    marginRight: 4,
+    width: 14
   },
   detailItemTextGroup: {
     flex: 1
   },
   detailItemLabel: {
-    fontSize: 10.5,
+    fontSize: 8.5,
     fontWeight: '600',
     color: '#64748B'
   },
   detailItemValue: {
-    fontSize: 12.5,
+    fontSize: 9.5,
     fontWeight: '800',
     color: '#0F172A',
     marginTop: 0
@@ -2674,16 +2674,16 @@ export const styles = StyleSheet.create({
   detailItemDivider: {
     height: 1,
     backgroundColor: '#F1F5F9',
-    marginVertical: 4
+    marginVertical: 1
   },
   verifiedBadgeMini: {
     backgroundColor: '#DCFCE7',
-    paddingHorizontal: 7,
-    paddingVertical: 2,
-    borderRadius: 7
+    paddingHorizontal: 4,
+    paddingVertical: 0.5,
+    borderRadius: 4
   },
   verifiedBadgeMiniText: {
-    fontSize: 10,
+    fontSize: 7.5,
     fontWeight: '800',
     color: '#15803D'
   },

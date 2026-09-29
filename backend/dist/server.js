@@ -50,10 +50,11 @@ app.use((req, res) => {
 // Global Error Middleware
 app.use(errorHandler_1.errorHandler);
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
+app.listen(Number(PORT), '0.0.0.0', () => {
     console.log(`\n=================================================`);
     console.log(`🚀 HunarGo TypeScript Server running on port ${PORT}`);
     console.log(`🌐 Base URL: http://localhost:${PORT}/api`);
     console.log(`📱 Android Emulator URL: http://10.0.2.2:${PORT}/api`);
+    console.log(`📶 Network/Mobile URL: http://192.168.1.103:${PORT}/api`);
     console.log(`=================================================\n`);
 });
