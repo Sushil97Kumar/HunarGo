@@ -35,6 +35,7 @@ export const WorkerLoginScreen: React.FC<Props> = ({
   const [errorMessage, setErrorMessage] = useState('');
   const [isLoginMode, setIsLoginMode] = useState(isLoginFlow);
   const toastAnim = useRef(new Animated.Value(350)).current;
+  const phoneInputRef = useRef<any>(null);
 
   useEffect(() => {
     setIsLoginMode(isLoginFlow);
@@ -167,7 +168,11 @@ export const WorkerLoginScreen: React.FC<Props> = ({
               </Text>
             </View>
 
-            <View style={styles.phoneInputCard}>
+            <TouchableOpacity
+              activeOpacity={1}
+              onPress={() => phoneInputRef.current?.focus()}
+              style={styles.phoneInputCard}
+            >
               <View style={styles.countrySelector}>
                 <Text style={styles.flagEmoji}>🇮🇳</Text>
                 <Text style={styles.dropdownArrow}>⌄</Text>
@@ -175,18 +180,21 @@ export const WorkerLoginScreen: React.FC<Props> = ({
               </View>
               <View style={styles.verticalDivider} />
               <TextInput
+                ref={phoneInputRef}
                 style={styles.phoneTextInput}
                 placeholder="Enter mobile number"
                 placeholderTextColor="#94A3B8"
-                keyboardType="phone-pad"
+                keyboardType={Platform.OS === 'ios' ? 'number-pad' : 'numeric'}
                 value={phoneNumber}
                 onChangeText={(text) => {
-                  setPhoneNumber(text.replace(/[^0-9]/g, ''));
+                  const cleaned = text.replace(/[^0-9]/g, '');
+                  setPhoneNumber(cleaned);
                   if (errorMessage) setErrorMessage('');
                 }}
                 maxLength={10}
+                editable={true}
               />
-            </View>
+            </TouchableOpacity>
 
 
 

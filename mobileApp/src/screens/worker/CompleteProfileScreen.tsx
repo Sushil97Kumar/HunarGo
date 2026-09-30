@@ -58,10 +58,10 @@ export const CompleteProfileScreen: React.FC<Props> = ({ onBack, onNext }) => {
           if (w.fullName) setFullName(w.fullName);
           if (w.email) setEmail(w.email);
           if (w.aadhaar) setAadhaar(w.aadhaar);
-          if (w.profileImage && !w.profileImage.startsWith('file://') && !w.profileImage.startsWith('content://')) {
-            const imgUri = w.profileImage.startsWith('http')
+          if (w.profileImage && typeof w.profileImage === 'string' && w.profileImage.trim() !== '') {
+            const imgUri = (w.profileImage.startsWith('http') || w.profileImage.startsWith('data:') || w.profileImage.startsWith('file:') || w.profileImage.startsWith('content:'))
               ? w.profileImage
-              : `https://${process.env.AWS_BUCKET_NAME || 'hunargo-bucket'}.s3.amazonaws.com/${w.profileImage}`;
+              : `https://${process.env.AWS_BUCKET_NAME || 'hunargo-dev'}.s3.${process.env.AWS_REGION || 'ap-south-1'}.amazonaws.com/${w.profileImage.replace(/^\//, '')}`;
             setProfileImageUri(imgUri);
             setHasProfileImage(true);
           }
@@ -172,7 +172,8 @@ export const CompleteProfileScreen: React.FC<Props> = ({ onBack, onNext }) => {
     }
     try {
       setIsSaving(true);
-      let s3ImageUri: string | undefined = undefined;
+
+      let uploadedUrl: string | undefined = undefined;
 
       if (hasProfileImage && profileImageUri) {
         if (profileImageUri.startsWith('file://') || profileImageUri.startsWith('content://')) {
@@ -180,14 +181,15 @@ export const CompleteProfileScreen: React.FC<Props> = ({ onBack, onNext }) => {
             console.log('📸 Uploading profile image to AWS S3 bucket...');
             const uploadRes = await workerApi.uploadProfileImage(profileImageUri);
             console.log('✅ AWS S3 Upload Response:', uploadRes);
-            if (uploadRes && uploadRes.success) {
-              s3ImageUri = uploadRes.imageUrl || uploadRes.profileImage || uploadRes.key;
+            if (uploadRes && uploadRes.success && (uploadRes.imageUrl || uploadRes.profileImage)) {
+              uploadedUrl = uploadRes.imageUrl || uploadRes.profileImage;
+              setProfileImageUri(uploadedUrl);
             }
           } catch (s3Err) {
             console.warn('⚠️ S3 upload error:', s3Err);
           }
-        } else if (profileImageUri.startsWith('http') || !profileImageUri.startsWith('file://')) {
-          s3ImageUri = profileImageUri;
+        } else if (profileImageUri.startsWith('http')) {
+          uploadedUrl = profileImageUri;
         }
       }
 
@@ -197,7 +199,7 @@ export const CompleteProfileScreen: React.FC<Props> = ({ onBack, onNext }) => {
         aadhaar: aadhaar ? aadhaar.trim() : '',
         gender: '',
         dob: '',
-        profileImageUri: s3ImageUri,
+        profileImageUri: uploadedUrl,
       });
       onNext();
     } catch (err) {

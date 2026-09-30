@@ -18,7 +18,7 @@ const router = Router();
 
 router.get('/profile', authMiddleware, getProfile);
 router.post('/profile', authMiddleware, updateProfile);
-router.post('/upload-profile-image', upload.single('profileImage'), uploadProfileImage);
+router.post('/upload-profile-image', authMiddleware, upload.single('profileImage'), uploadProfileImage);
 router.get('/location', authMiddleware, getLocation);
 router.post('/location', authMiddleware, updateLocation);
 router.get('/professions', authMiddleware, getProfessions);

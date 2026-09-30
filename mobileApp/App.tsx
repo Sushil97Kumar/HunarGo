@@ -412,6 +412,8 @@ function WorkerLoginScreen({
   var [isLoginMode, setIsLoginMode] = useState(isLoginFlow);
   var toastAnim = useRef(new Animated.Value(350)).current;
 
+  var phoneInputRef = useRef(null);
+
   useEffect(() => {
     setIsLoginMode(isLoginFlow);
   }, [isLoginFlow]);
@@ -540,7 +542,11 @@ function WorkerLoginScreen({
               </Text>
             </View>
 
-            <View style={styles.phoneInputCard}>
+            <TouchableOpacity
+              activeOpacity={1}
+              onPress={() => phoneInputRef.current?.focus()}
+              style={styles.phoneInputCard}
+            >
               <View style={styles.countrySelector}>
                 <Text style={styles.flagEmoji}>🇮🇳</Text>
                 <Text style={styles.dropdownArrow}>⌄</Text>
@@ -548,18 +554,21 @@ function WorkerLoginScreen({
               </View>
               <View style={styles.verticalDivider} />
               <TextInput
+                ref={phoneInputRef}
                 style={styles.phoneTextInput}
                 placeholder="Enter mobile number"
                 placeholderTextColor="#94A3B8"
-                keyboardType="phone-pad"
+                keyboardType={Platform.OS === 'ios' ? 'number-pad' : 'numeric'}
                 value={phoneNumber}
                 onChangeText={(text) => {
-                  setPhoneNumber(text.replace(/[^0-9]/g, ''));
+                  const cleaned = text.replace(/[^0-9]/g, '');
+                  setPhoneNumber(cleaned);
                   if (errorMessage) setErrorMessage('');
                 }}
                 maxLength={10}
+                editable={true}
               />
-            </View>
+            </TouchableOpacity>
 
             <TouchableOpacity
               style={[styles.nextButton, (!isPhoneValid || isLoading) && styles.disabledButton]}
@@ -2992,8 +3001,10 @@ function WorkerDashboardScreen({
               })]
             })]
           })]
-        }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
-          style: [styles.profileTabScrollContent, { flex: 1, paddingBottom: 0 }],
+        }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.ScrollView, {
+          style: { flex: 1 },
+          contentContainerStyle: { paddingBottom: 110 },
+          showsVerticalScrollIndicator: false,
           children: [/*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
             style: styles.profileSectionCard,
             children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
@@ -3305,23 +3316,6 @@ function WorkerDashboardScreen({
                 style: styles.saveSettingsBtnText,
                 children: "Save Profile & Account Changes"
               })
-            }),
-
-                /* Logout Button */
-                /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.TouchableOpacity, {
-              style: [styles.profileLogoutBtn, { paddingVertical: 9 }],
-              onPress: onBackToOnboarding,
-              activeOpacity: 0.8,
-              children: [
-                    /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-                style: [styles.profileLogoutBtnIcon, { fontSize: 14 }],
-                children: "🚪"
-              }),
-                    /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-                style: styles.profileLogoutBtnText,
-                children: "Logout Account"
-              })
-              ]
             })
             ]
           })
@@ -3784,63 +3778,70 @@ function WorkerDashboardScreen({
               /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
               style: styles.profileSectionCard,
               children: [
-                  /* 1. Worker Active Status Toggle */
+                  /* 1. Work Experience Input */
+                  /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                style: [styles.settingsInputSubLabel, { marginTop: 4 }],
+                children: "Work Experience (Years):"
+              }),
                   /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
-                style: styles.toggleRowBetween,
+                style: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
                 children: [
                       /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
+                  style: [
+                    styles.settingsTextInputField,
+                    {
+                      flex: 1,
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      marginBottom: 0,
+                      paddingHorizontal: 12
+                    }
+                  ],
                   children: [
                           /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-                    style: styles.toggleRowTitle,
-                    children: "Worker Active Status"
+                    style: { fontSize: 16, marginRight: 6 },
+                    children: "💼"
+                  }),
+                          /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TextInput, {
+                    style: { flex: 1, fontSize: 15, fontWeight: '800', color: '#0F172A', padding: 0 },
+                    value: String(experienceYears),
+                    onChangeText: val => setExperienceYears(Number(val) || 0),
+                    keyboardType: "numeric",
+                    placeholder: "e.g. 5"
                   }),
                           /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-                    style: styles.toggleRowSubtitle,
-                    children: "Toggle Online / Offline for incoming calls"
+                    style: { fontSize: 13, fontWeight: '700', color: '#64748B' },
+                    children: "Years Exp."
                   })
                   ]
-                }),
-                      /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
-                  style: [styles.toggleSwitchTrack, isAvailable && styles.toggleSwitchTrackActive],
-                  onPress: handleToggleAvailability,
-                  children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.View, {
-                    style: [styles.toggleSwitchThumb, isAvailable && styles.toggleSwitchThumbActive]
-                  })
                 })
                 ]
               }),
 
-                  /* Active Status Badge Pill */
-                  /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
-                style: [
-                  styles.verifiedBadgeSettingsRow,
-                  {
-                    backgroundColor: isAvailable ? '#DCFCE7' : '#F1F5F9',
-                    marginTop: 8,
-                    marginBottom: 14,
-                    paddingHorizontal: 10,
-                    paddingVertical: 6
-                  }
-                ],
-                children: [
-                      /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-                  style: { fontSize: 12, marginRight: 4 },
-                  children: isAvailable ? "🟢" : "🔴"
-                }),
-                      /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-                  style: {
-                    fontSize: 12,
-                    fontWeight: '800',
-                    color: isAvailable ? '#15803D' : '#64748B'
-                  },
-                  children: isAvailable ? "ONLINE - Ready to accept job calls" : "OFFLINE - Not visible for calls"
+                  /* Quick Select Experience Pills */
+                  /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                style: [styles.settingsInputSubLabel, { marginTop: 4 }],
+                children: "Quick Select Experience:"
+              }),
+                  /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.View, {
+                style: styles.quickPillsGrid,
+                children: ['1', '2', '3', '5', '7', '10', '15'].map(expVal => {
+                  var isExpSelected = String(experienceYears) === expVal;
+                  return /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
+                    style: [styles.quickChoicePill, isExpSelected && styles.quickChoicePillActive],
+                    onPress: () => setExperienceYears(Number(expVal)),
+                    activeOpacity: 0.7,
+                    children: /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.Text, {
+                      style: [styles.quickChoicePillText, isExpSelected && styles.quickChoicePillTextActive],
+                      children: [expVal, " Years"]
+                    })
+                  }, expVal);
                 })
-                ]
               }),
 
                   /* Divider */
                   /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.View, {
-                style: styles.detailItemDivider
+                style: [styles.detailItemDivider, { marginVertical: 12 }]
               }),
 
                   /* 2. Set Rate Per Hour (₹/hr) */
@@ -3909,11 +3910,22 @@ function WorkerDashboardScreen({
               /* Save Button */
               /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
               style: [styles.saveSettingsBtn, { marginBottom: 30 }],
-              onPress: () => setSettingsSubScreen(null),
+              onPress: async () => {
+                try {
+                  await workerApi.updateProfile({
+                    fullName: workerName,
+                    experienceYears,
+                    hourlyRate: Number(hourlyRate) || 0
+                  });
+                  setSettingsSubScreen(null);
+                } catch (err) {
+                  setSettingsSubScreen(null);
+                }
+              },
               activeOpacity: 0.85,
               children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
                 style: styles.saveSettingsBtnText,
-                children: "Save Active Status & Rate"
+                children: "Save Experience & Rate"
               })
             })
             ]
@@ -4310,91 +4322,6 @@ function WorkerDashboardScreen({
               ]
             }),
 
-              /* Top Worker Profile Card (Fixed) */
-              /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.TouchableOpacity, {
-              style: [styles.workerProfileSettingsTopCard, { marginBottom: 10 }],
-              onPress: () => setSettingsSubScreen('profileAccount'),
-              activeOpacity: 0.85,
-              children: [
-                  /* Avatar with camera icon badge */
-                  /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
-                style: styles.workerAvatarSettingsWrapper,
-                children: [
-                      /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Image, {
-                  source: require("./src/assets/default_avatar.png"),
-                  style: styles.workerAvatarSettingsImg
-                }),
-                      /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.View, {
-                  style: styles.cameraBadgeSettings,
-                  children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-                    style: { fontSize: 11 },
-                    children: "📷"
-                  })
-                })
-                ]
-              }),
-                  /* Worker Info Column */
-                  /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
-                style: { flex: 1, marginLeft: 14 },
-                children: [
-                      /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-                  style: { fontSize: 12, color: '#64748B', fontWeight: '500' },
-                  children: "Welcome,"
-                }),
-                      /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
-                  style: { flexDirection: 'row', alignItems: 'center' },
-                  children: [
-                          /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-                    style: { fontSize: 17, fontWeight: '800', color: '#0F172A' },
-                    children: workerName
-                  }),
-                          /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-                    style: { fontSize: 16, marginLeft: 4 },
-                    children: "👋"
-                  })
-                  ]
-                }),
-                      /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-                  style: { fontSize: 13, color: '#475569', fontWeight: '600', marginTop: 1 },
-                  children: workerProfession
-                }),
-                      /* Verified Badge */
-                      /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
-                  style: styles.verifiedBadgeSettingsRow,
-                  children: [
-                          /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-                    style: { fontSize: 11, marginRight: 3 },
-                    children: "🛡️"
-                  }),
-                          /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-                    style: { fontSize: 11, fontWeight: '700', color: '#16A34A' },
-                    children: "Verified Worker"
-                  })
-                  ]
-                }),
-                      /* Location line */
-                      /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
-                  style: { flexDirection: 'row', alignItems: 'center', marginTop: 3 },
-                  children: [
-                          /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-                    style: { fontSize: 12, color: '#64748B', marginRight: 3 },
-                    children: "📍"
-                  }),
-                          /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.Text, {
-                    style: { fontSize: 12, color: '#64748B' },
-                    children: [workerLocation, " • ", serviceRadius, " km away"]
-                  })
-                  ]
-                })
-                ]
-              }),
-                  /* Right Chevron */
-                  /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-                style: { fontSize: 18, color: '#94A3B8', fontWeight: 'bold' },
-                children: "❯"
-              })
-              ]
-            }),
 
               /* Scrollable List for 10 Settings Option Cards */
               /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.ScrollView, {
@@ -4668,43 +4595,6 @@ function WorkerDashboardScreen({
                 ]
               }),
 
-                  /* 8. Notification Alerts */
-                  /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
-                style: styles.settingsOptionCard,
-                children: [
-                      /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.TouchableOpacity, {
-                  style: styles.settingsCardHeaderRow,
-                  onPress: () => setSettingsSubScreen('notifications'),
-                  activeOpacity: 0.75,
-                  children: [
-                          /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.View, {
-                    style: [styles.settingsIconCircle, { backgroundColor: '#FEE2E2' }],
-                    children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-                      style: { fontSize: 20 },
-                      children: "🔔"
-                    })
-                  }),
-                          /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
-                    style: { flex: 1 },
-                    children: [
-                              /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-                      style: styles.settingsCardTitleText,
-                      children: "Notification Alerts"
-                    }),
-                              /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-                      style: styles.settingsCardSubText,
-                      children: "Manage notification preferences"
-                    })
-                    ]
-                  }),
-                          /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-                    style: styles.settingsChevronText,
-                    children: "❯"
-                  })
-                  ]
-                })
-                ]
-              }),
 
                   /* 9. Privacy & Security */
                   /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
@@ -7643,85 +7533,85 @@ var styles = _reactNative.StyleSheet.create({
   },
   profileHeroCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 14,
-    paddingVertical: 4,
+    borderRadius: 10,
+    paddingVertical: 5,
     paddingHorizontal: 8,
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 6,
     borderWidth: 1,
     borderColor: '#E2E8F0',
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
-      height: 2
+      height: 1
     },
-    shadowOpacity: 0.04,
-    shadowRadius: 6,
-    elevation: 2
+    shadowOpacity: 0.03,
+    shadowRadius: 3,
+    elevation: 1
   },
   heroAvatarContainer: {
     position: 'relative',
-    marginBottom: 6
+    marginBottom: 2
   },
   heroAvatarImg: {
-    width: 44,
-    height: 44,
-    borderRadius: 32,
-    borderWidth: 2,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    borderWidth: 1.5,
     borderColor: '#FFDCD4'
   },
   heroCameraBadge: {
     position: 'absolute',
-    bottom: 0,
-    right: 0,
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    bottom: -1,
+    right: -1,
+    width: 14,
+    height: 14,
+    borderRadius: 7,
     backgroundColor: '#FF5436',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1.5,
+    borderWidth: 1,
     borderColor: '#FFFFFF'
   },
   heroCameraIcon: {
-    fontSize: 11
+    fontSize: 7
   },
   heroWorkerName: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '800',
     color: '#0F172A'
   },
   heroWorkerSkill: {
-    fontSize: 10.5,
+    fontSize: 9.5,
     fontWeight: '700',
     color: '#0F52BA',
-    marginTop: 1,
-    marginBottom: 6
+    marginTop: 0,
+    marginBottom: 3
   },
   heroBadgesRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8
+    marginBottom: 4
   },
   heroVerifiedPill: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#DCFCE7',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 10,
-    marginRight: 6,
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+    borderRadius: 6,
+    marginRight: 4,
     borderWidth: 1,
     borderColor: '#86EFAC'
   },
   heroVerifiedCheck: {
-    fontSize: 10,
+    fontSize: 8,
     color: '#15803D',
     fontWeight: '900',
-    marginRight: 3
+    marginRight: 2
   },
   heroVerifiedText: {
-    fontSize: 11,
+    fontSize: 8.5,
     fontWeight: '800',
     color: '#15803D'
   },
@@ -7729,18 +7619,18 @@ var styles = _reactNative.StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FEF9C3',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 10,
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+    borderRadius: 6,
     borderWidth: 1,
     borderColor: '#FDE047'
   },
   heroRatingStar: {
-    fontSize: 10,
-    marginRight: 3
+    fontSize: 8,
+    marginRight: 2
   },
   heroRatingText: {
-    fontSize: 11,
+    fontSize: 8.5,
     fontWeight: '800',
     color: '#A16207'
   },
@@ -7750,9 +7640,9 @@ var styles = _reactNative.StyleSheet.create({
     justifyContent: 'space-around',
     width: '100%',
     backgroundColor: '#F8FAFC',
-    borderRadius: 12,
-    paddingVertical: 6,
-    paddingHorizontal: 6,
+    borderRadius: 8,
+    paddingVertical: 3,
+    paddingHorizontal: 4,
     borderWidth: 1,
     borderColor: '#F1F5F9'
   },
@@ -7761,19 +7651,19 @@ var styles = _reactNative.StyleSheet.create({
     flex: 1
   },
   heroStatVal: {
-    fontSize: 14,
+    fontSize: 11,
     fontWeight: '900',
     color: '#0F172A'
   },
   heroStatLbl: {
-    fontSize: 10,
+    fontSize: 8,
     fontWeight: '600',
     color: '#64748B',
-    marginTop: 1
+    marginTop: 0
   },
   heroStatDivider: {
     width: 1,
-    height: 18,
+    height: 12,
     backgroundColor: '#CBD5E1'
   },
   profileAvailabilityCard: {
@@ -7824,9 +7714,9 @@ var styles = _reactNative.StyleSheet.create({
   },
   profileSectionCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 14,
-    paddingVertical: 7,
-    paddingHorizontal: 12,
+    borderRadius: 10,
+    paddingVertical: 5,
+    paddingHorizontal: 10,
     marginBottom: 5,
     borderWidth: 1,
     borderColor: '#E2E8F0',
@@ -7840,31 +7730,31 @@ var styles = _reactNative.StyleSheet.create({
     elevation: 1
   },
   sectionCardHeaderTitle: {
-    fontSize: 14.5,
+    fontSize: 12,
     fontWeight: '900',
     color: '#0F172A',
-    marginBottom: 6
+    marginBottom: 3
   },
   detailItemRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 4
+    paddingVertical: 2
   },
   detailItemIcon: {
-    fontSize: 16,
-    marginRight: 10,
-    width: 20
+    fontSize: 13,
+    marginRight: 6,
+    width: 16
   },
   detailItemTextGroup: {
     flex: 1
   },
   detailItemLabel: {
-    fontSize: 10.5,
+    fontSize: 9.5,
     fontWeight: '600',
     color: '#64748B'
   },
   detailItemValue: {
-    fontSize: 12.5,
+    fontSize: 11,
     fontWeight: '800',
     color: '#0F172A',
     marginTop: 0

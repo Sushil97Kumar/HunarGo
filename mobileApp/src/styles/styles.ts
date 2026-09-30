@@ -2445,11 +2445,11 @@ export const styles = StyleSheet.create({
   },
   profileHeroCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 6,
-    paddingVertical: 1.5,
-    paddingHorizontal: 3,
+    borderRadius: 8,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
     alignItems: 'center',
-    marginBottom: 1.5,
+    marginBottom: 6,
     borderWidth: 1,
     borderColor: '#E2E8F0',
     shadowColor: '#000',
@@ -2463,22 +2463,22 @@ export const styles = StyleSheet.create({
   },
   heroAvatarContainer: {
     position: 'relative',
-    marginBottom: 0.5
+    marginBottom: 3
   },
   heroAvatarImg: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    borderWidth: 1,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    borderWidth: 1.5,
     borderColor: '#FFDCD4'
   },
   heroCameraBadge: {
     position: 'absolute',
     bottom: -1,
     right: -1,
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    width: 12,
+    height: 12,
+    borderRadius: 6,
     backgroundColor: '#FF5436',
     alignItems: 'center',
     justifyContent: 'center',
@@ -2486,44 +2486,44 @@ export const styles = StyleSheet.create({
     borderColor: '#FFFFFF'
   },
   heroCameraIcon: {
-    fontSize: 4
+    fontSize: 6
   },
   heroWorkerName: {
-    fontSize: 9.5,
+    fontSize: 12,
     fontWeight: '800',
     color: '#0F172A'
   },
   heroWorkerSkill: {
-    fontSize: 7.5,
+    fontSize: 9.5,
     fontWeight: '700',
     color: '#0F52BA',
-    marginTop: 0,
-    marginBottom: 0.5
+    marginTop: 1,
+    marginBottom: 3
   },
   heroBadgesRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 1
+    marginBottom: 4
   },
   heroVerifiedPill: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#DCFCE7',
-    paddingHorizontal: 2,
-    paddingVertical: 0,
+    paddingHorizontal: 4,
+    paddingVertical: 1,
     borderRadius: 4,
-    marginRight: 2,
+    marginRight: 4,
     borderWidth: 1,
     borderColor: '#86EFAC'
   },
   heroVerifiedCheck: {
-    fontSize: 6.5,
+    fontSize: 8,
     color: '#15803D',
     fontWeight: '900',
-    marginRight: 1
+    marginRight: 2
   },
   heroVerifiedText: {
-    fontSize: 6.5,
+    fontSize: 8,
     fontWeight: '800',
     color: '#15803D'
   },
@@ -2531,18 +2531,18 @@ export const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FEF9C3',
-    paddingHorizontal: 2,
-    paddingVertical: 0,
+    paddingHorizontal: 4,
+    paddingVertical: 1,
     borderRadius: 4,
     borderWidth: 1,
     borderColor: '#FDE047'
   },
   heroRatingStar: {
-    fontSize: 6.5,
-    marginRight: 1
+    fontSize: 8,
+    marginRight: 2
   },
   heroRatingText: {
-    fontSize: 6.5,
+    fontSize: 8,
     fontWeight: '800',
     color: '#A16207'
   },
@@ -2552,9 +2552,9 @@ export const styles = StyleSheet.create({
     justifyContent: 'space-around',
     width: '100%',
     backgroundColor: '#F8FAFC',
-    borderRadius: 4,
-    paddingVertical: 1,
-    paddingHorizontal: 2,
+    borderRadius: 6,
+    paddingVertical: 4,
+    paddingHorizontal: 4,
     borderWidth: 1,
     borderColor: '#F1F5F9'
   },
@@ -2563,19 +2563,19 @@ export const styles = StyleSheet.create({
     flex: 1
   },
   heroStatVal: {
-    fontSize: 8,
+    fontSize: 10,
     fontWeight: '900',
     color: '#0F172A'
   },
   heroStatLbl: {
-    fontSize: 6.5,
+    fontSize: 8,
     fontWeight: '600',
     color: '#64748B',
     marginTop: 0
   },
   heroStatDivider: {
     width: 1,
-    height: 8,
+    height: 12,
     backgroundColor: '#CBD5E1'
   },
   profileAvailabilityCard: {
@@ -2627,9 +2627,9 @@ export const styles = StyleSheet.create({
   profileSectionCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: 8,
-    paddingVertical: 2.5,
-    paddingHorizontal: 6,
-    marginBottom: 3,
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    marginBottom: 5,
     borderWidth: 1,
     borderColor: '#E2E8F0',
     shadowColor: '#000',
@@ -2642,31 +2642,31 @@ export const styles = StyleSheet.create({
     elevation: 1
   },
   sectionCardHeaderTitle: {
-    fontSize: 10.5,
+    fontSize: 11,
     fontWeight: '800',
     color: '#0F172A',
-    marginBottom: 2
+    marginBottom: 3
   },
   detailItemRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 1
+    paddingVertical: 2
   },
   detailItemIcon: {
-    fontSize: 11,
-    marginRight: 4,
-    width: 14
+    fontSize: 12,
+    marginRight: 6,
+    width: 16
   },
   detailItemTextGroup: {
     flex: 1
   },
   detailItemLabel: {
-    fontSize: 8.5,
+    fontSize: 9,
     fontWeight: '600',
     color: '#64748B'
   },
   detailItemValue: {
-    fontSize: 9.5,
+    fontSize: 10.5,
     fontWeight: '800',
     color: '#0F172A',
     marginTop: 0
@@ -2674,16 +2674,16 @@ export const styles = StyleSheet.create({
   detailItemDivider: {
     height: 1,
     backgroundColor: '#F1F5F9',
-    marginVertical: 1
+    marginVertical: 2
   },
   verifiedBadgeMini: {
     backgroundColor: '#DCFCE7',
     paddingHorizontal: 4,
-    paddingVertical: 0.5,
+    paddingVertical: 1,
     borderRadius: 4
   },
   verifiedBadgeMiniText: {
-    fontSize: 7.5,
+    fontSize: 8,
     fontWeight: '800',
     color: '#15803D'
   },
@@ -2739,7 +2739,7 @@ export const styles = StyleSheet.create({
     fontWeight: '900'
   },
   profileActionsContainer: {
-    gap: 6,
+    gap: 4,
     marginTop: 4,
     marginBottom: 6
   },
@@ -2748,8 +2748,8 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#FF5436',
-    paddingVertical: 8,
-    borderRadius: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
     shadowColor: '#FF5436',
     shadowOffset: {
       width: 0,
@@ -2760,11 +2760,11 @@ export const styles = StyleSheet.create({
     elevation: 2
   },
   profileEditBtnIcon: {
-    fontSize: 14,
-    marginRight: 6
+    fontSize: 12,
+    marginRight: 4
   },
   profileEditBtnText: {
-    fontSize: 13,
+    fontSize: 11.5,
     fontWeight: '800',
     color: '#FFFFFF'
   },

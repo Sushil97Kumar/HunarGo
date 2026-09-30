@@ -10,6 +10,8 @@ export interface CompleteProfilePayload {
   referralCode?: string;
   phoneNumber?: string;
   profileImageUri?: string | null;
+  experienceYears?: number;
+  hourlyRate?: number;
 }
 
 export interface LocationDistancePayload {
