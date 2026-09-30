@@ -2163,6 +2163,23 @@ function WorkerDashboardScreen({
   var [rating, setRating] = useState(4.8);
   var [reviewCount, setReviewCount] = useState(38);
   var [reviewsCurrentPage, setReviewsCurrentPage] = useState(1);
+  var [selectedCallBackCustomer, setSelectedCallBackCustomer] = useState(null);
+  var [callBackModalVisible, setCallBackModalVisible] = useState(false);
+  var [callBackSuccessMessage, setCallBackSuccessMessage] = useState('');
+
+  var handleOpenCallBackModal = customer => {
+    setSelectedCallBackCustomer(customer);
+    setCallBackSuccessMessage('');
+    setCallBackModalVisible(true);
+  };
+
+  var handleSendCallBackRequest = () => {
+    setCallBackSuccessMessage('✅ Call back request sent successfully!');
+    setTimeout(() => {
+      setCallBackModalVisible(false);
+      setCallBackSuccessMessage('');
+    }, 1200);
+  };
 
   useEffect(() => {
     var fetchWorkerProfile = async () => {
@@ -2859,6 +2876,7 @@ function WorkerDashboardScreen({
               })]
             }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.TouchableOpacity, {
               style: styles.compactCallBackBtn,
+              onPress: () => handleOpenCallBackModal(item),
               activeOpacity: 0.8,
               children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
                 style: styles.callBackBtnIcon,
@@ -3951,7 +3969,7 @@ function WorkerDashboardScreen({
               { id: '17', name: 'Manoj Ahuja', rating: '⭐⭐⭐⭐', comment: 'Good diagnostic skills for electrical faults.', time: '3 months ago' },
               { id: '18', name: 'Ritu Chawla', rating: '⭐⭐⭐⭐⭐', comment: 'Highly skilled and professional. Will call again.', time: '4 months ago' }
             ];
-            var REVIEWS_PER_PAGE = 5;
+            var REVIEWS_PER_PAGE = 3;
             var totalReviewPages = Math.ceil(allWorkerReviews.length / REVIEWS_PER_PAGE);
             var safePage = Math.min(Math.max(1, reviewsCurrentPage), totalReviewPages);
             var currentReviewsList = allWorkerReviews.slice((safePage - 1) * REVIEWS_PER_PAGE, safePage * REVIEWS_PER_PAGE);
@@ -4013,7 +4031,7 @@ function WorkerDashboardScreen({
 
                     /* Page Subtitle Row */
                     /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
-                  style: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 16, marginBottom: 10 },
+                  style: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 8, marginBottom: 6 },
                   children: [
                         /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
                     style: styles.sectionCardHeaderTitle,
@@ -4026,9 +4044,9 @@ function WorkerDashboardScreen({
                   ]
                 }),
 
-                    /* 6 Reviews for current page */
+                    /* Reviews for current page */
                     /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.View, {
-                  style: { gap: 10 },
+                  style: { gap: 6 },
                   children: currentReviewsList.map(rev => /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
                     style: styles.recentReviewItem,
                     children: [
@@ -4732,7 +4750,141 @@ function WorkerDashboardScreen({
             style: styles.activeTabIndicator
           })]
         })]
-      })]
+      }),
+
+        /* Call Back Request Modal Popup */
+        /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Modal, {
+        visible: callBackModalVisible,
+        transparent: true,
+        animationType: "fade",
+        onRequestClose: () => setCallBackModalVisible(false),
+        children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.View, {
+          style: {
+            flex: 1,
+            backgroundColor: 'rgba(15, 23, 42, 0.65)',
+            justifyContent: 'center',
+            alignItems: 'center',
+            paddingHorizontal: 20
+          },
+          children: /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
+            style: {
+              width: '100%',
+              maxWidth: 340,
+              backgroundColor: '#FFFFFF',
+              borderRadius: 20,
+              padding: 24,
+              alignItems: 'center',
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 8 },
+              shadowOpacity: 0.25,
+              shadowRadius: 16,
+              elevation: 10
+            },
+            children: [
+              /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.View, {
+                style: {
+                  width: 56,
+                  height: 56,
+                  borderRadius: 28,
+                  backgroundColor: '#DCFCE7',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  marginBottom: 14
+                },
+                children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                  style: { fontSize: 26 },
+                  children: "📞"
+                })
+              }),
+              /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                style: {
+                  fontSize: 19,
+                  fontWeight: '800',
+                  color: '#0F172A',
+                  marginBottom: 6,
+                  textAlign: 'center'
+                },
+                children: "Request Call Back"
+              }),
+              /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.Text, {
+                style: {
+                  fontSize: 14,
+                  color: '#475569',
+                  textAlign: 'center',
+                  lineHeight: 20,
+                  marginBottom: 16
+                },
+                children: [
+                  "Do you want to send a call back request to ",
+                  /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                    style: { fontWeight: '700', color: '#0F172A' },
+                    children: selectedCallBackCustomer?.name || 'this customer'
+                  }),
+                  "?"
+                ]
+              }),
+              callBackSuccessMessage ? /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.View, {
+                style: {
+                  backgroundColor: '#F0FDF4',
+                  borderColor: '#86EFAC',
+                  borderWidth: 1,
+                  borderRadius: 10,
+                  paddingVertical: 8,
+                  paddingHorizontal: 12,
+                  marginBottom: 16,
+                  width: '100%'
+                },
+                children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                  style: {
+                    fontSize: 13,
+                    fontWeight: '700',
+                    color: '#16A34A',
+                    textAlign: 'center'
+                  },
+                  children: callBackSuccessMessage
+                })
+              }) : null,
+              /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
+                style: { width: '100%', gap: 10 },
+                children: [
+                  /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
+                    style: {
+                      backgroundColor: '#16A34A',
+                      paddingVertical: 13,
+                      borderRadius: 12,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      elevation: 4
+                    },
+                    onPress: handleSendCallBackRequest,
+                    activeOpacity: 0.85,
+                    children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                      style: { fontSize: 15, fontWeight: '800', color: '#FFFFFF' },
+                      children: "Request Call Back"
+                    })
+                  }),
+                  /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
+                    style: {
+                      backgroundColor: '#F1F5F9',
+                      paddingVertical: 11,
+                      borderRadius: 12,
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    },
+                    onPress: () => setCallBackModalVisible(false),
+                    activeOpacity: 0.75,
+                    children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                      style: { fontSize: 14, fontWeight: '700', color: '#64748B' },
+                      children: "Cancel"
+                    })
+                  })
+                ]
+              })
+            ]
+          })
+        })
+      })
+      ]
     })
   });
 }

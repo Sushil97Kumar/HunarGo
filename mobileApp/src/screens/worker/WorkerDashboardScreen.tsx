@@ -118,6 +118,23 @@ export function WorkerDashboardScreen({
   var [rating, setRating] = useState(4.8);
   var [reviewCount, setReviewCount] = useState(38);
   var [reviewsCurrentPage, setReviewsCurrentPage] = useState(1);
+  var [selectedCallBackCustomer, setSelectedCallBackCustomer] = useState(null);
+  var [callBackModalVisible, setCallBackModalVisible] = useState(false);
+  var [callBackSuccessMessage, setCallBackSuccessMessage] = useState('');
+
+  var handleOpenCallBackModal = customer => {
+    setSelectedCallBackCustomer(customer);
+    setCallBackSuccessMessage('');
+    setCallBackModalVisible(true);
+  };
+
+  var handleSendCallBackRequest = () => {
+    setCallBackSuccessMessage('✅ Call back request sent successfully!');
+    setTimeout(() => {
+      setCallBackModalVisible(false);
+      setCallBackSuccessMessage('');
+    }, 1200);
+  };
 
   useEffect(() => {
     var fetchWorkerProfile = async () => {
@@ -482,7 +499,7 @@ export function WorkerDashboardScreen({
             bottom: 10,
             left: 10,
             right: 10
-          }}>{<Text style={styles.clearIcon}>✕</Text>}</TouchableOpacity>}</View>}{<View style={styles.callsListContainer}>{paginatedCalls.map(item => <View style={styles.compactCallCard}>{<View style={styles.compactCardLeft}>{<View style={styles.compactAvatarCircle}>{<Text style={styles.compactAvatarEmoji}>{item.avatar}</Text>}</View>}{<View style={styles.compactInfoGroup}>{<Text style={styles.compactCustomerName}>{item.name}</Text>}{<View style={styles.compactDistanceRow}>{<Text style={styles.compactPinIcon}>📍</Text>}{<Text style={styles.compactDistanceText}>{item.distance}</Text>}</View>}</View>}</View>}{<TouchableOpacity style={styles.compactCallBackBtn} activeOpacity={0.8}>{<Text style={styles.callBackBtnIcon}>📞</Text>}{<Text style={styles.callBackBtnText}>Call Back</Text>}</TouchableOpacity>}</View>)}</View>}{<View style={styles.paginationControlsContainer}>{<TouchableOpacity style={[styles.pageBtn, currentPage === 1 && styles.pageBtnDisabled]} onPress={() => setCurrentPage(prev => Math.max(1, prev - 1))} disabled={currentPage === 1} activeOpacity={0.75}>{<Text style={[styles.pageBtnText, currentPage === 1 && styles.pageBtnTextDisabled]}>◀ Prev</Text>}</TouchableOpacity>}{<View style={styles.pageNumberBadge}>{<Text style={styles.pageNumberText}>Page {currentPage} of {totalPages}</Text>}</View>}{<TouchableOpacity style={[styles.pageBtn, currentPage >= totalPages && styles.pageBtnDisabled]} onPress={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))} disabled={currentPage >= totalPages} activeOpacity={0.75}>{<Text style={[styles.pageBtnText, currentPage >= totalPages && styles.pageBtnDisabled]}>Next ▶</Text>}</TouchableOpacity>}</View>}</ScrollView>}{activeTab === 'profile' && <View style={styles.profileContainer}>{<View style={styles.profileHeaderNav}>{<Text style={styles.profileNavTitle}>Worker Profile</Text>}{<TouchableOpacity style={styles.profileShareHeaderBtn} activeOpacity={0.7}>{<Text style={styles.profileShareHeaderIcon}>🔗</Text>}</TouchableOpacity>}</View>}{<View style={{ flex: 1 }}>{<View style={styles.profileHeroCard}>{<View style={styles.heroAvatarContainer}>{<Image source={workerAvatarUri ? { uri: workerAvatarUri } : require("../../assets/default_avatar.png")} style={styles.heroAvatarImg} />}{<TouchableOpacity style={styles.heroCameraBadge} activeOpacity={0.8} onPress={handlePickProfileImage}>{<Text style={styles.heroCameraIcon}>📷</Text>}</TouchableOpacity>}</View>}{<Text style={styles.heroWorkerName}>{workerName || 'Worker'}</Text>}{<Text style={styles.heroWorkerSkill}>⚡ Master {workerProfession}</Text>}{<View style={styles.heroBadgesRow}>{<View style={styles.heroVerifiedPill}>{<Text style={styles.heroVerifiedCheck}>✔</Text>}{<Text style={styles.heroVerifiedText}>Verified Worker</Text>}</View>}{<View style={styles.heroRatingPill}>{<Text style={styles.heroRatingStar}>⭐</Text>}{<Text style={styles.heroRatingText}>{rating} ({reviewCount} Reviews)</Text>}</View>}</View>}{<View style={styles.heroStatsRow}>{<View style={styles.heroStatBox}>{<Text style={styles.heroStatVal}>{profileViews}</Text>}{<Text style={styles.heroStatLbl}>Views</Text>}</View>}{<View style={styles.heroStatDivider} />}{<View style={styles.heroStatBox}>{<Text style={styles.heroStatVal}>{callsReceivedCount}</Text>}{<Text style={styles.heroStatLbl}>Calls</Text>}</View>}{<View style={styles.heroStatDivider} />}{<View style={styles.heroStatBox}>{<Text style={styles.heroStatVal}>{customersServedCount}</Text>}{<Text style={styles.heroStatLbl}>Served</Text>}</View>}{<View style={styles.heroStatDivider} />}{<View style={styles.heroStatBox}>{<Text style={styles.heroStatVal}>{rating}★</Text>}{<Text style={styles.heroStatLbl}>Rating</Text>}</View>}</View>}</View>}{<View style={styles.profileSectionCard}>{<Text style={styles.sectionCardHeaderTitle}>Personal & Contact Details</Text>}{<View style={styles.detailItemRow}>{<Text style={styles.detailItemIcon}>📱</Text>}{<View style={styles.detailItemTextGroup}>{<Text style={styles.detailItemLabel}>Mobile Phone</Text>}{<Text style={styles.detailItemValue}>{workerMobile || 'Not provided'}</Text>}</View>}{<View style={styles.verifiedBadgeMini}>{<Text style={styles.verifiedBadgeMiniText}>✔ Verified</Text>}</View>}</View>}{<View style={styles.detailItemDivider} />}{<View style={styles.detailItemRow}>{<Text style={styles.detailItemIcon}>📍</Text>}{<View style={styles.detailItemTextGroup}>{<Text style={styles.detailItemLabel}>Location & Radius</Text>}{<Text style={styles.detailItemValue}>{workerLocation} • {serviceRadius} km Radius</Text>}</View>}</View>}{<View style={styles.detailItemDivider} />}{<View style={styles.detailItemRow}>{<Text style={styles.detailItemIcon}>💼</Text>}{<View style={styles.detailItemTextGroup}>{<Text style={styles.detailItemLabel}>Experience</Text>}{<Text style={styles.detailItemValue}>{experienceYears}+ Years Professional Experience</Text>}</View>}</View>}{<View style={styles.detailItemDivider} />}{<View style={styles.detailItemRow}>{<Text style={styles.detailItemIcon}>💵</Text>}{<View style={styles.detailItemTextGroup}>{<Text style={styles.detailItemLabel}>Service Rates</Text>}{<Text style={styles.detailItemValue}>₹{visitingCharge} Visiting Charge • ₹{hourlyRate}/hr Repair</Text>}</View>}</View>}</View>}{<View style={styles.profileSectionCard}>{<View style={styles.sectionHeaderFlexRow}>{<Text style={styles.sectionCardHeaderTitle}>Work Portfolio & Photos</Text>}{<TouchableOpacity onPress={() => setActiveTab('settings')}>{<Text style={styles.linkTextSmall}>+ Add Photo</Text>}</TouchableOpacity>}</View>}{<View style={styles.portfolioGrid}>{workImages.map(img => <View style={styles.portfolioCardItem}>{<View style={styles.portfolioIconCircle}>{<Text style={styles.portfolioEmoji}>{img.icon}</Text>}</View>}{<Text style={styles.portfolioTitleText} numberOfLines={1}>{img.title}</Text>}</View>)}</View>}</View>}{<View style={styles.profileActionsContainer}>{<TouchableOpacity style={styles.profileEditBtn} onPress={() => setActiveTab('settings')} activeOpacity={0.8}>{<Text style={styles.profileEditBtnIcon}>✏️</Text>}{<Text style={styles.profileEditBtnText}>Edit Profile & Settings</Text>}</TouchableOpacity>}</View>}</View>}</View>}{activeTab === 'settings' && <View style={{
+          }}>{<Text style={styles.clearIcon}>✕</Text>}</TouchableOpacity>}</View>}{<View style={styles.callsListContainer}>{paginatedCalls.map(item => <View style={styles.compactCallCard}>{<View style={styles.compactCardLeft}>{<View style={styles.compactAvatarCircle}>{<Text style={styles.compactAvatarEmoji}>{item.avatar}</Text>}</View>}{<View style={styles.compactInfoGroup}>{<Text style={styles.compactCustomerName}>{item.name}</Text>}{<View style={styles.compactDistanceRow}>{<Text style={styles.compactPinIcon}>📍</Text>}{<Text style={styles.compactDistanceText}>{item.distance}</Text>}</View>}</View>}</View>}{<TouchableOpacity style={styles.compactCallBackBtn} onPress={() => handleOpenCallBackModal(item)} activeOpacity={0.8}>{<Text style={styles.callBackBtnIcon}>📞</Text>}{<Text style={styles.callBackBtnText}>Call Back</Text>}</TouchableOpacity>}</View>)}</View>}{<View style={styles.paginationControlsContainer}>{<TouchableOpacity style={[styles.pageBtn, currentPage === 1 && styles.pageBtnDisabled]} onPress={() => setCurrentPage(prev => Math.max(1, prev - 1))} disabled={currentPage === 1} activeOpacity={0.75}>{<Text style={[styles.pageBtnText, currentPage === 1 && styles.pageBtnTextDisabled]}>◀ Prev</Text>}</TouchableOpacity>}{<View style={styles.pageNumberBadge}>{<Text style={styles.pageNumberText}>Page {currentPage} of {totalPages}</Text>}</View>}{<TouchableOpacity style={[styles.pageBtn, currentPage >= totalPages && styles.pageBtnDisabled]} onPress={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))} disabled={currentPage >= totalPages} activeOpacity={0.75}>{<Text style={[styles.pageBtnText, currentPage >= totalPages && styles.pageBtnDisabled]}>Next ▶</Text>}</TouchableOpacity>}</View>}</ScrollView>}{activeTab === 'profile' && <View style={styles.profileContainer}>{<View style={styles.profileHeaderNav}>{<Text style={styles.profileNavTitle}>Worker Profile</Text>}{<TouchableOpacity style={styles.profileShareHeaderBtn} activeOpacity={0.7}>{<Text style={styles.profileShareHeaderIcon}>🔗</Text>}</TouchableOpacity>}</View>}{<View style={{ flex: 1 }}>{<View style={styles.profileHeroCard}>{<View style={styles.heroAvatarContainer}>{<Image source={workerAvatarUri ? { uri: workerAvatarUri } : require("../../assets/default_avatar.png")} style={styles.heroAvatarImg} />}{<TouchableOpacity style={styles.heroCameraBadge} activeOpacity={0.8} onPress={handlePickProfileImage}>{<Text style={styles.heroCameraIcon}>📷</Text>}</TouchableOpacity>}</View>}{<Text style={styles.heroWorkerName}>{workerName || 'Worker'}</Text>}{<Text style={styles.heroWorkerSkill}>⚡ Master {workerProfession}</Text>}{<View style={styles.heroBadgesRow}>{<View style={styles.heroVerifiedPill}>{<Text style={styles.heroVerifiedCheck}>✔</Text>}{<Text style={styles.heroVerifiedText}>Verified Worker</Text>}</View>}{<View style={styles.heroRatingPill}>{<Text style={styles.heroRatingStar}>⭐</Text>}{<Text style={styles.heroRatingText}>{rating} ({reviewCount} Reviews)</Text>}</View>}</View>}{<View style={styles.heroStatsRow}>{<View style={styles.heroStatBox}>{<Text style={styles.heroStatVal}>{profileViews}</Text>}{<Text style={styles.heroStatLbl}>Views</Text>}</View>}{<View style={styles.heroStatDivider} />}{<View style={styles.heroStatBox}>{<Text style={styles.heroStatVal}>{callsReceivedCount}</Text>}{<Text style={styles.heroStatLbl}>Calls</Text>}</View>}{<View style={styles.heroStatDivider} />}{<View style={styles.heroStatBox}>{<Text style={styles.heroStatVal}>{customersServedCount}</Text>}{<Text style={styles.heroStatLbl}>Served</Text>}</View>}{<View style={styles.heroStatDivider} />}{<View style={styles.heroStatBox}>{<Text style={styles.heroStatVal}>{rating}★</Text>}{<Text style={styles.heroStatLbl}>Rating</Text>}</View>}</View>}</View>}{<View style={styles.profileSectionCard}>{<Text style={styles.sectionCardHeaderTitle}>Personal & Contact Details</Text>}{<View style={styles.detailItemRow}>{<Text style={styles.detailItemIcon}>📱</Text>}{<View style={styles.detailItemTextGroup}>{<Text style={styles.detailItemLabel}>Mobile Phone</Text>}{<Text style={styles.detailItemValue}>{workerMobile || 'Not provided'}</Text>}</View>}{<View style={styles.verifiedBadgeMini}>{<Text style={styles.verifiedBadgeMiniText}>✔ Verified</Text>}</View>}</View>}{<View style={styles.detailItemDivider} />}{<View style={styles.detailItemRow}>{<Text style={styles.detailItemIcon}>📍</Text>}{<View style={styles.detailItemTextGroup}>{<Text style={styles.detailItemLabel}>Location & Radius</Text>}{<Text style={styles.detailItemValue}>{workerLocation} • {serviceRadius} km Radius</Text>}</View>}</View>}{<View style={styles.detailItemDivider} />}{<View style={styles.detailItemRow}>{<Text style={styles.detailItemIcon}>💼</Text>}{<View style={styles.detailItemTextGroup}>{<Text style={styles.detailItemLabel}>Experience</Text>}{<Text style={styles.detailItemValue}>{experienceYears}+ Years Professional Experience</Text>}</View>}</View>}{<View style={styles.detailItemDivider} />}{<View style={styles.detailItemRow}>{<Text style={styles.detailItemIcon}>💵</Text>}{<View style={styles.detailItemTextGroup}>{<Text style={styles.detailItemLabel}>Service Rates</Text>}{<Text style={styles.detailItemValue}>₹{visitingCharge} Visiting Charge • ₹{hourlyRate}/hr Repair</Text>}</View>}</View>}</View>}{<View style={styles.profileSectionCard}>{<View style={styles.sectionHeaderFlexRow}>{<Text style={styles.sectionCardHeaderTitle}>Work Portfolio & Photos</Text>}{<TouchableOpacity onPress={() => setActiveTab('settings')}>{<Text style={styles.linkTextSmall}>+ Add Photo</Text>}</TouchableOpacity>}</View>}{<View style={styles.portfolioGrid}>{workImages.map(img => <View style={styles.portfolioCardItem}>{<View style={styles.portfolioIconCircle}>{<Text style={styles.portfolioEmoji}>{img.icon}</Text>}</View>}{<Text style={styles.portfolioTitleText} numberOfLines={1}>{img.title}</Text>}</View>)}</View>}</View>}{<View style={styles.profileActionsContainer}>{<TouchableOpacity style={styles.profileEditBtn} onPress={() => setActiveTab('settings')} activeOpacity={0.8}>{<Text style={styles.profileEditBtnIcon}>✏️</Text>}{<Text style={styles.profileEditBtnText}>Edit Profile & Settings</Text>}</TouchableOpacity>}</View>}</View>}</View>}{activeTab === 'settings' && <View style={{
         flex: 1
       }}>{settingsSubScreen === 'profileAccount' ?
         /* Separate Profile & Account Screen (Single Page, No Scroll) */
@@ -1166,7 +1183,7 @@ export function WorkerDashboardScreen({
             comment: 'Highly skilled and professional. Will call again.',
             time: '4 months ago'
           }];
-          var REVIEWS_PER_PAGE = 5;
+          var REVIEWS_PER_PAGE = 3;
           var totalReviewPages = Math.ceil(allWorkerReviews.length / REVIEWS_PER_PAGE);
           var safePage = Math.min(Math.max(1, reviewsCurrentPage), totalReviewPages);
           var currentReviewsList = allWorkerReviews.slice((safePage - 1) * REVIEWS_PER_PAGE, safePage * REVIEWS_PER_PAGE);
@@ -1191,16 +1208,16 @@ export function WorkerDashboardScreen({
                 flexDirection: 'row',
                 justifyContent: 'space-between',
                 alignItems: 'center',
-                marginTop: 16,
-                marginBottom: 10
+                marginTop: 8,
+                marginBottom: 6
               }}>{<Text style={styles.sectionCardHeaderTitle}>Recent Reviews</Text>}{<Text style={{
                   fontSize: 12,
                   fontWeight: '700',
                   color: '#64748B'
                 }}>Page {safePage} of {totalReviewPages}</Text>}</View>}{
-              /* 6 Reviews for current page */
+              /* Reviews for current page */
               <View style={{
-                gap: 10
+                gap: 6
               }}>{currentReviewsList.map(rev => <View style={styles.recentReviewItem}>{<View style={styles.reviewerTopRow}>{<Text style={styles.reviewerName}>{rev.name}</Text>}{<View style={{
                       flexDirection: 'row',
                       alignItems: 'center'
@@ -1362,7 +1379,102 @@ export function WorkerDashboardScreen({
                     color: '#EF4444'
                   }]}>Logout</Text>}{<Text style={styles.settingsCardSubText}>Sign out from your account</Text>}</View>}{<Text style={[styles.settingsChevronText, {
                   color: '#EF4444'
-                }]}>❯</Text>}</TouchableOpacity>}</View>}</ScrollView>}</View>}{<View style={styles.bottomTabBarContainer}>{<TouchableOpacity style={styles.tabItem} onPress={handleDashboardPress} activeOpacity={0.75}>{<Text style={[styles.tabIcon, activeTab === 'dashboard' && styles.tabIconActive]}>🏠</Text>}{<Text style={[styles.tabLabel, activeTab === 'dashboard' && styles.tabLabelActive]}>Dashboard</Text>}{activeTab === 'dashboard' && <View style={styles.activeTabIndicator} />}</TouchableOpacity>}{<TouchableOpacity style={styles.tabItem} onPress={() => setActiveTab('calls')} activeOpacity={0.75}>{<Text style={[styles.tabIcon, activeTab === 'calls' && styles.tabIconActive]}>📞</Text>}{<Text style={[styles.tabLabel, activeTab === 'calls' && styles.tabLabelActive]}>Calls</Text>}{activeTab === 'calls' && <View style={styles.activeTabIndicator} />}</TouchableOpacity>}{<TouchableOpacity style={styles.tabItem} onPress={() => setActiveTab('profile')} activeOpacity={0.75}>{<Text style={[styles.tabIcon, activeTab === 'profile' && styles.tabIconActive]}>👤</Text>}{<Text style={[styles.tabLabel, activeTab === 'profile' && styles.tabLabelActive]}>Profile</Text>}{activeTab === 'profile' && <View style={styles.activeTabIndicator} />}</TouchableOpacity>}{<TouchableOpacity style={styles.tabItem} onPress={() => setActiveTab('settings')} activeOpacity={0.75}>{<Text style={[styles.tabIcon, activeTab === 'settings' && styles.tabIconActive]}>⚙️</Text>}{<Text style={[styles.tabLabel, activeTab === 'settings' && styles.tabLabelActive]}>Settings</Text>}{activeTab === 'settings' && <View style={styles.activeTabIndicator} />}</TouchableOpacity>}</View>}</SafeAreaView>}</ImageBackground>;
+                }]}>❯</Text>}</TouchableOpacity>}</View>}</ScrollView>}</View>}{<View style={styles.bottomTabBarContainer}>{<TouchableOpacity style={styles.tabItem} onPress={handleDashboardPress} activeOpacity={0.75}>{<Text style={[styles.tabIcon, activeTab === 'dashboard' && styles.tabIconActive]}>🏠</Text>}{<Text style={[styles.tabLabel, activeTab === 'dashboard' && styles.tabLabelActive]}>Dashboard</Text>}{activeTab === 'dashboard' && <View style={styles.activeTabIndicator} />}</TouchableOpacity>}{<TouchableOpacity style={styles.tabItem} onPress={() => setActiveTab('calls')} activeOpacity={0.75}>{<Text style={[styles.tabIcon, activeTab === 'calls' && styles.tabIconActive]}>📞</Text>}{<Text style={[styles.tabLabel, activeTab === 'calls' && styles.tabLabelActive]}>Calls</Text>}{activeTab === 'calls' && <View style={styles.activeTabIndicator} />}</TouchableOpacity>}{<TouchableOpacity style={styles.tabItem} onPress={() => setActiveTab('profile')} activeOpacity={0.75}>{<Text style={[styles.tabIcon, activeTab === 'profile' && styles.tabIconActive]}>👤</Text>}{<Text style={[styles.tabLabel, activeTab === 'profile' && styles.tabLabelActive]}>Profile</Text>}{activeTab === 'profile' && <View style={styles.activeTabIndicator} />}</TouchableOpacity>}{<TouchableOpacity style={styles.tabItem} onPress={() => setActiveTab('settings')} activeOpacity={0.75}>{<Text style={[styles.tabIcon, activeTab === 'settings' && styles.tabIconActive]}>⚙️</Text>}{<Text style={[styles.tabLabel, activeTab === 'settings' && styles.tabLabelActive]}>Settings</Text>}{activeTab === 'settings' && <View style={styles.activeTabIndicator} />}</TouchableOpacity>}</View>}{
+        /* Call Back Request Modal Popup */
+        <Modal visible={callBackModalVisible} transparent={true} animationType="fade" onRequestClose={() => setCallBackModalVisible(false)}><View style={{
+            flex: 1,
+            backgroundColor: 'rgba(15, 23, 42, 0.65)',
+            justifyContent: 'center',
+            alignItems: 'center',
+            paddingHorizontal: 20
+          }}><View style={{
+              width: '100%',
+              maxWidth: 340,
+              backgroundColor: '#FFFFFF',
+              borderRadius: 20,
+              padding: 24,
+              alignItems: 'center',
+              shadowColor: '#000',
+              shadowOffset: {
+                width: 0,
+                height: 8
+              },
+              shadowOpacity: 0.25,
+              shadowRadius: 16,
+              elevation: 10
+            }}>{
+              /* Icon Circle */
+              <View style={{
+                width: 56,
+                height: 56,
+                borderRadius: 28,
+                backgroundColor: '#DCFCE7',
+                justifyContent: 'center',
+                alignItems: 'center',
+                marginBottom: 14
+              }}><Text style={{
+                  fontSize: 26
+                }}>📞</Text></View>}{
+              /* Title */
+              <Text style={{
+                fontSize: 19,
+                fontWeight: '800',
+                color: '#0F172A',
+                marginBottom: 6,
+                textAlign: 'center'
+              }}>Request Call Back</Text>}{
+              /* Message */
+              <Text style={{
+                fontSize: 14,
+                color: '#475569',
+                textAlign: 'center',
+                lineHeight: 20,
+                marginBottom: 16
+              }}>Do you want to send a call back request to <Text style={{
+                  fontWeight: '700',
+                  color: '#0F172A'
+                }}>{selectedCallBackCustomer?.name || 'this customer'}</Text>?</Text>}{callBackSuccessMessage ? <View style={{
+                backgroundColor: '#F0FDF4',
+                borderColor: '#86EFAC',
+                borderWidth: 1,
+                borderRadius: 10,
+                paddingVertical: 8,
+                paddingHorizontal: 12,
+                marginBottom: 16,
+                width: '100%'
+              }}><Text style={{
+                  fontSize: 13,
+                  fontWeight: '700',
+                  color: '#16A34A',
+                  textAlign: 'center'
+                }}>{callBackSuccessMessage}</Text></View> : null}{
+              /* Action Buttons */
+              <View style={{
+                width: '100%',
+                gap: 10
+              }}><TouchableOpacity style={{
+                  backgroundColor: '#16A34A',
+                  paddingVertical: 13,
+                  borderRadius: 12,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  elevation: 4
+                }} onPress={handleSendCallBackRequest} activeOpacity={0.85}><Text style={{
+                    fontSize: 15,
+                    fontWeight: '800',
+                    color: '#FFFFFF'
+                  }}>Request Call Back</Text></TouchableOpacity><TouchableOpacity style={{
+                  backgroundColor: '#F1F5F9',
+                  paddingVertical: 11,
+                  borderRadius: 12,
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }} onPress={() => setCallBackModalVisible(false)} activeOpacity={0.75}><Text style={{
+                    fontSize: 14,
+                    fontWeight: '700',
+                    color: '#64748B'
+                  }}>Cancel</Text></TouchableOpacity></View>}</View></View></Modal>
+      }</SafeAreaView>}</ImageBackground>;
 }
 
 export default WorkerDashboardScreen;

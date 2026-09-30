@@ -3153,33 +3153,35 @@ export const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FEF9C3',
-    borderRadius: 14,
-    padding: 14,
+    borderRadius: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
     borderWidth: 1,
     borderColor: '#FDE047'
   },
   bigRatingScoreText: {
-    fontSize: 32,
+    fontSize: 24,
     fontWeight: '900',
     color: '#A16207',
-    marginRight: 14
+    marginRight: 10
   },
   starsRowGroup: {
     flex: 1
   },
   starYellow: {
-    fontSize: 16,
-    marginBottom: 2
+    fontSize: 14,
+    marginBottom: 1
   },
   totalReviewsSubText: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '700',
     color: '#854D0E'
   },
   recentReviewItem: {
     backgroundColor: '#F8FAFC',
-    borderRadius: 12,
-    padding: 12,
+    borderRadius: 8,
+    paddingVertical: 5,
+    paddingHorizontal: 9,
     borderWidth: 1,
     borderColor: '#E2E8F0'
   },
@@ -3187,20 +3189,20 @@ export const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 4
+    marginBottom: 2
   },
   reviewerName: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '800',
     color: '#0F172A'
   },
   reviewStarsMini: {
-    fontSize: 12
+    fontSize: 11
   },
   reviewCommentText: {
-    fontSize: 12,
+    fontSize: 11,
     color: '#475569',
-    lineHeight: 16
+    lineHeight: 14
   },
   // Home Screen Styles
   container: {
