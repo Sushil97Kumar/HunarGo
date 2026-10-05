@@ -2353,169 +2353,61 @@ function WorkerDashboardScreen({
   var [callSearch, setCallSearch] = useState('');
   var [currentPage, setCurrentPage] = useState(1);
   var ITEMS_PER_PAGE = 6;
-  var allCustomerCalls = [{
-    id: '1',
-    name: 'Amit Sharma',
-    distance: '1.2 km away',
-    avatar: '👨'
-  }, {
-    id: '2',
-    name: 'Priya Singh',
-    distance: '2.8 km away',
-    avatar: '👩'
-  }, {
-    id: '3',
-    name: 'Rohit Verma',
-    distance: '4.5 km away',
-    avatar: '👨‍💼'
-  }, {
-    id: '4',
-    name: 'Neha Gupta',
-    distance: '5.1 km away',
-    avatar: '👩‍💼'
-  }, {
-    id: '5',
-    name: 'Vikas Malhotra',
-    distance: '6.0 km away',
-    avatar: '🧑‍🔧'
-  }, {
-    id: '6',
-    name: 'Sunita Devi',
-    distance: '3.1 km away',
-    avatar: '👩‍🌾'
-  }, {
-    id: '7',
-    name: 'Rajesh Kumar',
-    distance: '1.8 km away',
-    avatar: '👨'
-  }, {
-    id: '8',
-    name: 'Pooja Rani',
-    distance: '2.4 km away',
-    avatar: '👩'
-  }, {
-    id: '9',
-    name: 'Sanjay Patel',
-    distance: '3.7 km away',
-    avatar: '👨‍💼'
-  }, {
-    id: '10',
-    name: 'Kavita Sharma',
-    distance: '4.2 km away',
-    avatar: '👩‍💼'
-  },
-  // Page 2 (Items 11-20)
-  {
-    id: '11',
-    name: 'Deepak Joshi',
-    distance: '5.5 km away',
-    avatar: '👨'
-  }, {
-    id: '12',
-    name: 'Ananya Roy',
-    distance: '6.8 km away',
-    avatar: '👩'
-  }, {
-    id: '13',
-    name: 'Manoj Singh',
-    distance: '2.1 km away',
-    avatar: '👨‍💼'
-  }, {
-    id: '14',
-    name: 'Ritu Agarwal',
-    distance: '3.4 km away',
-    avatar: '👩‍💼'
-  }, {
-    id: '15',
-    name: 'Karan Mehra',
-    distance: '4.9 km away',
-    avatar: '👨'
-  }, {
-    id: '16',
-    name: 'Shalini Verma',
-    distance: '5.3 km away',
-    avatar: '👩'
-  }, {
-    id: '17',
-    name: 'Alok Nath',
-    distance: '6.2 km away',
-    avatar: '👨‍💼'
-  }, {
-    id: '18',
-    name: 'Meenakshi S.',
-    distance: '7.1 km away',
-    avatar: '👩‍💼'
-  }, {
-    id: '19',
-    name: 'Vikram Batra',
-    distance: '1.5 km away',
-    avatar: '👨'
-  }, {
-    id: '20',
-    name: 'Divya Prakash',
-    distance: '2.9 km away',
-    avatar: '👩'
-  },
-  // Page 3 (Items 21-24)
-  {
-    id: '21',
-    name: 'Suresh Kumar',
-    distance: '3.8 km away',
-    avatar: '👨'
-  }, {
-    id: '22',
-    name: 'Nisha Thakur',
-    distance: '4.6 km away',
-    avatar: '👩'
-  }, {
-    id: '23',
-    name: 'Harish Chander',
-    distance: '5.9 km away',
-    avatar: '👨‍💼'
-  }, {
-    id: '24',
-    name: 'Bhavna Kapoor',
-    distance: '6.4 km away',
-    avatar: '👩‍💼'
-  }];
+  var [allCustomerCalls, setAllCustomerCalls] = useState([]);
+
+  useEffect(() => {
+    var fetchWorkerCustomerCalls = async () => {
+      try {
+        var res = await workerApi.getCustomerCalls();
+        if (res && res.success && Array.isArray(res.calls)) {
+          setAllCustomerCalls(res.calls.map((c, i) => ({
+            id: c.id || String(i + 1),
+            name: c.customerName || 'Customer',
+            phone: c.phone || '',
+            service: c.service || 'Call Request',
+            distance: c.distance || 'Nearby',
+            time: c.time || 'Just now',
+            status: c.status || 'Pending',
+            avatar: c.avatar || '👤',
+          })));
+        } else {
+          setAllCustomerCalls([]);
+        }
+      } catch (err) {
+        console.error('Error fetching customer calls for worker:', err);
+      }
+    };
+    fetchWorkerCustomerCalls();
+  }, [activeTab]);
+
+  var [confirmCallModalVisible, setConfirmCallModalVisible] = useState(false);
+  var [pendingCallAction, setPendingCallAction] = useState({ callId: null, status: '', customerName: '' });
+
+  var handleOpenConfirmCallModal = (callId, status, customerName) => {
+    setPendingCallAction({ callId, status, customerName });
+    setConfirmCallModalVisible(true);
+  };
+
+  var handleConfirmCallAction = async () => {
+    var { callId, status } = pendingCallAction;
+    if (!callId || !status) return;
+    try {
+      setAllCustomerCalls(prevCalls =>
+        prevCalls.map(c => (c.id === callId ? { ...c, status } : c))
+      );
+      setConfirmCallModalVisible(false);
+      await workerApi.updateCallStatus(callId, status);
+    } catch (err) {
+      console.error('Error updating call status:', err);
+    }
+  };
+
   var filteredCalls = allCustomerCalls.filter(call => {
     return call.name.toLowerCase().includes(callSearch.toLowerCase()) || call.distance.toLowerCase().includes(callSearch.toLowerCase());
   });
   var totalPages = Math.ceil(filteredCalls.length / ITEMS_PER_PAGE) || 1;
   var paginatedCalls = filteredCalls.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
-  var recentCalls = [{
-    id: '1',
-    name: 'Amit Sharma',
-    verified: true,
-    service: 'Fan Repair',
-    time: 'Today 10:24 AM',
-    avatar: '👨',
-    status: 'Called'
-  }, {
-    id: '2',
-    name: 'Priya Singh',
-    verified: true,
-    service: 'Wiring',
-    time: 'Yesterday 04:12 PM',
-    avatar: '👩',
-    status: 'Called'
-  }, {
-    id: '3',
-    name: 'Rohit Verma',
-    verified: true,
-    service: 'Switch Repair',
-    time: '12 Sep 2025 11:36 AM',
-    avatar: '👨‍💼',
-    status: 'Called'
-  }, {
-    id: '4',
-    name: 'Neha Gupta',
-    verified: true,
-    service: 'Electrical Installation',
-    time: '10 Sep 2025 03:20 PM',
-    avatar: '👩‍💼',
-    status: 'Called'
-  }];
+  var recentCalls = allCustomerCalls;
   return /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.ImageBackground, {
     source: require("./src/assets/onboarding_bg.png"),
     style: styles.bgImage,
@@ -2848,7 +2740,19 @@ function WorkerDashboardScreen({
           })]
         }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.View, {
           style: styles.callsListContainer,
-          children: paginatedCalls.map(item => /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
+          children: paginatedCalls.length === 0 ? /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
+            style: { padding: 30, alignItems: 'center', justifyContent: 'center' },
+            children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+              style: { fontSize: 36, marginBottom: 10 },
+              children: "📞"
+            }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+              style: { fontSize: 16, fontWeight: 'bold', color: '#1E293B', marginBottom: 4 },
+              children: "No Call Requests"
+            }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+              style: { fontSize: 13, color: '#64748B', textAlign: 'center' },
+              children: "When customers request to call you, they will appear here."
+            })]
+          }) : paginatedCalls.map(item => /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
             style: styles.compactCallCard,
             children: [/*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
               style: styles.compactCardLeft,
@@ -2856,7 +2760,7 @@ function WorkerDashboardScreen({
                 style: styles.compactAvatarCircle,
                 children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
                   style: styles.compactAvatarEmoji,
-                  children: item.avatar
+                  children: item.avatar || '👤'
                 })
               }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
                 style: styles.compactInfoGroup,
@@ -2870,21 +2774,58 @@ function WorkerDashboardScreen({
                     children: "\uD83D\uDCCD"
                   }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
                     style: styles.compactDistanceText,
-                    children: item.distance
+                    children: item.distance || 'Nearby'
                   })]
                 })]
               })]
-            }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.TouchableOpacity, {
-              style: styles.compactCallBackBtn,
-              onPress: () => handleOpenCallBackModal(item),
-              activeOpacity: 0.8,
-              children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-                style: styles.callBackBtnIcon,
-                children: "\uD83D\uDCDE"
-              }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-                style: styles.callBackBtnText,
-                children: "Call Back"
+            }), item.status === 'Pending' ? /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
+              style: { flexDirection: 'row', gap: 6, alignItems: 'center' },
+              children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
+                style: {
+                  backgroundColor: '#EF4444',
+                  paddingVertical: 7,
+                  paddingHorizontal: 12,
+                  borderRadius: 8,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                },
+                onPress: () => handleOpenConfirmCallModal(item.id, 'Cancelled', item.name),
+                activeOpacity: 0.8,
+                children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                  style: { color: '#FFFFFF', fontSize: 12, fontWeight: '600' },
+                  children: "✕ Cancel"
+                })
+              }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
+                style: {
+                  backgroundColor: '#16A34A',
+                  paddingVertical: 7,
+                  paddingHorizontal: 12,
+                  borderRadius: 8,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                },
+                onPress: () => handleOpenConfirmCallModal(item.id, 'Accepted', item.name),
+                activeOpacity: 0.8,
+                children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                  style: { color: '#FFFFFF', fontSize: 12, fontWeight: '600' },
+                  children: "✓ Accepted"
+                })
               })]
+            }) : /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.View, {
+              style: {
+                backgroundColor: item.status === 'Accepted' ? '#DCFCE7' : '#FEE2E2',
+                paddingVertical: 6,
+                paddingHorizontal: 12,
+                borderRadius: 12,
+              },
+              children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                style: {
+                  color: item.status === 'Accepted' ? '#15803D' : '#B91C1C',
+                  fontSize: 12,
+                  fontWeight: 'bold',
+                },
+                children: item.status === 'Accepted' ? '✓ Accepted' : '✕ Cancelled'
+              })
             })]
           }, item.id))
         }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
@@ -4876,6 +4817,121 @@ function WorkerDashboardScreen({
                     children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
                       style: { fontSize: 14, fontWeight: '700', color: '#64748B' },
                       children: "Cancel"
+                    })
+                  })
+                ]
+              })
+            ]
+          })
+        })
+      }),
+
+      /* Confirmation Modal Popup for Accepting/Cancelling Call Request */
+      /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Modal, {
+        visible: confirmCallModalVisible,
+        transparent: true,
+        animationType: "fade",
+        onRequestClose: () => setConfirmCallModalVisible(false),
+        children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.View, {
+          style: {
+            flex: 1,
+            backgroundColor: 'rgba(15, 23, 42, 0.65)',
+            justifyContent: 'center',
+            alignItems: 'center',
+            paddingHorizontal: 20
+          },
+          children: /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
+            style: {
+              width: '100%',
+              maxWidth: 340,
+              backgroundColor: '#FFFFFF',
+              borderRadius: 20,
+              padding: 24,
+              alignItems: 'center',
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 8 },
+              shadowOpacity: 0.25,
+              shadowRadius: 16,
+              elevation: 10
+            },
+            children: [
+              /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.View, {
+                style: {
+                  width: 56,
+                  height: 56,
+                  borderRadius: 28,
+                  backgroundColor: pendingCallAction.status === 'Accepted' ? '#DCFCE7' : '#FEE2E2',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  marginBottom: 14
+                },
+                children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                  style: { fontSize: 24, fontWeight: 'bold', color: pendingCallAction.status === 'Accepted' ? '#15803D' : '#B91C1C' },
+                  children: pendingCallAction.status === 'Accepted' ? '✓' : '✕'
+                })
+              }),
+              /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                style: {
+                  fontSize: 18,
+                  fontWeight: '800',
+                  color: '#0F172A',
+                  marginBottom: 8,
+                  textAlign: 'center'
+                },
+                children: pendingCallAction.status === 'Accepted' ? 'Accept Call Request?' : 'Cancel Call Request?'
+              }),
+              /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.Text, {
+                style: {
+                  fontSize: 14,
+                  color: '#475569',
+                  textAlign: 'center',
+                  lineHeight: 20,
+                  marginBottom: 20
+                },
+                children: [
+                  pendingCallAction.status === 'Accepted' 
+                    ? 'Are you sure you want to accept the call request from ' 
+                    : 'Are you sure you want to cancel the call request from ',
+                  /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                    style: { fontWeight: '700', color: '#0F172A' },
+                    children: pendingCallAction.customerName || 'Customer'
+                  }),
+                  '?'
+                ]
+              }),
+              /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
+                style: { flexDirection: 'row', gap: 10, width: '100%' },
+                children: [
+                  /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
+                    style: {
+                      flex: 1,
+                      paddingVertical: 12,
+                      borderRadius: 10,
+                      backgroundColor: '#F1F5F9',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    },
+                    onPress: () => setConfirmCallModalVisible(false),
+                    activeOpacity: 0.8,
+                    children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                      style: { fontSize: 14, fontWeight: '600', color: '#64748B' },
+                      children: "No, Go Back"
+                    })
+                  }),
+                  /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
+                    style: {
+                      flex: 1,
+                      paddingVertical: 12,
+                      borderRadius: 10,
+                      backgroundColor: pendingCallAction.status === 'Accepted' ? '#16A34A' : '#EF4444',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    },
+                    onPress: handleConfirmCallAction,
+                    activeOpacity: 0.8,
+                    children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                      style: { fontSize: 14, fontWeight: '700', color: '#FFFFFF' },
+                      children: pendingCallAction.status === 'Accepted' ? "Yes, Accept" : "Yes, Cancel"
                     })
                   })
                 ]

@@ -56,6 +56,11 @@ export const CustomerHomeScreen: React.FC<Props> = ({ onBackToOnboarding }) => {
   const [helpDescription, setHelpDescription] = useState('');
   const [isSubmittingHelp, setIsSubmittingHelp] = useState(false);
 
+  // Modal state for Call Request Confirmation Popup
+  const [showCallConfirmModal, setShowCallConfirmModal] = useState(false);
+  const [selectedWorkerForCall, setSelectedWorkerForCall] = useState<any | null>(null);
+  const [isSendingCallReq, setIsSendingCallReq] = useState(false);
+
   const modalCategoriesFilters = [
     { id: 'All', title: 'All', emoji: '🌟', bg: '#FFF7ED', color: '#C2410C', border: '#FFD8A8' },
     { id: 'Plumber', title: 'Plumber', emoji: '🔧', bg: '#EBF3FF', color: '#1E40AF', border: '#BFDBFE' },
@@ -174,6 +179,51 @@ export const CustomerHomeScreen: React.FC<Props> = ({ onBackToOnboarding }) => {
 
   const handleCallWorker = (workerId: string) => {
     customerApi.callWorker(workerId);
+  };
+
+  const handleOpenCallConfirm = (worker: any) => {
+    setSelectedWorkerForCall(worker);
+    setShowCallConfirmModal(true);
+  };
+
+  const handleConfirmSendCallRequest = async () => {
+    if (!selectedWorkerForCall) return;
+    setIsSendingCallReq(true);
+    try {
+      const workerId = selectedWorkerForCall.id || selectedWorkerForCall._id || '1';
+      await customerApi.callWorker(workerId);
+      setIsSendingCallReq(false);
+      setShowCallConfirmModal(false);
+      const workerName = selectedWorkerForCall.name || selectedWorkerForCall.fullName || 'Worker';
+
+      // Immediately filter out the worker from local state
+      const targetId = selectedWorkerForCall.id || selectedWorkerForCall._id;
+      setAllWorkersList((prev) => prev.filter((w) => (w.id || w._id) !== targetId));
+      setNearbyWorkers((prev) => prev.filter((w) => (w.id || w._id) !== targetId));
+
+      Alert.alert(
+        'Call Request Sent 📞',
+        `Call request sent to ${workerName} successfully!`,
+        [
+          {
+            text: 'OK',
+            onPress: () => {
+              setSelectedWorkerForCall(null);
+              fetchPaginatedWorkers(allWorkersPage);
+              fetchNearbyWorkers();
+            },
+          },
+        ]
+      );
+    } catch (err) {
+      setIsSendingCallReq(false);
+      Alert.alert('Error ⚠️', 'Failed to send call request. Please try again.');
+    }
+  };
+
+  const handleCancelCallRequest = () => {
+    setShowCallConfirmModal(false);
+    setSelectedWorkerForCall(null);
   };
 
   const requestLocationPermission = async () => {
@@ -697,7 +747,7 @@ export const CustomerHomeScreen: React.FC<Props> = ({ onBackToOnboarding }) => {
                 <TouchableOpacity
                   style={localStyles.callPillBtn}
                   activeOpacity={0.85}
-                  onPress={() => handleCallWorker(worker.id)}
+                  onPress={() => handleOpenCallConfirm(worker)}
                 >
                   <Text style={localStyles.callPillText}>📞 Call</Text>
                 </TouchableOpacity>
@@ -742,12 +792,9 @@ export const CustomerHomeScreen: React.FC<Props> = ({ onBackToOnboarding }) => {
               </TouchableOpacity>
             </View>
 
-            {/* Sub-Header Banner with Title & Location */}
+            {/* Sub-Header Banner with Title */}
             <View style={localStyles.modalSubHeaderRow}>
               <Text style={localStyles.modalHeaderTitle}>Nearest Workers</Text>
-              <Text style={localStyles.modalHeaderSub}>
-                📍 {userLocation} • <Text style={{ color: '#FF5436', fontWeight: '700' }}>{allWorkersTotal} Available</Text>
-              </Text>
             </View>
 
             {/* Stylish Modern Search Bar */}
@@ -809,7 +856,7 @@ export const CustomerHomeScreen: React.FC<Props> = ({ onBackToOnboarding }) => {
               <View style={localStyles.loadingCenterState}>
                 <ActivityIndicator size="large" color="#FF5436" />
                 <Text style={{ marginTop: 12, fontSize: 14, color: '#64748B', fontWeight: '600' }}>
-                  Searching nearest workers around {userLocation}...
+                  Searching nearest workers...
                 </Text>
               </View>
             ) : allWorkersList.length === 0 ? (
@@ -819,7 +866,7 @@ export const CustomerHomeScreen: React.FC<Props> = ({ onBackToOnboarding }) => {
                   No Workers Found
                 </Text>
                 <Text style={{ fontSize: 14, color: '#64748B', textAlign: 'center', paddingHorizontal: 32 }}>
-                  We couldn't find any active workers matching "{modalSelectedCategory !== 'All' ? modalSelectedCategory : modalSearchText}" near {userLocation}.
+                  We couldn't find any active workers matching "{modalSelectedCategory !== 'All' ? modalSelectedCategory : modalSearchText}".
                 </Text>
               </View>
             ) : (
@@ -849,9 +896,9 @@ export const CustomerHomeScreen: React.FC<Props> = ({ onBackToOnboarding }) => {
                     <TouchableOpacity
                       style={localStyles.modalCallBtn}
                       activeOpacity={0.85}
-                      onPress={() => handleCallWorker(worker.id)}
+                      onPress={() => handleOpenCallConfirm(worker)}
                     >
-                      <Text style={localStyles.modalCallBtnText}>📞 Call Back</Text>
+                      <Text style={localStyles.modalCallBtnText}>📞 Call</Text>
                     </TouchableOpacity>
                   </View>
                 ))}
@@ -1369,6 +1416,85 @@ export const CustomerHomeScreen: React.FC<Props> = ({ onBackToOnboarding }) => {
                   <ActivityIndicator color="#FFFFFF" size="small" />
                 ) : (
                   <Text style={localStyles.helpSubmitBtnText}>Submit Query 🚀</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* CALL REQUEST CONFIRMATION POPUP MODAL */}
+      <Modal
+        visible={showCallConfirmModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={handleCancelCallRequest}
+      >
+        <View style={localStyles.helpModalOverlay}>
+          <View style={localStyles.callModalContainer}>
+            {/* Header / Icon */}
+            <View style={localStyles.callModalHeader}>
+              <View style={localStyles.callIconWrapper}>
+                <Text style={{ fontSize: 24 }}>📞</Text>
+              </View>
+              <Text style={localStyles.callModalTitle}>Send Call Request</Text>
+              <Text style={localStyles.callModalSubTitle}>
+                Do you want to send a call request to this worker?
+              </Text>
+            </View>
+
+            {/* Selected Worker Info Card */}
+            {selectedWorkerForCall && (
+              <View style={localStyles.callWorkerPreviewCard}>
+                <Image
+                  source={
+                    selectedWorkerForCall.avatar &&
+                    typeof selectedWorkerForCall.avatar === 'string' &&
+                    selectedWorkerForCall.avatar.startsWith('http')
+                      ? { uri: selectedWorkerForCall.avatar }
+                      : DefaultAvatar
+                  }
+                  style={localStyles.callWorkerAvatar}
+                />
+                <View style={localStyles.callWorkerInfo}>
+                  <Text style={localStyles.callWorkerName}>
+                    {selectedWorkerForCall.name || selectedWorkerForCall.fullName || 'Worker'}
+                  </Text>
+                  <Text style={localStyles.callWorkerProfession}>
+                    {selectedWorkerForCall.profession ||
+                      (Array.isArray(selectedWorkerForCall.professions)
+                        ? selectedWorkerForCall.professions[0]
+                        : 'Service Worker')}
+                  </Text>
+                  <View style={localStyles.callWorkerMetaRow}>
+                    <Text style={localStyles.callWorkerRating}>⭐ {selectedWorkerForCall.rating || '4.8'}</Text>
+                    <Text style={localStyles.callWorkerDistance}>📍 {selectedWorkerForCall.distance || selectedWorkerForCall.distanceText || '1.2 km away'}</Text>
+                  </View>
+                </View>
+              </View>
+            )}
+
+            {/* Action Buttons: Cancel and Call Request Send */}
+            <View style={localStyles.callModalActionRow}>
+              <TouchableOpacity
+                style={localStyles.callCancelBtn}
+                onPress={handleCancelCallRequest}
+                activeOpacity={0.8}
+                disabled={isSendingCallReq}
+              >
+                <Text style={localStyles.callCancelBtnText}>Cancel</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={localStyles.callSendReqBtn}
+                onPress={handleConfirmSendCallRequest}
+                activeOpacity={0.85}
+                disabled={isSendingCallReq}
+              >
+                {isSendingCallReq ? (
+                  <ActivityIndicator color="#FFFFFF" size="small" />
+                ) : (
+                  <Text style={localStyles.callSendReqBtnText}>Send Call Request 📞</Text>
                 )}
               </TouchableOpacity>
             </View>
@@ -2690,6 +2816,126 @@ const localStyles = StyleSheet.create({
   saveProfileBtnText: {
     fontSize: 14,
     fontWeight: '800',
+    color: '#FFFFFF',
+  },
+  callModalContainer: {
+    width: '88%',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 20,
+    elevation: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+  },
+  callModalHeader: {
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  callIconWrapper: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: '#FFEFEF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 10,
+  },
+  callModalTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#0F172A',
+    marginBottom: 4,
+    textAlign: 'center',
+  },
+  callModalSubTitle: {
+    fontSize: 13,
+    color: '#64748B',
+    textAlign: 'center',
+    paddingHorizontal: 8,
+  },
+  callWorkerPreviewCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F8FAFC',
+    borderRadius: 14,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    marginBottom: 20,
+  },
+  callWorkerAvatar: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    marginRight: 12,
+  },
+  callWorkerInfo: {
+    flex: 1,
+  },
+  callWorkerName: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#0F172A',
+  },
+  callWorkerProfession: {
+    fontSize: 12.5,
+    color: '#FF5436',
+    fontWeight: '600',
+    marginBottom: 2,
+  },
+  callWorkerMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  callWorkerRating: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#1E293B',
+  },
+  callWorkerDistance: {
+    fontSize: 11.5,
+    color: '#64748B',
+  },
+  callModalActionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 10,
+  },
+  callCancelBtn: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 12,
+    backgroundColor: '#F1F5F9',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+  },
+  callCancelBtnText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#475569',
+  },
+  callSendReqBtn: {
+    flex: 1.3,
+    paddingVertical: 12,
+    borderRadius: 12,
+    backgroundColor: '#FF5436',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#FF5436',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  callSendReqBtnText: {
+    fontSize: 14,
+    fontWeight: '700',
     color: '#FFFFFF',
   },
 });

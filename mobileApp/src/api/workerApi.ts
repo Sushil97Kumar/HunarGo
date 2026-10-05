@@ -220,22 +220,43 @@ export const workerApi = {
   },
 
   /**
-   * Fetch Customer Calls list for Worker
+   * Fetch Customer Calls list for Worker from backend
    */
   async getCustomerCalls() {
     try {
-      console.log('API [getCustomerCalls]');
-      return {
-        success: true,
-        calls: [
-          { id: '1', customerName: 'Rajesh Kumar', service: 'AC Service', time: '10 mins ago', status: 'Missed', location: 'Sector 62, Noida' },
-          { id: '2', customerName: 'Priya Sharma', service: 'Plumbing', time: '1 hour ago', status: 'Completed', location: 'Indirapuram' },
-          { id: '3', customerName: 'Amit Verma', service: 'Electrical Repair', time: 'Yesterday', status: 'Received', location: 'Vaishali' },
-        ],
-      };
+      console.log('🚀 API [getCustomerCalls] Fetching worker calls from backend...');
+      const response = await fetch(`${API_BASE_URL}/worker/customer-calls`, {
+        method: 'GET',
+        headers: getAuthHeaders(),
+      });
+      const data = await response.json();
+      console.log('✅ API [getCustomerCalls] Server Response:', data);
+      if (data && data.success && Array.isArray(data.calls)) {
+        return data;
+      }
     } catch (error) {
-      console.error('Error in getCustomerCalls:', error);
-      throw error;
+      console.error('❌ Error in getCustomerCalls:', error);
+    }
+    return { success: true, calls: [] };
+  },
+
+  /**
+   * Update Call Request Status (Accepted / Cancelled)
+   */
+  async updateCallStatus(callId: string, status: 'Accepted' | 'Cancelled' | string) {
+    try {
+      console.log(`🚀 API [updateCallStatus] Updating call ${callId} to ${status}`);
+      const response = await fetch(`${API_BASE_URL}/worker/call-status`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ callId, status }),
+      });
+      const data = await response.json();
+      console.log('✅ API [updateCallStatus] Server Response:', data);
+      return data;
+    } catch (error) {
+      console.error('❌ Error in updateCallStatus:', error);
+      return { success: false };
     }
   },
 };

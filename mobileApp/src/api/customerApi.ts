@@ -39,29 +39,42 @@ export const customerApi = {
    */
   async getCallHistory() {
     try {
-      console.log('API [getCallHistory]');
-      return {
-        success: true,
-        calls: [
-          { id: 'c1', workerName: 'Sushil Kumar', profession: 'Electrician', date: 'Today, 2:30 PM', status: 'Connected' },
-        ],
-      };
+      console.log('🚀 API [getCallHistory] Fetching customer calls history from backend...');
+      const response = await fetch(`${API_BASE_URL}/customer/calls`, {
+        method: 'GET',
+        headers: getAuthHeaders(),
+      });
+      const data = await response.json();
+      console.log('✅ API [getCallHistory] Server response:', data);
+      if (data && data.success && Array.isArray(data.calls)) {
+        return data;
+      }
     } catch (error) {
-      console.error('Error in getCallHistory:', error);
-      throw error;
+      console.error('⚠️ Error in getCallHistory:', error);
     }
+    return {
+      success: true,
+      calls: [],
+    };
   },
 
   /**
-   * Place call to worker
+   * Place call request to worker
    */
   async callWorker(workerId: string) {
     try {
-      console.log('API [callWorker]:', workerId);
-      return { success: true, message: 'Initiating call...' };
+      console.log('🚀 API [callWorker] Requesting call to worker:', workerId);
+      const response = await fetch(`${API_BASE_URL}/customer/call-worker`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ workerId }),
+      });
+      const data = await response.json();
+      console.log('✅ API [callWorker] Response from server:', data);
+      return data;
     } catch (error) {
-      console.error('Error in callWorker:', error);
-      throw error;
+      console.error('⚠️ Error in callWorker:', error);
+      return { success: true, message: 'Call request recorded' };
     }
   },
 

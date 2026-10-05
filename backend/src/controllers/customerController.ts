@@ -1,4 +1,5 @@
 import { Response, NextFunction } from 'express';
+import mongoose from 'mongoose';
 import { AuthRequest } from '../middleware/authMiddleware';
 import User from '../models/User';
 import Call from '../models/Call';
@@ -24,10 +25,34 @@ export const searchWorkers = async (req: AuthRequest, res: Response, next: NextF
     const limitNum = parseInt(limit, 10) || 10;
     const skip = (pageNum - 1) * limitNum;
 
+    // Determine current customer
+    let customerObjectId: mongoose.Types.ObjectId | undefined = undefined;
+    const phoneHeader = (req.headers['x-user-phone'] as string) || '';
+    if (req.user?.id && mongoose.Types.ObjectId.isValid(req.user.id)) {
+      customerObjectId = new mongoose.Types.ObjectId(req.user.id);
+    } else if (phoneHeader) {
+      const customerUser = await User.findOne({ phoneNumber: phoneHeader });
+      if (customerUser) customerObjectId = customerUser._id as mongoose.Types.ObjectId;
+    }
+    if (!customerObjectId) {
+      const customerUser = await User.findOne({ role: 'customer' });
+      if (customerUser) customerObjectId = customerUser._id as mongoose.Types.ObjectId;
+    }
+
+    // Find all worker IDs to whom this customer currently has a 'Pending' call request
+    let pendingWorkerIds: string[] = [];
+    if (customerObjectId) {
+      const pendingCalls = await Call.find({ customerId: customerObjectId, status: 'Pending' });
+      pendingWorkerIds = pendingCalls.map((c) => (c.workerId ? c.workerId.toString() : '')).filter(Boolean);
+    }
+
     let totalWorkers = 0;
     let workers: any = [];
     try {
       const filter: any = { role: 'worker' };
+      if (pendingWorkerIds.length > 0) {
+        filter._id = { $nin: pendingWorkerIds.map((id) => new mongoose.Types.ObjectId(id)) };
+      }
       if (category && category !== 'All') filter.professions = category;
       if (query) filter.fullName = new RegExp(query, 'i');
 
@@ -51,14 +76,17 @@ export const searchWorkers = async (req: AuthRequest, res: Response, next: NextF
       workers = await User.find(filter).skip(skip).limit(limitNum);
     } catch (err) {
       const filter: any = { role: 'worker' };
+      if (pendingWorkerIds.length > 0) {
+        filter._id = { $nin: pendingWorkerIds.map((id) => new mongoose.Types.ObjectId(id)) };
+      }
       if (category && category !== 'All') filter.professions = category;
       if (query) filter.fullName = new RegExp(query, 'i');
       workers = await User.find(filter).skip(skip).limit(limitNum);
-      totalWorkers = 25;
+      totalWorkers = await User.countDocuments(filter);
     }
 
     if (!workers || workers.length === 0) {
-      const allSampleWorkers = [
+      let allSampleWorkers = [
         // Page 1
         { id: 'w1', name: 'Amit Sharma', fullName: 'Amit Sharma', profession: 'Carpenter', rating: '4.8', reviews: '124', distance: '1.2 km away', phone: '+919876543210' },
         { id: 'w2', name: 'Priya Singh', fullName: 'Priya Singh', profession: 'Beautician', rating: '4.9', reviews: '98', distance: '2.8 km away', phone: '+919876543211' },
@@ -91,6 +119,11 @@ export const searchWorkers = async (req: AuthRequest, res: Response, next: NextF
         { id: 'w23', name: 'Sunil Chhetri', fullName: 'Sunil Chhetri', profession: 'Technician', rating: '4.8', reviews: '94', distance: '7.2 km away', phone: '+919876543232' },
         { id: 'w24', name: 'Hardik Pandya', fullName: 'Hardik Pandya', profession: 'Electrician', rating: '4.7', reviews: '58', distance: '8.1 km away', phone: '+919876543233' },
       ];
+
+      // Exclude any pending call workers from sample list
+      if (pendingWorkerIds.length > 0) {
+        allSampleWorkers = allSampleWorkers.filter((w) => !pendingWorkerIds.includes(w.id));
+      }
 
       totalWorkers = allSampleWorkers.length;
       const startIndex = (pageNum - 1) * limitNum;
@@ -134,21 +167,39 @@ export const searchWorkers = async (req: AuthRequest, res: Response, next: NextF
  */
 export const getCallHistory = async (req: AuthRequest, res: Response, next: NextFunction): Promise<Response | void> => {
   try {
-    let calls: any = [];
-    try {
-      calls = await Call.find({ customerId: req.user?.id }).sort({ createdAt: -1 });
-    } catch (err) {}
-
-    if (!calls || calls.length === 0) {
-      calls = [
-        { id: 'c1', workerName: 'Raj Kumar', profession: 'Electrician', date: 'Today, 2:30 PM', status: 'Connected', phone: '+91 98765 43210' },
-        { id: 'c2', workerName: 'Suresh Patel', profession: 'Plumber', date: 'Yesterday, 11:15 AM', status: 'Completed', phone: '+91 98765 43211' },
-      ];
+    let customerObjectId: mongoose.Types.ObjectId | undefined = undefined;
+    const phoneHeader = (req.headers['x-user-phone'] as string) || '';
+    if (req.user?.id && mongoose.Types.ObjectId.isValid(req.user.id)) {
+      customerObjectId = new mongoose.Types.ObjectId(req.user.id);
+    } else if (phoneHeader) {
+      const customerUser = await User.findOne({ phoneNumber: phoneHeader });
+      if (customerUser) customerObjectId = customerUser._id as mongoose.Types.ObjectId;
     }
+    if (!customerObjectId) {
+      const customerUser = await User.findOne({ role: 'customer' });
+      if (customerUser) customerObjectId = customerUser._id as mongoose.Types.ObjectId;
+    }
+
+    let callsFromDb: any = [];
+    if (customerObjectId) {
+      callsFromDb = await Call.find({ customerId: customerObjectId })
+        .populate('workerId', 'fullName phoneNumber professions profileImage')
+        .sort({ createdAt: -1 });
+    }
+
+    const formattedCalls = callsFromDb.map((c: any) => ({
+      id: c._id ? c._id.toString() : c.id,
+      workerName: c.workerId?.fullName || 'Worker',
+      profession: Array.isArray(c.workerId?.professions) && c.workerId.professions.length > 0 ? c.workerId.professions[0] : 'Handyman',
+      date: c.time || 'Just now',
+      status: c.status || 'Pending',
+      phone: c.workerId?.phoneNumber || '+91 98765 43210',
+      emoji: '📞',
+    }));
 
     return res.status(200).json({
       success: true,
-      calls,
+      calls: formattedCalls,
     });
   } catch (error) {
     next(error);
@@ -161,23 +212,60 @@ export const getCallHistory = async (req: AuthRequest, res: Response, next: Next
  */
 export const callWorker = async (req: AuthRequest, res: Response, next: NextFunction): Promise<Response | void> => {
   try {
-    const { workerId, workerName, service } = req.body;
+    const { workerId, workerName } = req.body;
+    const phoneHeader = (req.headers['x-user-phone'] as string) || '';
 
-    try {
-      await Call.create({
-        customerName: 'Amit Sharma',
-        workerPhone: '+91 98765 43210',
-        service: service || 'Repair Request',
-        status: 'Initiated',
-        time: 'Just now',
-      });
-    } catch (err) {}
+    // Determine Customer ID
+    let customerObjectId: mongoose.Types.ObjectId | undefined = undefined;
+    if (req.user?.id && mongoose.Types.ObjectId.isValid(req.user.id)) {
+      customerObjectId = new mongoose.Types.ObjectId(req.user.id);
+    } else if (phoneHeader) {
+      const customerUser = await User.findOne({ phoneNumber: phoneHeader });
+      if (customerUser) {
+        customerObjectId = customerUser._id as mongoose.Types.ObjectId;
+      }
+    }
+
+    if (!customerObjectId) {
+      const customerUser = await User.findOne({ role: 'customer' });
+      if (customerUser) {
+        customerObjectId = customerUser._id as mongoose.Types.ObjectId;
+      }
+    }
+
+    // Determine Worker ID
+    let workerObjectId: mongoose.Types.ObjectId | undefined = undefined;
+    if (workerId && mongoose.Types.ObjectId.isValid(workerId)) {
+      workerObjectId = new mongoose.Types.ObjectId(workerId);
+    } else {
+      const workerUser = await User.findOne({ role: 'worker' });
+      if (workerUser) {
+        workerObjectId = workerUser._id as mongoose.Types.ObjectId;
+      }
+    }
+
+    // Save Call Request in Call collection with status 'Pending'
+    const newCall = await Call.create({
+      customerId: customerObjectId,
+      workerId: workerObjectId,
+      status: 'Pending',
+      time: 'Just now',
+    });
+
+    console.log('📞 [Call Request Saved to Call Collection]:', {
+      id: newCall._id,
+      customerId: newCall.customerId,
+      workerId: newCall.workerId,
+      status: newCall.status,
+    });
 
     return res.status(200).json({
       success: true,
-      message: `Initiating direct phone call to ${workerName || 'worker'}...`,
+      message: `Call request sent to ${workerName || 'worker'} successfully!`,
+      call: newCall,
     });
   } catch (error) {
+    console.error('⚠️ Error in callWorker:', error);
     next(error);
   }
 };

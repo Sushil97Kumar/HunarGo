@@ -12,6 +12,7 @@ import {
   getDashboardStats,
   getCustomerCalls,
   uploadProfileImage,
+  updateCallStatus,
 } from '../controllers/workerController';
 
 const router = Router();
@@ -26,5 +27,6 @@ router.post('/professions', authMiddleware, updateProfessions);
 router.post('/availability', authMiddleware, toggleAvailability);
 router.get('/dashboard-stats', authMiddleware, getDashboardStats);
 router.get('/customer-calls', authMiddleware, getCustomerCalls);
+router.post('/call-status', authMiddleware, updateCallStatus);
 
 export default router;

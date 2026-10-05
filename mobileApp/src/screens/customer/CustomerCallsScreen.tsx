@@ -54,7 +54,7 @@ export const CustomerCallsScreen: React.FC = () => {
     try {
       const res = await customerApi.getCallHistory();
       if (res && res.calls && Array.isArray(res.calls) && res.calls.length > 0) {
-        // Merge API calls if available
+        setCallHistory(res.calls);
       }
     } catch (err) {
       console.error('Error fetching customer call history:', err);
@@ -115,7 +115,7 @@ export const CustomerCallsScreen: React.FC = () => {
             <View key={item.id} style={styles.compactCallCard}>
               <View style={styles.compactCardLeft}>
                 <View style={styles.compactAvatarCircle}>
-                  <Text style={styles.compactAvatarEmoji}>{item.emoji || '🛠️'}</Text>
+                  <Text style={styles.compactAvatarEmoji}>{item.emoji || '📞'}</Text>
                 </View>
                 <View style={styles.compactInfoGroup}>
                   <Text style={styles.compactCustomerName}>{item.workerName}</Text>
@@ -123,14 +123,28 @@ export const CustomerCallsScreen: React.FC = () => {
                 </View>
               </View>
 
-              <TouchableOpacity
-                style={styles.compactCallBackBtn}
-                activeOpacity={0.8}
-                onPress={() => customerApi.callWorker(item.id)}
-              >
-                <Text style={styles.callBackBtnIcon}>📞</Text>
-                <Text style={styles.callBackBtnText}>Call Again</Text>
-              </TouchableOpacity>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <View
+                  style={{
+                    backgroundColor: item.status === 'Pending' ? '#FFF7ED' : item.status === 'Connected' ? '#DCFCE7' : '#F1F5F9',
+                    borderColor: item.status === 'Pending' ? '#FFD8A8' : item.status === 'Connected' ? '#86EFAC' : '#CBD5E1',
+                    borderWidth: 1,
+                    borderRadius: 14,
+                    paddingHorizontal: 10,
+                    paddingVertical: 5,
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontSize: 12,
+                      fontWeight: '800',
+                      color: item.status === 'Pending' ? '#C2410C' : item.status === 'Connected' ? '#166534' : '#475569',
+                    }}
+                  >
+                    {item.status === 'Pending' ? '⏳ Pending' : item.status}
+                  </Text>
+                </View>
+              </View>
             </View>
           ))
         )}

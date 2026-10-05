@@ -1,4 +1,5 @@
 import { Response, NextFunction } from 'express';
+import mongoose from 'mongoose';
 import { AuthRequest } from '../middleware/authMiddleware';
 import User from '../models/User';
 import Call from '../models/Call';
@@ -362,24 +363,67 @@ export const getDashboardStats = async (req: AuthRequest, res: Response, next: N
  */
 export const getCustomerCalls = async (req: AuthRequest, res: Response, next: NextFunction): Promise<Response | void> => {
   try {
-    let calls: any = [];
-    try {
-      calls = await Call.find().sort({ createdAt: -1 });
-    } catch (err) { }
+    let workerObjectId: mongoose.Types.ObjectId | undefined = undefined;
+    const phoneHeader = (req.headers['x-user-phone'] as string) || '';
 
-    if (!calls || calls.length === 0) {
-      calls = [
-        { id: '1', customerName: 'Amit Sharma', distance: '1.2 km away', service: 'Fan Repair & Wiring', time: 'Today 10:24 AM', status: 'Called', avatar: '👨' },
-        { id: '2', customerName: 'Priya Singh', distance: '2.8 km away', service: 'Switchboard Fix', time: 'Yesterday 04:12 PM', status: 'Called', avatar: '👩' },
-        { id: '3', customerName: 'Rohit Verma', distance: '4.5 km away', service: 'MCB Tripping Repair', time: '12 Sep 2025 11:36 AM', status: 'Called', avatar: '👨‍💼' },
-        { id: '4', customerName: 'Neha Gupta', distance: '5.1 km away', service: 'Inverter Installation', time: '10 Sep 2025 03:20 PM', status: 'Called', avatar: '👩‍💼' },
-        { id: '5', customerName: 'Vikas Malhotra', distance: '6.0 km away', service: 'General Electrical', time: '08 Sep 2025 02:15 PM', status: 'Called', avatar: '🧑‍🔧' },
-      ];
+    if (req.user?.id && mongoose.Types.ObjectId.isValid(req.user.id)) {
+      workerObjectId = new mongoose.Types.ObjectId(req.user.id);
+    } else if (phoneHeader) {
+      const workerUser = await User.findOne({ phoneNumber: phoneHeader });
+      if (workerUser) workerObjectId = workerUser._id as mongoose.Types.ObjectId;
     }
+
+    if (!workerObjectId) {
+      const workerUser = await User.findOne({ role: 'worker' });
+      if (workerUser) workerObjectId = workerUser._id as mongoose.Types.ObjectId;
+    }
+
+    let callsFromDb: any = [];
+    if (workerObjectId) {
+      callsFromDb = await Call.find({
+        $or: [
+          { workerId: workerObjectId },
+          { workerId: { $exists: false } },
+          { workerId: null }
+        ]
+      })
+        .populate('customerId', 'fullName phoneNumber email profileImage location')
+        .sort({ createdAt: -1 });
+    }
+
+    if (!callsFromDb || callsFromDb.length === 0) {
+      callsFromDb = await Call.find()
+        .populate('customerId', 'fullName phoneNumber email profileImage location')
+        .sort({ createdAt: -1 });
+    }
+
+    const formattedCalls = await Promise.all(
+      callsFromDb.map(async (c: any) => {
+        let cust = c.customerId;
+        if (cust && typeof cust === 'object' && cust.fullName) {
+          // Already populated
+        } else if (c.customerId && mongoose.Types.ObjectId.isValid(c.customerId)) {
+          cust = await User.findById(c.customerId).select('fullName phoneNumber email profileImage location');
+        }
+
+        return {
+          id: c._id ? c._id.toString() : c.id,
+          customerName: cust?.fullName || c.customerName || 'Customer',
+          phone: cust?.phoneNumber || c.customerPhone || '+91 98765 43210',
+          service: c.service || 'Call Request Received',
+          distance: cust?.location?.city ? `Near ${cust.location.city}` : (c.distance || '1.2 km away'),
+          time: c.time || 'Just now',
+          status: c.status || 'Pending',
+          avatar: (cust?.profileImage && !cust.profileImage.startsWith('file://')) ? cust.profileImage : '👤',
+        };
+      })
+    );
+
+    console.log(`📞 [getCustomerCalls] Returning ${formattedCalls.length} call requests for worker`);
 
     return res.status(200).json({
       success: true,
-      calls,
+      calls: formattedCalls,
     });
   } catch (error) {
     next(error);
@@ -505,6 +549,38 @@ export const uploadProfileImage = async (req: any, res: Response, next: NextFunc
         key: newKey,
       });
     }
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * @desc    Update Call Request Status (Accept or Cancel)
+ * @route   POST /api/worker/call-status
+ */
+export const updateCallStatus = async (req: AuthRequest, res: Response, next: NextFunction): Promise<Response | void> => {
+  try {
+    const { callId, status } = req.body;
+    if (!callId || !status) {
+      return res.status(400).json({ success: false, message: 'callId and status are required' });
+    }
+
+    let updatedCall = null;
+    if (mongoose.Types.ObjectId.isValid(callId)) {
+      updatedCall = await Call.findByIdAndUpdate(callId, { status }, { new: true });
+    }
+
+    if (!updatedCall) {
+      updatedCall = await Call.findOneAndUpdate({ status: 'Pending' }, { status }, { new: true, sort: { createdAt: -1 } });
+    }
+
+    console.log(`📞 [Call Status Updated]: ID ${callId} set to status ${status}`);
+
+    return res.status(200).json({
+      success: true,
+      message: `Call status updated to ${status}`,
+      call: updatedCall,
+    });
   } catch (error) {
     next(error);
   }
