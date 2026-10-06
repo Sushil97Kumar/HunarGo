@@ -15,7 +15,8 @@ interface CallRecord {
   profession: string;
   date: string;
   status: string;
-  duration: string;
+  duration?: string;
+  phone?: string;
   emoji?: string;
 }
 
@@ -123,11 +124,21 @@ export const CustomerCallsScreen: React.FC = () => {
                 </View>
               </View>
 
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <View style={{ flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
                 <View
                   style={{
-                    backgroundColor: item.status === 'Pending' ? '#FFF7ED' : item.status === 'Connected' ? '#DCFCE7' : '#F1F5F9',
-                    borderColor: item.status === 'Pending' ? '#FFD8A8' : item.status === 'Connected' ? '#86EFAC' : '#CBD5E1',
+                    backgroundColor:
+                      item.status === 'Accepted'
+                        ? '#DCFCE7'
+                        : item.status === 'Pending'
+                        ? '#FFF7ED'
+                        : '#FEE2E2',
+                    borderColor:
+                      item.status === 'Accepted'
+                        ? '#86EFAC'
+                        : item.status === 'Pending'
+                        ? '#FFD8A8'
+                        : '#FCA5A5',
                     borderWidth: 1,
                     borderRadius: 14,
                     paddingHorizontal: 10,
@@ -138,12 +149,42 @@ export const CustomerCallsScreen: React.FC = () => {
                     style={{
                       fontSize: 12,
                       fontWeight: '800',
-                      color: item.status === 'Pending' ? '#C2410C' : item.status === 'Connected' ? '#166534' : '#475569',
+                      color:
+                        item.status === 'Accepted'
+                          ? '#166534'
+                          : item.status === 'Pending'
+                          ? '#C2410C'
+                          : '#B91C1C',
                     }}
                   >
-                    {item.status === 'Pending' ? '⏳ Pending' : item.status}
+                    {item.status === 'Accepted'
+                      ? '✓ Accepted'
+                      : item.status === 'Pending'
+                      ? '⏳ Pending'
+                      : item.status === 'Cancelled'
+                      ? '✕ Cancelled'
+                      : item.status}
                   </Text>
                 </View>
+
+                {item.status === 'Accepted' && (
+                  <View
+                    style={{
+                      backgroundColor: '#16A34A',
+                      paddingHorizontal: 10,
+                      paddingVertical: 5,
+                      borderRadius: 10,
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: 4,
+                      marginTop: 2,
+                    }}
+                  >
+                    <Text style={{ color: '#FFFFFF', fontSize: 12, fontWeight: '700' }}>
+                      📱 {item.phone || '+91 98765 43210'}
+                    </Text>
+                  </View>
+                )}
               </View>
             </View>
           ))

@@ -187,15 +187,32 @@ export const getCallHistory = async (req: AuthRequest, res: Response, next: Next
         .sort({ createdAt: -1 });
     }
 
-    const formattedCalls = callsFromDb.map((c: any) => ({
-      id: c._id ? c._id.toString() : c.id,
-      workerName: c.workerId?.fullName || 'Worker',
-      profession: Array.isArray(c.workerId?.professions) && c.workerId.professions.length > 0 ? c.workerId.professions[0] : 'Handyman',
-      date: c.time || 'Just now',
-      status: c.status || 'Pending',
-      phone: c.workerId?.phoneNumber || '+91 98765 43210',
-      emoji: '📞',
-    }));
+    if (!callsFromDb || callsFromDb.length === 0) {
+      callsFromDb = await Call.find()
+        .populate('workerId', 'fullName phoneNumber professions profileImage')
+        .sort({ createdAt: -1 });
+    }
+
+    const formattedCalls = await Promise.all(
+      callsFromDb.map(async (c: any) => {
+        let worker = c.workerId;
+        if (worker && typeof worker === 'object' && worker.fullName) {
+          // Already populated
+        } else if (c.workerId && mongoose.Types.ObjectId.isValid(c.workerId)) {
+          worker = await User.findById(c.workerId).select('fullName phoneNumber professions profileImage');
+        }
+
+        return {
+          id: c._id ? c._id.toString() : c.id,
+          workerName: worker?.fullName || 'Worker',
+          profession: Array.isArray(worker?.professions) && worker.professions.length > 0 ? worker.professions[0] : 'Handyman',
+          date: c.time || 'Just now',
+          status: c.status || 'Pending',
+          phone: worker?.phoneNumber || '+91 98765 43210',
+          emoji: '📞',
+        };
+      })
+    );
 
     return res.status(200).json({
       success: true,
