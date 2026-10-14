@@ -35,20 +35,14 @@ var __importStar = (this && this.__importStar) || (function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importStar(require("mongoose"));
 const callSchema = new mongoose_1.Schema({
-    customerName: { type: String, required: true },
-    customerPhone: { type: String, default: '' },
-    workerPhone: { type: String, default: '' },
     workerId: { type: mongoose_1.Schema.Types.ObjectId, ref: 'User' },
     customerId: { type: mongoose_1.Schema.Types.ObjectId, ref: 'User' },
-    service: { type: String, default: 'General Repair' },
-    distance: { type: String, default: '1.2 km away' },
     status: {
         type: String,
-        enum: ['Initiated', 'Connected', 'Called', 'Missed', 'Completed'],
-        default: 'Called',
+        enum: ['Initiated', 'Connected', 'Called', 'Missed', 'Completed', 'Pending', 'Accepted', 'Cancelled'],
+        default: 'Pending',
     },
     time: { type: String, default: 'Just now' },
-    location: { type: String, default: 'Sector 62, Noida' },
 }, {
     timestamps: true,
 });

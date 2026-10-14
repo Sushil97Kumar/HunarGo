@@ -18,6 +18,7 @@ import {
 } from 'react-native';
 import { HunarGoLogo, DefaultAvatar, Screen2Illustration, HeroIllustration, OnboardingBg } from '../../utils/assets';
 import { CustomerCallsScreen } from './CustomerCallsScreen';
+import { CustomerCallingScreen } from './CustomerCallingScreen';
 import { styles } from '../../styles/styles';
 import { customerApi } from '../../api/customerApi';
 
@@ -60,6 +61,10 @@ export const CustomerHomeScreen: React.FC<Props> = ({ onBackToOnboarding }) => {
   const [showCallConfirmModal, setShowCallConfirmModal] = useState(false);
   const [selectedWorkerForCall, setSelectedWorkerForCall] = useState<any | null>(null);
   const [isSendingCallReq, setIsSendingCallReq] = useState(false);
+
+  // Full-Screen Customer Outgoing Calling Screen State
+  const [callingWorker, setCallingWorker] = useState<any | null>(null);
+  const [showCallingScreen, setShowCallingScreen] = useState(false);
 
   const modalCategoriesFilters = [
     { id: 'All', title: 'All', emoji: '🌟', bg: '#FFF7ED', color: '#C2410C', border: '#FFD8A8' },
@@ -177,47 +182,57 @@ export const CustomerHomeScreen: React.FC<Props> = ({ onBackToOnboarding }) => {
     }
   };
 
+  const handleStartCall = (worker: any) => {
+    if (!worker) return;
+    console.log('📞 [CustomerHomeScreen] Starting call with worker:', worker.name || worker.fullName);
+    const normalizedWorker = {
+      id: worker._id || worker.id,
+      _id: worker._id || worker.id,
+      name: worker.name || worker.fullName || 'Worker',
+      fullName: worker.fullName || worker.name || 'Worker',
+      profession: worker.profession || (Array.isArray(worker.professions) ? worker.professions[0] : 'Handyman'),
+      avatar: worker.avatar || worker.profileImage || '',
+      profileImage: worker.profileImage || worker.avatar || '',
+      rating: worker.rating || '4.8',
+      distance: worker.distance || worker.distanceText || '1.2 km away',
+      phone: worker.phone || worker.phoneNumber || '',
+    };
+    setCallingWorker(normalizedWorker);
+    setSelectedWorkerForCall(normalizedWorker);
+    setShowCallingScreen(true);
+    setShowCallConfirmModal(false);
+    setShowAllWorkersModal(false);
+  };
+
+  const handleEndCall = () => {
+    console.log('🔴 [CustomerHomeScreen] Call ended.');
+    setShowCallingScreen(false);
+    const targetWorkerId = callingWorker?._id || callingWorker?.id;
+    if (targetWorkerId) {
+      setAllWorkersList((prev) => prev.filter((w) => (w._id || w.id) !== targetWorkerId));
+      setNearbyWorkers((prev) => prev.filter((w) => (w._id || w.id) !== targetWorkerId));
+    }
+    setCallingWorker(null);
+    setSelectedWorkerForCall(null);
+    fetchNearbyWorkers();
+    fetchPaginatedWorkers(allWorkersPage);
+  };
+
   const handleCallWorker = (workerId: string) => {
-    customerApi.callWorker(workerId);
+    const foundWorker =
+      nearbyWorkers.find((w) => (w._id || w.id) === workerId) ||
+      allWorkersList.find((w) => (w._id || w.id) === workerId) ||
+      { id: workerId, name: 'Worker' };
+    handleStartCall(foundWorker);
   };
 
   const handleOpenCallConfirm = (worker: any) => {
-    setSelectedWorkerForCall(worker);
-    setShowCallConfirmModal(true);
+    handleStartCall(worker);
   };
 
-  const handleConfirmSendCallRequest = async () => {
-    if (!selectedWorkerForCall) return;
-    setIsSendingCallReq(true);
-    try {
-      const workerId = selectedWorkerForCall.id || selectedWorkerForCall._id || '1';
-      await customerApi.callWorker(workerId);
-      setIsSendingCallReq(false);
-      setShowCallConfirmModal(false);
-      const workerName = selectedWorkerForCall.name || selectedWorkerForCall.fullName || 'Worker';
-
-      // Immediately filter out the worker from local state
-      const targetId = selectedWorkerForCall.id || selectedWorkerForCall._id;
-      setAllWorkersList((prev) => prev.filter((w) => (w.id || w._id) !== targetId));
-      setNearbyWorkers((prev) => prev.filter((w) => (w.id || w._id) !== targetId));
-
-      Alert.alert(
-        'Call Request Sent 📞',
-        `Call request sent to ${workerName} successfully!`,
-        [
-          {
-            text: 'OK',
-            onPress: () => {
-              setSelectedWorkerForCall(null);
-              fetchPaginatedWorkers(allWorkersPage);
-              fetchNearbyWorkers();
-            },
-          },
-        ]
-      );
-    } catch (err) {
-      setIsSendingCallReq(false);
-      Alert.alert('Error ⚠️', 'Failed to send call request. Please try again.');
+  const handleConfirmSendCallRequest = () => {
+    if (selectedWorkerForCall) {
+      handleStartCall(selectedWorkerForCall);
     }
   };
 
@@ -747,7 +762,7 @@ export const CustomerHomeScreen: React.FC<Props> = ({ onBackToOnboarding }) => {
                 <TouchableOpacity
                   style={localStyles.callPillBtn}
                   activeOpacity={0.85}
-                  onPress={() => handleOpenCallConfirm(worker)}
+                  onPress={() => handleStartCall(worker)}
                 >
                   <Text style={localStyles.callPillText}>📞 Call</Text>
                 </TouchableOpacity>
@@ -896,7 +911,7 @@ export const CustomerHomeScreen: React.FC<Props> = ({ onBackToOnboarding }) => {
                     <TouchableOpacity
                       style={localStyles.modalCallBtn}
                       activeOpacity={0.85}
-                      onPress={() => handleOpenCallConfirm(worker)}
+                      onPress={() => handleStartCall(worker)}
                     >
                       <Text style={localStyles.modalCallBtnText}>📞 Call</Text>
                     </TouchableOpacity>
@@ -1001,7 +1016,7 @@ export const CustomerHomeScreen: React.FC<Props> = ({ onBackToOnboarding }) => {
       </Modal>
 
       {/* Customer Calls History */}
-      {activeTab === 'calls' && <CustomerCallsScreen />}
+      {activeTab === 'calls' && <CustomerCallsScreen onStartCall={handleStartCall} />}
 
       {/* Profile Tab */}
       {activeTab === 'profile' && (
@@ -1501,6 +1516,13 @@ export const CustomerHomeScreen: React.FC<Props> = ({ onBackToOnboarding }) => {
           </View>
         </View>
       </Modal>
+
+      {/* FULL-SCREEN CUSTOMER OUTGOING CALLING SCREEN */}
+      <CustomerCallingScreen
+        visible={showCallingScreen}
+        worker={callingWorker}
+        onEndCall={handleEndCall}
+      />
     </SafeAreaView>
     </ImageBackground>
   );

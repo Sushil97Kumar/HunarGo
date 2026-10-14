@@ -1,4 +1,5 @@
 import { API_BASE_URL, ENDPOINTS, defaultHeaders, setAuthToken, setActiveUserPhone, setLoggedInUser } from './apiConfig';
+import { socketService } from '../services/socketService';
 
 export interface SendOtpPayload {
   phoneNumber: string;
@@ -63,6 +64,13 @@ export const authApi = {
           setActiveUserPhone(data.user.phoneNumber);
         } else if (payload.phoneNumber) {
           setActiveUserPhone(payload.phoneNumber);
+        }
+
+        // Establish real-time authenticated socket connection
+        try {
+          socketService.connect();
+        } catch (socketErr) {
+          console.warn('⚠️ [SocketClient Auto-Connect Error]:', socketErr);
         }
       }
       return data;

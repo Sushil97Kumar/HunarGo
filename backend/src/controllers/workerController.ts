@@ -5,6 +5,7 @@ import User from '../models/User';
 import Call from '../models/Call';
 import { PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
 import { s3 } from '../config/s3';
+import { emitToUser } from '../services/socketService';
 
 /**
  * @desc    Get Worker Profile
@@ -575,6 +576,21 @@ export const updateCallStatus = async (req: AuthRequest, res: Response, next: Ne
     }
 
     console.log(`📞 [Call Status Updated]: ID ${callId} set to status ${status}`);
+
+    // Real-time broadcast to both Customer and Worker rooms
+    if (updatedCall) {
+      const eventPayload = {
+        callId: updatedCall._id ? updatedCall._id.toString() : callId,
+        status,
+        updatedAt: new Date().toISOString(),
+      };
+      if (updatedCall.customerId) {
+        emitToUser(updatedCall.customerId.toString(), 'call_status_updated', eventPayload);
+      }
+      if (updatedCall.workerId) {
+        emitToUser(updatedCall.workerId.toString(), 'call_status_updated', eventPayload);
+      }
+    }
 
     return res.status(200).json({
       success: true,

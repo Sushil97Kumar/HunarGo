@@ -3,11 +3,13 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.uploadProfileImage = exports.getCustomerCalls = exports.getDashboardStats = exports.toggleAvailability = exports.getProfessions = exports.updateProfessions = exports.getLocation = exports.updateLocation = exports.updateProfile = exports.getProfile = void 0;
+exports.updateCallStatus = exports.uploadProfileImage = exports.getCustomerCalls = exports.getDashboardStats = exports.toggleAvailability = exports.getProfessions = exports.updateProfessions = exports.getLocation = exports.updateLocation = exports.updateProfile = exports.getProfile = void 0;
+const mongoose_1 = __importDefault(require("mongoose"));
 const User_1 = __importDefault(require("../models/User"));
 const Call_1 = __importDefault(require("../models/Call"));
 const client_s3_1 = require("@aws-sdk/client-s3");
 const s3_1 = require("../config/s3");
+const socketService_1 = require("../services/socketService");
 /**
  * @desc    Get Worker Profile
  * @route   GET /api/worker/profile
@@ -15,21 +17,42 @@ const s3_1 = require("../config/s3");
 const getProfile = async (req, res, next) => {
     try {
         let worker;
+        const headerPhone = req.headers['x-user-phone'];
+        const userPhone = req.user?.phoneNumber;
         if (req.user?.id && req.user.id !== 'mock-user-id') {
             try {
                 worker = await User_1.default.findById(req.user.id);
             }
             catch (err) { }
         }
-        if (!worker && req.user?.phoneNumber) {
+        const phoneCandidates = [userPhone, headerPhone].filter(Boolean);
+        for (const rawP of phoneCandidates) {
+            if (worker)
+                break;
+            const digits = rawP.replace(/\D/g, '');
+            const last10 = digits.slice(-10);
+            if (last10) {
+                try {
+                    worker = await User_1.default.findOne({
+                        $or: [
+                            { phoneNumber: rawP },
+                            { phoneNumber: `+91${last10}` },
+                            { phoneNumber: last10 },
+                        ],
+                    });
+                }
+                catch (err) { }
+            }
+        }
+        if (!worker) {
             try {
-                worker = await User_1.default.findOne({ phoneNumber: formatPhoneNumber(req.user.phoneNumber) });
+                worker = await User_1.default.findOne({ role: 'worker' }).sort({ updatedAt: -1 });
             }
             catch (err) { }
         }
-        if (!worker && req.headers['x-user-phone']) {
+        if (!worker) {
             try {
-                worker = await User_1.default.findOne({ phoneNumber: formatPhoneNumber(req.headers['x-user-phone']) });
+                worker = await User_1.default.findOne().sort({ updatedAt: -1 });
             }
             catch (err) { }
         }
@@ -103,8 +126,9 @@ const updateProfile = async (req, res, next) => {
             updateFields.dob = dob;
         if (referralCode !== undefined)
             updateFields.referralCode = referralCode;
-        if (profileImageUri !== undefined)
+        if (profileImageUri !== undefined && typeof profileImageUri === 'string' && profileImageUri.trim() !== '') {
             updateFields.profileImage = profileImageUri;
+        }
         const user = await User_1.default.findOneAndUpdate(query, { $set: updateFields }, { new: true, upsert: true });
         console.log('🎉 [MongoDB Profile Updated Successfully]:', {
             _id: user?._id,
@@ -342,23 +366,61 @@ exports.getDashboardStats = getDashboardStats;
  */
 const getCustomerCalls = async (req, res, next) => {
     try {
-        let calls = [];
-        try {
-            calls = await Call_1.default.find().sort({ createdAt: -1 });
+        let workerObjectId = undefined;
+        const phoneHeader = req.headers['x-user-phone'] || '';
+        if (req.user?.id && mongoose_1.default.Types.ObjectId.isValid(req.user.id)) {
+            workerObjectId = new mongoose_1.default.Types.ObjectId(req.user.id);
         }
-        catch (err) { }
-        if (!calls || calls.length === 0) {
-            calls = [
-                { id: '1', customerName: 'Amit Sharma', distance: '1.2 km away', service: 'Fan Repair & Wiring', time: 'Today 10:24 AM', status: 'Called', avatar: '👨' },
-                { id: '2', customerName: 'Priya Singh', distance: '2.8 km away', service: 'Switchboard Fix', time: 'Yesterday 04:12 PM', status: 'Called', avatar: '👩' },
-                { id: '3', customerName: 'Rohit Verma', distance: '4.5 km away', service: 'MCB Tripping Repair', time: '12 Sep 2025 11:36 AM', status: 'Called', avatar: '👨‍💼' },
-                { id: '4', customerName: 'Neha Gupta', distance: '5.1 km away', service: 'Inverter Installation', time: '10 Sep 2025 03:20 PM', status: 'Called', avatar: '👩‍💼' },
-                { id: '5', customerName: 'Vikas Malhotra', distance: '6.0 km away', service: 'General Electrical', time: '08 Sep 2025 02:15 PM', status: 'Called', avatar: '🧑‍🔧' },
-            ];
+        else if (phoneHeader) {
+            const workerUser = await User_1.default.findOne({ phoneNumber: phoneHeader });
+            if (workerUser)
+                workerObjectId = workerUser._id;
         }
+        if (!workerObjectId) {
+            const workerUser = await User_1.default.findOne({ role: 'worker' });
+            if (workerUser)
+                workerObjectId = workerUser._id;
+        }
+        let callsFromDb = [];
+        if (workerObjectId) {
+            callsFromDb = await Call_1.default.find({
+                $or: [
+                    { workerId: workerObjectId },
+                    { workerId: { $exists: false } },
+                    { workerId: null }
+                ]
+            })
+                .populate('customerId', 'fullName phoneNumber email profileImage location')
+                .sort({ createdAt: -1 });
+        }
+        if (!callsFromDb || callsFromDb.length === 0) {
+            callsFromDb = await Call_1.default.find()
+                .populate('customerId', 'fullName phoneNumber email profileImage location')
+                .sort({ createdAt: -1 });
+        }
+        const formattedCalls = await Promise.all(callsFromDb.map(async (c) => {
+            let cust = c.customerId;
+            if (cust && typeof cust === 'object' && cust.fullName) {
+                // Already populated
+            }
+            else if (c.customerId && mongoose_1.default.Types.ObjectId.isValid(c.customerId)) {
+                cust = await User_1.default.findById(c.customerId).select('fullName phoneNumber email profileImage location');
+            }
+            return {
+                id: c._id ? c._id.toString() : c.id,
+                customerName: cust?.fullName || c.customerName || 'Customer',
+                phone: cust?.phoneNumber || c.customerPhone || '+91 98765 43210',
+                service: c.service || 'Call Request Received',
+                distance: cust?.location?.city ? `Near ${cust.location.city}` : (c.distance || '1.2 km away'),
+                time: c.time || 'Just now',
+                status: c.status || 'Pending',
+                avatar: (cust?.profileImage && !cust.profileImage.startsWith('file://')) ? cust.profileImage : '👤',
+            };
+        }));
+        console.log(`📞 [getCustomerCalls] Returning ${formattedCalls.length} call requests for worker`);
         return res.status(200).json({
             success: true,
-            calls,
+            calls: formattedCalls,
         });
     }
     catch (error) {
@@ -374,13 +436,20 @@ const uploadProfileImage = async (req, res, next) => {
     try {
         const userId = req.body.userId || req.user?.id || req.query.userId;
         const file = req.file;
+        console.log("888888888888888888888888888");
         if (!file) {
             return res.status(400).json({ success: false, message: 'No file uploaded' });
         }
         let user;
-        if (userId) {
+        if (userId && userId !== 'mock-user-id') {
             try {
                 user = await User_1.default.findById(userId);
+            }
+            catch (e) { }
+        }
+        if (!user && req.user?.id && req.user.id !== 'mock-user-id') {
+            try {
+                user = await User_1.default.findById(req.user.id);
             }
             catch (e) { }
         }
@@ -396,6 +465,12 @@ const uploadProfileImage = async (req, res, next) => {
             }
             catch (e) { }
         }
+        if (!user && req.headers['x-user-phone']) {
+            try {
+                user = await User_1.default.findOne({ phoneNumber: formatPhoneNumber(req.headers['x-user-phone']) });
+            }
+            catch (e) { }
+        }
         if (!user) {
             try {
                 user = await User_1.default.findOne().sort({ createdAt: -1 });
@@ -405,15 +480,34 @@ const uploadProfileImage = async (req, res, next) => {
         if (!user) {
             return res.status(404).json({ success: false, message: 'User not found' });
         }
-        const bucketName = process.env.AWS_BUCKET_NAME || 'hunargo-bucket';
+        const bucketName = (process.env.AWS_BUCKET_NAME || 'hunargo-dev').trim();
+        const region = (process.env.AWS_REGION || 'ap-south-1').trim();
+        console.log(bucketName, 'bucketName=================');
         // 1. Delete old image from AWS S3
         if (user.profileImage) {
             try {
-                console.log(`🗑️ [S3 Delete] Deleting old image Key: ${user.profileImage}`);
-                await s3_1.s3.send(new client_s3_1.DeleteObjectCommand({
-                    Bucket: bucketName,
-                    Key: user.profileImage,
-                }));
+                let oldKey = user.profileImage;
+                if (oldKey.startsWith('http://') || oldKey.startsWith('https://')) {
+                    try {
+                        const parsedUrl = new URL(oldKey);
+                        oldKey = parsedUrl.pathname.startsWith('/') ? parsedUrl.pathname.slice(1) : parsedUrl.pathname;
+                    }
+                    catch (e) {
+                        const parts = oldKey.split('.amazonaws.com/');
+                        if (parts.length > 1) {
+                            oldKey = parts[1];
+                        }
+                    }
+                }
+                oldKey = decodeURIComponent(oldKey);
+                if (oldKey && !oldKey.startsWith('file://') && !oldKey.startsWith('content://')) {
+                    console.log(`🗑️ [S3 Delete] Deleting old image Key from S3: ${oldKey}`);
+                    await s3_1.s3.send(new client_s3_1.DeleteObjectCommand({
+                        Bucket: bucketName,
+                        Key: oldKey,
+                    }));
+                    console.log(`✅ [S3 Deleted Successfully]: ${oldKey}`);
+                }
             }
             catch (err) {
                 console.warn('⚠️ S3 DeleteObject Warning:', err.message);
@@ -421,45 +515,91 @@ const uploadProfileImage = async (req, res, next) => {
         }
         // 2. Upload new image to AWS S3
         const targetUserId = user._id || userId || 'default';
-        const cleanFileName = file.originalname ? file.originalname.replace(/[^a-zA-Z0-9.-]/g, '_') : 'avatar.jpg';
-        const newKey = `workers/profile/${targetUserId}/${Date.now()}-${cleanFileName}`;
+        const rawExt = file.originalname ? file.originalname.split('.').pop() : 'png';
+        const ext = rawExt ? rawExt.replace(/[^a-zA-Z0-9]/g, '').toLowerCase() : 'png';
+        const cleanExt = ['jpg', 'jpeg', 'png', 'webp', 'gif'].includes(ext) ? ext : 'png';
+        const newKey = `workers/profile/${targetUserId}/${Date.now()}-profile.${cleanExt}`;
+        const imageUrl = `https://${bucketName}.s3.${region}.amazonaws.com/${newKey}`;
         try {
             console.log(`📤 [S3 Upload] Uploading to Key: ${newKey}`);
             await s3_1.s3.send(new client_s3_1.PutObjectCommand({
                 Bucket: bucketName,
                 Key: newKey,
                 Body: file.buffer,
-                ContentType: file.mimetype || 'image/jpeg',
+                ContentType: file.mimetype || `image/${cleanExt}`,
             }));
-        }
-        catch (uploadErr) {
-            console.error('⚠️ S3 PutObject Error:', uploadErr.message);
-            const fallbackUrl = `https://${bucketName}.s3.${process.env.AWS_REGION || 'ap-south-1'}.amazonaws.com/${newKey}`;
-            user.profileImage = newKey;
+            user.profileImage = imageUrl;
             await user.save();
+            console.log(`✅ [DB Updated]: profileImage set to ${imageUrl}`);
             return res.status(200).json({
                 success: true,
-                message: 'Profile image updated (Fallback mode)',
+                message: 'Profile image uploaded to S3 successfully',
                 profileImage: user.profileImage,
-                imageUrl: fallbackUrl,
+                imageUrl,
                 key: newKey,
             });
         }
-        // 3. Update DB
-        user.profileImage = newKey;
-        await user.save();
-        const imageUrl = `https://${bucketName}.s3.${process.env.AWS_REGION || 'ap-south-1'}.amazonaws.com/${newKey}`;
-        console.log(`✅ [DB Updated]: profileImage set to ${newKey}`);
-        return res.status(200).json({
-            success: true,
-            message: 'Profile image uploaded to S3 successfully',
-            profileImage: user.profileImage,
-            imageUrl,
-            key: newKey,
-        });
+        catch (uploadErr) {
+            console.error('⚠️ S3 PutObject Error:', uploadErr.message);
+            const mimeType = file.mimetype || `image/${cleanExt}`;
+            const base64Image = `data:${mimeType};base64,${file.buffer.toString('base64')}`;
+            user.profileImage = base64Image;
+            await user.save();
+            console.log(`✅ [DB Updated Fallback]: profileImage set to base64 Data URI`);
+            return res.status(200).json({
+                success: true,
+                message: 'Profile image updated (Base64 fallback mode)',
+                profileImage: user.profileImage,
+                imageUrl: base64Image,
+                key: newKey,
+            });
+        }
     }
     catch (error) {
         next(error);
     }
 };
 exports.uploadProfileImage = uploadProfileImage;
+/**
+ * @desc    Update Call Request Status (Accept or Cancel)
+ * @route   POST /api/worker/call-status
+ */
+const updateCallStatus = async (req, res, next) => {
+    try {
+        const { callId, status } = req.body;
+        if (!callId || !status) {
+            return res.status(400).json({ success: false, message: 'callId and status are required' });
+        }
+        let updatedCall = null;
+        if (mongoose_1.default.Types.ObjectId.isValid(callId)) {
+            updatedCall = await Call_1.default.findByIdAndUpdate(callId, { status }, { new: true });
+        }
+        if (!updatedCall) {
+            updatedCall = await Call_1.default.findOneAndUpdate({ status: 'Pending' }, { status }, { new: true, sort: { createdAt: -1 } });
+        }
+        console.log(`📞 [Call Status Updated]: ID ${callId} set to status ${status}`);
+        // Real-time broadcast to both Customer and Worker rooms
+        if (updatedCall) {
+            const eventPayload = {
+                callId: updatedCall._id ? updatedCall._id.toString() : callId,
+                status,
+                updatedAt: new Date().toISOString(),
+            };
+            if (updatedCall.customerId) {
+                (0, socketService_1.emitToUser)(updatedCall.customerId.toString(), 'call_status_updated', eventPayload);
+            }
+            if (updatedCall.workerId) {
+                (0, socketService_1.emitToUser)(updatedCall.workerId.toString(), 'call_status_updated', eventPayload);
+            }
+        }
+        return res.status(200).json({
+            success: true,
+            message: `Call status updated to ${status}`,
+            call: updatedCall,
+        });
+    }
+    catch (error) {
+        next(error);
+    }
+};
+exports.updateCallStatus = updateCallStatus;

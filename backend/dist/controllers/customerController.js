@@ -4,9 +4,11 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.updateCustomerProfile = exports.createHelpSupport = exports.getCustomerProfile = exports.callWorker = exports.getCallHistory = exports.searchWorkers = void 0;
+const mongoose_1 = __importDefault(require("mongoose"));
 const User_1 = __importDefault(require("../models/User"));
 const Call_1 = __importDefault(require("../models/Call"));
 const HelpSupport_1 = require("../models/HelpSupport");
+const socketService_1 = require("../services/socketService");
 /**
  * @desc    Search Nearby Workers
  * @route   GET /api/customer/search-workers
@@ -17,10 +19,35 @@ const searchWorkers = async (req, res, next) => {
         const pageNum = parseInt(page, 10) || 1;
         const limitNum = parseInt(limit, 10) || 10;
         const skip = (pageNum - 1) * limitNum;
+        // Determine current customer
+        let customerObjectId = undefined;
+        const phoneHeader = req.headers['x-user-phone'] || '';
+        if (req.user?.id && mongoose_1.default.Types.ObjectId.isValid(req.user.id)) {
+            customerObjectId = new mongoose_1.default.Types.ObjectId(req.user.id);
+        }
+        else if (phoneHeader) {
+            const customerUser = await User_1.default.findOne({ phoneNumber: phoneHeader });
+            if (customerUser)
+                customerObjectId = customerUser._id;
+        }
+        if (!customerObjectId) {
+            const customerUser = await User_1.default.findOne({ role: 'customer' });
+            if (customerUser)
+                customerObjectId = customerUser._id;
+        }
+        // Find all worker IDs to whom this customer currently has a 'Pending' call request
+        let pendingWorkerIds = [];
+        if (customerObjectId) {
+            const pendingCalls = await Call_1.default.find({ customerId: customerObjectId, status: 'Pending' });
+            pendingWorkerIds = pendingCalls.map((c) => (c.workerId ? c.workerId.toString() : '')).filter(Boolean);
+        }
         let totalWorkers = 0;
         let workers = [];
         try {
             const filter = { role: 'worker' };
+            if (pendingWorkerIds.length > 0) {
+                filter._id = { $nin: pendingWorkerIds.map((id) => new mongoose_1.default.Types.ObjectId(id)) };
+            }
             if (category && category !== 'All')
                 filter.professions = category;
             if (query)
@@ -44,15 +71,18 @@ const searchWorkers = async (req, res, next) => {
         }
         catch (err) {
             const filter = { role: 'worker' };
+            if (pendingWorkerIds.length > 0) {
+                filter._id = { $nin: pendingWorkerIds.map((id) => new mongoose_1.default.Types.ObjectId(id)) };
+            }
             if (category && category !== 'All')
                 filter.professions = category;
             if (query)
                 filter.fullName = new RegExp(query, 'i');
             workers = await User_1.default.find(filter).skip(skip).limit(limitNum);
-            totalWorkers = 25;
+            totalWorkers = await User_1.default.countDocuments(filter);
         }
         if (!workers || workers.length === 0) {
-            const allSampleWorkers = [
+            let allSampleWorkers = [
                 // Page 1
                 { id: 'w1', name: 'Amit Sharma', fullName: 'Amit Sharma', profession: 'Carpenter', rating: '4.8', reviews: '124', distance: '1.2 km away', phone: '+919876543210' },
                 { id: 'w2', name: 'Priya Singh', fullName: 'Priya Singh', profession: 'Beautician', rating: '4.9', reviews: '98', distance: '2.8 km away', phone: '+919876543211' },
@@ -82,6 +112,10 @@ const searchWorkers = async (req, res, next) => {
                 { id: 'w23', name: 'Sunil Chhetri', fullName: 'Sunil Chhetri', profession: 'Technician', rating: '4.8', reviews: '94', distance: '7.2 km away', phone: '+919876543232' },
                 { id: 'w24', name: 'Hardik Pandya', fullName: 'Hardik Pandya', profession: 'Electrician', rating: '4.7', reviews: '58', distance: '8.1 km away', phone: '+919876543233' },
             ];
+            // Exclude any pending call workers from sample list
+            if (pendingWorkerIds.length > 0) {
+                allSampleWorkers = allSampleWorkers.filter((w) => !pendingWorkerIds.includes(w.id));
+            }
             totalWorkers = allSampleWorkers.length;
             const startIndex = (pageNum - 1) * limitNum;
             workers = allSampleWorkers.slice(startIndex, startIndex + limitNum);
@@ -97,7 +131,7 @@ const searchWorkers = async (req, res, next) => {
                 reviews: w.reviewCount ? w.reviewCount.toString() : '50',
                 distance: w.location?.city ? `Near ${w.location.city}` : '1.5 km away',
                 phone: w.phoneNumber || '+919876543210',
-                avatar: w.profileImage || '',
+                avatar: (w.profileImage && !w.profileImage.startsWith('file://') && !w.profileImage.startsWith('content://')) ? w.profileImage : '',
                 experience: `${w.experienceYears || 5}+ Yrs`,
                 hourlyRate: w.hourlyRate || 350,
             }));
@@ -125,20 +159,59 @@ exports.searchWorkers = searchWorkers;
  */
 const getCallHistory = async (req, res, next) => {
     try {
-        let calls = [];
-        try {
-            calls = await Call_1.default.find({ customerId: req.user?.id }).sort({ createdAt: -1 });
+        let customerObjectId = undefined;
+        const phoneHeader = req.headers['x-user-phone'] || '';
+        if (req.user?.id && mongoose_1.default.Types.ObjectId.isValid(req.user.id)) {
+            customerObjectId = new mongoose_1.default.Types.ObjectId(req.user.id);
         }
-        catch (err) { }
-        if (!calls || calls.length === 0) {
-            calls = [
-                { id: 'c1', workerName: 'Raj Kumar', profession: 'Electrician', date: 'Today, 2:30 PM', status: 'Connected', phone: '+91 98765 43210' },
-                { id: 'c2', workerName: 'Suresh Patel', profession: 'Plumber', date: 'Yesterday, 11:15 AM', status: 'Completed', phone: '+91 98765 43211' },
-            ];
+        else if (phoneHeader) {
+            const customerUser = await User_1.default.findOne({ phoneNumber: phoneHeader });
+            if (customerUser) {
+                customerObjectId = customerUser._id;
+            }
         }
+        // If no authenticated customer is identified, return empty call list
+        if (!customerObjectId) {
+            return res.status(200).json({
+                success: true,
+                calls: [],
+            });
+        }
+        // Query ONLY calls placed by this specific customer
+        const callsFromDb = await Call_1.default.find({ customerId: customerObjectId })
+            .populate('workerId', 'fullName phoneNumber professions profileImage')
+            .sort({ createdAt: -1 });
+        if (!callsFromDb || callsFromDb.length === 0) {
+            return res.status(200).json({
+                success: true,
+                calls: [],
+            });
+        }
+        const formattedCalls = (await Promise.all(callsFromDb.map(async (c) => {
+            let worker = c.workerId;
+            if (worker && typeof worker === 'object' && worker.fullName) {
+                // Already populated
+            }
+            else if (c.workerId && mongoose_1.default.Types.ObjectId.isValid(c.workerId)) {
+                worker = await User_1.default.findById(c.workerId).select('fullName phoneNumber professions profileImage');
+            }
+            // If there is no valid worker related to this call, do not show it
+            if (!worker || (!worker.fullName && !worker.phoneNumber)) {
+                return null;
+            }
+            return {
+                id: c._id ? c._id.toString() : c.id,
+                workerName: worker?.fullName || 'Worker',
+                profession: Array.isArray(worker?.professions) && worker.professions.length > 0 ? worker.professions[0] : 'Handyman',
+                date: c.time || 'Just now',
+                status: c.status || 'Pending',
+                phone: worker?.phoneNumber || '',
+                emoji: '📞',
+            };
+        }))).filter(Boolean);
         return res.status(200).json({
             success: true,
-            calls,
+            calls: formattedCalls,
         });
     }
     catch (error) {
@@ -152,23 +225,115 @@ exports.getCallHistory = getCallHistory;
  */
 const callWorker = async (req, res, next) => {
     try {
-        const { workerId, workerName, service } = req.body;
-        try {
-            await Call_1.default.create({
-                customerName: 'Amit Sharma',
-                workerPhone: '+91 98765 43210',
-                service: service || 'Repair Request',
-                status: 'Initiated',
-                time: 'Just now',
+        const { workerId, workerName } = req.body;
+        const phoneHeader = req.headers['x-user-phone'] || '';
+        // 1. Caller Authorization Validation
+        let customerObjectId = undefined;
+        let customerUser = null;
+        if (req.user?.id && mongoose_1.default.Types.ObjectId.isValid(req.user.id)) {
+            customerObjectId = new mongoose_1.default.Types.ObjectId(req.user.id);
+            customerUser = await User_1.default.findById(customerObjectId);
+        }
+        else if (phoneHeader) {
+            customerUser = await User_1.default.findOne({ phoneNumber: phoneHeader });
+            if (customerUser) {
+                customerObjectId = customerUser._id;
+            }
+        }
+        if (!customerUser || !customerObjectId) {
+            return res.status(401).json({
+                success: false,
+                message: 'Unauthorized: Caller identity is missing or unverified. Please log in as a customer.',
             });
         }
-        catch (err) { }
+        // 2. Target Worker Validation
+        if (!workerId || !mongoose_1.default.Types.ObjectId.isValid(workerId)) {
+            return res.status(400).json({
+                success: false,
+                message: 'A valid worker database ID is required.',
+            });
+        }
+        const targetWorker = await User_1.default.findById(workerId);
+        if (!targetWorker) {
+            return res.status(404).json({
+                success: false,
+                message: 'Target worker does not exist in database.',
+            });
+        }
+        if (targetWorker.role && targetWorker.role !== 'worker') {
+            return res.status(400).json({
+                success: false,
+                message: 'Target user is not registered as a worker.',
+            });
+        }
+        if (customerObjectId.toString() === targetWorker._id.toString()) {
+            return res.status(400).json({
+                success: false,
+                message: 'You cannot place a call to yourself.',
+            });
+        }
+        // 3. Generate Unique Call ID & Save in Call collection
+        const newCall = await Call_1.default.create({
+            customerId: customerObjectId,
+            workerId: targetWorker._id,
+            status: 'Pending',
+            time: 'Just now',
+        });
+        const callId = newCall._id.toString();
+        console.log(`\n=================================================`);
+        console.log(`📞 [Call Request Initiated]:`);
+        console.log(`   • Call ID     : ${callId}`);
+        console.log(`   • Customer ID : ${customerObjectId.toString()} (${customerUser.fullName || customerUser.phoneNumber})`);
+        console.log(`   • Worker ID   : ${targetWorker._id.toString()} (${targetWorker.fullName || targetWorker.phoneNumber})`);
+        console.log(`   • Status      : ${newCall.status}`);
+        console.log(`=================================================\n`);
+        // 4. Send Real-time Incoming Call Event ONLY to the Target Worker (Never Broadcast!)
+        const incomingCallPayload = {
+            callId,
+            callerId: customerObjectId.toString(),
+            callerName: customerUser.fullName || 'Customer',
+            callerPhone: customerUser.phoneNumber || phoneHeader || '',
+            callerImage: customerUser.profileImage || '',
+            targetWorkerId: targetWorker._id.toString(),
+            customer: {
+                id: customerObjectId.toString(),
+                name: customerUser.fullName || 'Customer',
+                phoneNumber: customerUser.phoneNumber || phoneHeader || '',
+                profileImage: customerUser.profileImage || '',
+            },
+            worker: {
+                id: targetWorker._id.toString(),
+                name: targetWorker.fullName || workerName || 'Worker',
+                profession: Array.isArray(targetWorker.professions) && targetWorker.professions.length > 0 ? targetWorker.professions[0] : 'Handyman',
+            },
+            time: newCall.time || 'Just now',
+            status: newCall.status || 'Pending',
+            timestamp: new Date().toISOString(),
+        };
+        // Emit strictly to the target worker's private room: user:<workerId> and phone:<phoneNumber>
+        const deliveryResult = (0, socketService_1.emitToUser)(targetWorker._id.toString(), 'incoming_call', incomingCallPayload, targetWorker.phoneNumber);
+        console.log(`📡 [Call Delivery Summary]:`);
+        console.log(`   • Requested Worker ID : ${targetWorker._id.toString()}`);
+        console.log(`   • Target Room         : ${deliveryResult.room}`);
+        console.log(`   • Sockets In Room     : ${deliveryResult.socketsCount} (${deliveryResult.delivered ? 'Delivered Real-time' : 'Worker Offline / Disconnected'})`);
+        const isWorkerOnline = deliveryResult.socketsCount > 0;
         return res.status(200).json({
             success: true,
-            message: `Initiating direct phone call to ${workerName || 'worker'}...`,
+            message: isWorkerOnline
+                ? `Call request sent to ${targetWorker.fullName || workerName || 'worker'} successfully!`
+                : `Call request recorded. Target worker is currently offline.`,
+            callId,
+            call: newCall,
+            deliveryStatus: {
+                workerOnline: isWorkerOnline,
+                connectedSocketsCount: deliveryResult.socketsCount,
+                targetRoom: deliveryResult.room,
+                delivered: deliveryResult.delivered,
+            },
         });
     }
     catch (error) {
+        console.error('⚠️ Error in callWorker:', error);
         next(error);
     }
 };

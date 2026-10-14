@@ -3,11 +3,13 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+const http_1 = __importDefault(require("http"));
 const express_1 = __importDefault(require("express"));
 const cors_1 = __importDefault(require("cors"));
 const dotenv_1 = __importDefault(require("dotenv"));
 const db_1 = require("./config/db");
 const errorHandler_1 = require("./middleware/errorHandler");
+const socketService_1 = require("./services/socketService");
 const authRoutes_1 = __importDefault(require("./routes/authRoutes"));
 const workerRoutes_1 = __importDefault(require("./routes/workerRoutes"));
 const customerRoutes_1 = __importDefault(require("./routes/customerRoutes"));
@@ -16,6 +18,9 @@ dotenv_1.default.config();
 // Connect to MongoDB
 (0, db_1.connectDB)();
 const app = (0, express_1.default)();
+const httpServer = http_1.default.createServer(app);
+// Initialize Socket.IO Server
+(0, socketService_1.initSocketServer)(httpServer);
 // Enable CORS for mobile app requests
 app.use((0, cors_1.default)());
 // Body parsing middleware
@@ -50,7 +55,7 @@ app.use((req, res) => {
 // Global Error Middleware
 app.use(errorHandler_1.errorHandler);
 const PORT = process.env.PORT || 5000;
-app.listen(Number(PORT), '0.0.0.0', () => {
+httpServer.listen(Number(PORT), '0.0.0.0', () => {
     console.log(`\n=================================================`);
     console.log(`🚀 HunarGo TypeScript Server running on port ${PORT}`);
     console.log(`🌐 Base URL: http://localhost:${PORT}/api`);

@@ -4,6 +4,8 @@ import { AuthRequest } from '../middleware/authMiddleware';
 import User from '../models/User';
 import Call from '../models/Call';
 import { HelpSupport } from '../models/HelpSupport';
+import { emitToUser } from '../services/socketService';
+import { formatPhoneNumberE164 } from '../config/twilio';
 
 /**
  * @desc    Search Nearby Workers
@@ -169,50 +171,65 @@ export const getCallHistory = async (req: AuthRequest, res: Response, next: Next
   try {
     let customerObjectId: mongoose.Types.ObjectId | undefined = undefined;
     const phoneHeader = (req.headers['x-user-phone'] as string) || '';
+
     if (req.user?.id && mongoose.Types.ObjectId.isValid(req.user.id)) {
       customerObjectId = new mongoose.Types.ObjectId(req.user.id);
     } else if (phoneHeader) {
       const customerUser = await User.findOne({ phoneNumber: phoneHeader });
-      if (customerUser) customerObjectId = customerUser._id as mongoose.Types.ObjectId;
-    }
-    if (!customerObjectId) {
-      const customerUser = await User.findOne({ role: 'customer' });
-      if (customerUser) customerObjectId = customerUser._id as mongoose.Types.ObjectId;
+      if (customerUser) {
+        customerObjectId = customerUser._id as mongoose.Types.ObjectId;
+      }
     }
 
-    let callsFromDb: any = [];
-    if (customerObjectId) {
-      callsFromDb = await Call.find({ customerId: customerObjectId })
-        .populate('workerId', 'fullName phoneNumber professions profileImage')
-        .sort({ createdAt: -1 });
+    // If no authenticated customer is identified, return empty call list
+    if (!customerObjectId) {
+      return res.status(200).json({
+        success: true,
+        calls: [],
+      });
     }
+
+    // Query ONLY calls placed by this specific customer
+    const callsFromDb = await Call.find({ customerId: customerObjectId })
+      .populate('workerId', 'fullName phoneNumber professions profileImage')
+      .sort({ createdAt: -1 });
 
     if (!callsFromDb || callsFromDb.length === 0) {
-      callsFromDb = await Call.find()
-        .populate('workerId', 'fullName phoneNumber professions profileImage')
-        .sort({ createdAt: -1 });
+      return res.status(200).json({
+        success: true,
+        calls: [],
+      });
     }
 
-    const formattedCalls = await Promise.all(
-      callsFromDb.map(async (c: any) => {
-        let worker = c.workerId;
-        if (worker && typeof worker === 'object' && worker.fullName) {
-          // Already populated
-        } else if (c.workerId && mongoose.Types.ObjectId.isValid(c.workerId)) {
-          worker = await User.findById(c.workerId).select('fullName phoneNumber professions profileImage');
-        }
+    const formattedCalls = (
+      await Promise.all(
+        callsFromDb.map(async (c: any) => {
+          let worker = c.workerId;
+          if (worker && typeof worker === 'object' && worker.fullName) {
+            // Already populated
+          } else if (c.workerId && mongoose.Types.ObjectId.isValid(c.workerId)) {
+            worker = await User.findById(c.workerId).select('fullName phoneNumber professions profileImage');
+          }
 
-        return {
-          id: c._id ? c._id.toString() : c.id,
-          workerName: worker?.fullName || 'Worker',
-          profession: Array.isArray(worker?.professions) && worker.professions.length > 0 ? worker.professions[0] : 'Handyman',
-          date: c.time || 'Just now',
-          status: c.status || 'Pending',
-          phone: worker?.phoneNumber || '+91 98765 43210',
-          emoji: '📞',
-        };
-      })
-    );
+          // If there is no valid worker related to this call, do not show it
+          if (!worker || (!worker.fullName && !worker.phoneNumber)) {
+            return null;
+          }
+
+          return {
+            id: c._id ? c._id.toString() : c.id,
+            workerId: worker?._id ? worker._id.toString() : (c.workerId ? c.workerId.toString() : undefined),
+            workerName: worker?.fullName || 'Worker',
+            profession: Array.isArray(worker?.professions) && worker.professions.length > 0 ? worker.professions[0] : 'Handyman',
+            date: c.time || 'Just now',
+            status: c.status || 'Pending',
+            phone: worker?.phoneNumber || '',
+            avatar: (worker?.profileImage && !worker.profileImage.startsWith('file://')) ? worker.profileImage : '',
+            emoji: '📞',
+          };
+        })
+      )
+    ).filter(Boolean);
 
     return res.status(200).json({
       success: true,
@@ -232,54 +249,134 @@ export const callWorker = async (req: AuthRequest, res: Response, next: NextFunc
     const { workerId, workerName } = req.body;
     const phoneHeader = (req.headers['x-user-phone'] as string) || '';
 
-    // Determine Customer ID
+    // 1. Caller Authorization Validation
     let customerObjectId: mongoose.Types.ObjectId | undefined = undefined;
+    let customerUser: any = null;
+
     if (req.user?.id && mongoose.Types.ObjectId.isValid(req.user.id)) {
       customerObjectId = new mongoose.Types.ObjectId(req.user.id);
+      customerUser = await User.findById(customerObjectId);
     } else if (phoneHeader) {
-      const customerUser = await User.findOne({ phoneNumber: phoneHeader });
+      customerUser = await User.findOne({ phoneNumber: phoneHeader });
       if (customerUser) {
         customerObjectId = customerUser._id as mongoose.Types.ObjectId;
       }
     }
 
-    if (!customerObjectId) {
-      const customerUser = await User.findOne({ role: 'customer' });
-      if (customerUser) {
-        customerObjectId = customerUser._id as mongoose.Types.ObjectId;
-      }
+    if (!customerUser || !customerObjectId) {
+      return res.status(401).json({
+        success: false,
+        message: 'Unauthorized: Caller identity is missing or unverified. Please log in as a customer.',
+      });
     }
 
-    // Determine Worker ID
-    let workerObjectId: mongoose.Types.ObjectId | undefined = undefined;
+    // 2. Target Worker Validation
+    let targetWorker: any = null;
     if (workerId && mongoose.Types.ObjectId.isValid(workerId)) {
-      workerObjectId = new mongoose.Types.ObjectId(workerId);
-    } else {
-      const workerUser = await User.findOne({ role: 'worker' });
-      if (workerUser) {
-        workerObjectId = workerUser._id as mongoose.Types.ObjectId;
+      targetWorker = await User.findById(workerId);
+    }
+    if (!targetWorker) {
+      const workerPhone = (req.body.phone || req.body.phoneNumber || '').toString().trim();
+      if (workerPhone) {
+        targetWorker = (await User.findOne({ phoneNumber: formatPhoneNumberE164(workerPhone) })) ||
+                       (await User.findOne({ phoneNumber: workerPhone }));
       }
     }
+    if (!targetWorker) {
+      targetWorker = await User.findOne({ role: 'worker' }).sort({ updatedAt: -1 });
+    }
 
-    // Save Call Request in Call collection with status 'Pending'
+    if (!targetWorker) {
+      return res.status(404).json({
+        success: false,
+        message: 'Target worker does not exist in database.',
+      });
+    }
+
+    if (targetWorker.role && targetWorker.role !== 'worker') {
+      return res.status(400).json({
+        success: false,
+        message: 'Target user is not registered as a worker.',
+      });
+    }
+
+    if (customerObjectId.toString() === targetWorker._id.toString()) {
+      return res.status(400).json({
+        success: false,
+        message: 'You cannot place a call to yourself.',
+      });
+    }
+
+    // 3. Generate Unique Call ID & Save in Call collection
     const newCall = await Call.create({
       customerId: customerObjectId,
-      workerId: workerObjectId,
+      workerId: targetWorker._id,
       status: 'Pending',
       time: 'Just now',
     });
 
-    console.log('📞 [Call Request Saved to Call Collection]:', {
-      id: newCall._id,
-      customerId: newCall.customerId,
-      workerId: newCall.workerId,
-      status: newCall.status,
-    });
+    const callId = newCall._id.toString();
+
+    console.log(`\n=================================================`);
+    console.log(`📞 [Call Request Initiated]:`);
+    console.log(`   • Call ID     : ${callId}`);
+    console.log(`   • Customer ID : ${customerObjectId.toString()} (${customerUser.fullName || customerUser.phoneNumber})`);
+    console.log(`   • Worker ID   : ${targetWorker._id.toString()} (${targetWorker.fullName || targetWorker.phoneNumber})`);
+    console.log(`   • Status      : ${newCall.status}`);
+    console.log(`=================================================\n`);
+
+    // 4. Send Real-time Incoming Call Event ONLY to the Target Worker (Never Broadcast!)
+    const incomingCallPayload = {
+      callId,
+      callerId: customerObjectId.toString(),
+      callerName: customerUser.fullName || 'Customer',
+      callerPhone: customerUser.phoneNumber || phoneHeader || '',
+      callerImage: customerUser.profileImage || '',
+      targetWorkerId: targetWorker._id.toString(),
+      customer: {
+        id: customerObjectId.toString(),
+        name: customerUser.fullName || 'Customer',
+        phoneNumber: customerUser.phoneNumber || phoneHeader || '',
+        profileImage: customerUser.profileImage || '',
+      },
+      worker: {
+        id: targetWorker._id.toString(),
+        name: targetWorker.fullName || workerName || 'Worker',
+        profession: Array.isArray(targetWorker.professions) && targetWorker.professions.length > 0 ? targetWorker.professions[0] : 'Handyman',
+      },
+      time: newCall.time || 'Just now',
+      status: newCall.status || 'Pending',
+      timestamp: new Date().toISOString(),
+    };
+
+    // Emit strictly to the target worker's private room: user:<workerId> and phone:<phoneNumber>
+    const deliveryResult = emitToUser(
+      targetWorker._id.toString(),
+      'incoming_call',
+      incomingCallPayload,
+      targetWorker.phoneNumber
+    );
+
+    console.log(`📡 [Call Delivery Summary]:`);
+    console.log(`   • Requested Worker ID : ${targetWorker._id.toString()}`);
+    console.log(`   • Target Room         : ${deliveryResult.room}`);
+    console.log(`   • Sockets In Room     : ${deliveryResult.socketsCount} (${deliveryResult.delivered ? 'Delivered Real-time' : 'Worker Offline / Disconnected'})`);
+
+    const isWorkerOnline = deliveryResult.socketsCount > 0;
 
     return res.status(200).json({
       success: true,
-      message: `Call request sent to ${workerName || 'worker'} successfully!`,
+      message: isWorkerOnline
+        ? `Call request sent to ${targetWorker.fullName || workerName || 'worker'} successfully!`
+        : `Call request recorded. Target worker is currently offline.`,
+      callId,
       call: newCall,
+      deliveryStatus: {
+        workerOnline: isWorkerOnline,
+        connectedSocketsCount: deliveryResult.socketsCount,
+        targetRoom: deliveryResult.room,
+        delivered: deliveryResult.delivered,
+      },
     });
   } catch (error) {
     console.error('⚠️ Error in callWorker:', error);

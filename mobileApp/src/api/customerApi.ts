@@ -59,22 +59,42 @@ export const customerApi = {
   },
 
   /**
-   * Place call request to worker
+   * Place call request to worker with validated database ID and authentication
    */
-  async callWorker(workerId: string) {
+  async callWorker(workerId: string, workerName?: string) {
     try {
       console.log('🚀 API [callWorker] Requesting call to worker:', workerId);
       const response = await fetch(`${API_BASE_URL}/customer/call-worker`, {
         method: 'POST',
         headers: getAuthHeaders(),
-        body: JSON.stringify({ workerId }),
+        body: JSON.stringify({ workerId, workerName }),
       });
       const data = await response.json();
       console.log('✅ API [callWorker] Response from server:', data);
       return data;
     } catch (error) {
       console.error('⚠️ Error in callWorker:', error);
-      return { success: true, message: 'Call request recorded' };
+      return { success: false, message: 'Network error: Unable to connect to HunarGo server' };
+    }
+  },
+
+  /**
+   * Update Call Request Status (e.g. Cancelled / Ended)
+   */
+  async updateCallStatus(callId: string, status: string = 'Cancelled') {
+    try {
+      console.log(`🚀 API [updateCallStatus] Customer updating call ${callId} status to:`, status);
+      const response = await fetch(`${API_BASE_URL}/customer/call-status`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ callId, status }),
+      });
+      const data = await response.json();
+      console.log('✅ API [updateCallStatus] Server response:', data);
+      return data;
+    } catch (error) {
+      console.error('⚠️ Error in updateCallStatus:', error);
+      return { success: false };
     }
   },
 

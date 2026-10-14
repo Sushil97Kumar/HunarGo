@@ -1,8 +1,10 @@
+import http from 'http';
 import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import { connectDB } from './config/db';
 import { errorHandler } from './middleware/errorHandler';
+import { initSocketServer } from './services/socketService';
 
 import authRoutes from './routes/authRoutes';
 import workerRoutes from './routes/workerRoutes';
@@ -15,6 +17,10 @@ dotenv.config();
 connectDB();
 
 const app = express();
+const httpServer = http.createServer(app);
+
+// Initialize Socket.IO Server
+initSocketServer(httpServer);
 
 // Enable CORS for mobile app requests
 app.use(cors());
@@ -58,7 +64,7 @@ app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
 
-app.listen(Number(PORT), '0.0.0.0', () => {
+httpServer.listen(Number(PORT), '0.0.0.0', () => {
   console.log(`\n=================================================`);
   console.log(`🚀 HunarGo TypeScript Server running on port ${PORT}`);
   console.log(`🌐 Base URL: http://localhost:${PORT}/api`);

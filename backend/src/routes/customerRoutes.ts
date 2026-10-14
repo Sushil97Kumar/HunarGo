@@ -8,12 +8,14 @@ import {
   updateCustomerProfile,
   createHelpSupport,
 } from '../controllers/customerController';
+import { updateCallStatus } from '../controllers/workerController';
 
 const router = Router();
 
 router.get('/search-workers', authMiddleware, searchWorkers);
 router.get('/calls', authMiddleware, getCallHistory);
 router.post('/call-worker', authMiddleware, callWorker);
+router.post('/call-status', authMiddleware, updateCallStatus);
 router.get('/profile', authMiddleware, getCustomerProfile);
 router.post('/profile', authMiddleware, updateCustomerProfile);
 router.post('/help-support', authMiddleware, createHelpSupport);

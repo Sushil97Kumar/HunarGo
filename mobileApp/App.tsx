@@ -28,6 +28,9 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { authApi } from './src/api/authApi';
 import { workerApi } from './src/api/workerApi';
 import { CustomerHomeScreen } from './src/screens/customer/CustomerHomeScreen';
+import { getLoggedInUser, getActiveUserPhone } from './src/api/apiConfig';
+import { socketService } from './src/services/socketService';
+import { WorkerIncomingCallScreen } from './src/screens/worker/WorkerIncomingCallScreen';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const BASE_WIDTH = 390;
@@ -51,6 +54,84 @@ function App() {
   var [userPhone, setUserPhone] = useState('');
   var [userRole, setUserRole] = useState('customer');
   var [isLoginFlow, setIsLoginFlow] = useState(false);
+
+  // Step 5: Incoming Call State (accessible app-wide across all screens)
+  var [incomingCallData, setIncomingCallData] = useState<any>(null);
+  var processedCallIdsRef = useRef<Set<string>>(new Set());
+
+  // Connect Socket whenever active session is detected
+  useEffect(() => {
+    const storedUser = getLoggedInUser();
+    const storedPhone = getActiveUserPhone();
+    const phoneToUse = userPhone || storedPhone || storedUser?.phoneNumber;
+
+    if (storedUser?.role && storedUser.role !== userRole) {
+      setUserRole(storedUser.role);
+    }
+    if (storedPhone && !userPhone) {
+      setUserPhone(storedPhone);
+    }
+
+    if (phoneToUse || storedUser) {
+      console.log('🔌 [App.tsx] Activating Socket connection for phone/user...');
+      socketService.connect();
+    }
+  }, [userPhone, userRole, currentScreen]);
+
+  // Step 5: Listen for Incoming Calls across all Worker screens
+  useEffect(() => {
+    console.log('🎧 [Worker Incoming Call Listener] Registered in App.tsx');
+
+    // Make sure socket is connected
+    socketService.connect();
+
+    const unsubscribe = socketService.onIncomingCall((payload: any) => {
+      const callId = payload?.callId;
+      const targetWorkerId = payload?.targetWorkerId || payload?.workerId;
+
+      if (!callId) {
+        console.warn('⚠️ [IncomingCall] Received call event without callId. Discarding.');
+        return;
+      }
+
+      // Verify that the event belongs to the currently authenticated worker
+      const loggedInUser = getLoggedInUser();
+      const currentWorkerId = loggedInUser?.id || loggedInUser?._id;
+
+      if (currentWorkerId && targetWorkerId && String(currentWorkerId) !== String(targetWorkerId)) {
+        console.warn(`⚠️ [IncomingCall] Event ignored: Target worker ID (${targetWorkerId}) does not match authenticated worker (${currentWorkerId}).`);
+        return;
+      }
+
+      // Handle duplicate events for the same call ID safely
+      if (processedCallIdsRef.current.has(callId)) {
+        console.log(`ℹ️ [IncomingCall] Duplicate event ignored for Call ID: ${callId}`);
+        return;
+      }
+
+      // Mark this call ID as processed
+      processedCallIdsRef.current.add(callId);
+
+      // Clean up from duplicate set after 60 seconds
+      setTimeout(() => {
+        processedCallIdsRef.current.delete(callId);
+      }, 60000);
+
+      console.log(`\n=================================================`);
+      console.log(`🔔 [Incoming Call Triggered on Worker App]:`);
+      console.log(`   • Call ID       : ${callId}`);
+      console.log(`   • Caller Name   : ${payload?.callerName || payload?.customer?.name}`);
+      console.log(`   • Target Worker : ${targetWorkerId}`);
+      console.log(`=================================================\n`);
+
+      setIncomingCallData(payload);
+    });
+
+    return () => {
+      console.log('🧹 [Worker Incoming Call Listener] Cleaned up in App.tsx');
+      unsubscribe();
+    };
+  }, [userPhone, userRole]);
   return /*#__PURE__*/(0, _jsxRuntime.jsxs)(require("react-native-safe-area-context").SafeAreaProvider, {
     children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.StatusBar, {
       barStyle: isDarkMode ? 'light-content' : 'dark-content'
@@ -130,7 +211,15 @@ function App() {
       onBackToOnboarding: () => setCurrentScreen('onboarding1')
     }), currentScreen === 'home' && /*#__PURE__*/(0, _jsxRuntime.jsx)(HomeScreen, {
       onBackToOnboarding: () => setCurrentScreen('onboarding1')
-    })]
+    }),
+    Boolean(incomingCallData) && (
+      <WorkerIncomingCallScreen
+        visible={Boolean(incomingCallData)}
+        callData={incomingCallData}
+        onDecline={() => setIncomingCallData(null)}
+        onEndCall={() => setIncomingCallData(null)}
+      />
+    )]
   });
 }
 function OnboardingScreen1({
