@@ -24,6 +24,10 @@ class MobileSocketService {
   private isConnecting: boolean = false;
   private incomingCallListeners: Set<IncomingCallListener> = new Set();
   private callStatusListeners: Set<(payload: any) => void> = new Set();
+  private webrtcOfferListeners: Set<(payload: any) => void> = new Set();
+  private webrtcAnswerListeners: Set<(payload: any) => void> = new Set();
+  private webrtcIceCandidateListeners: Set<(payload: any) => void> = new Set();
+  private callEndedListeners: Set<(payload: any) => void> = new Set();
 
   /**
    * Derive base server URL without /api path
@@ -65,6 +69,53 @@ class MobileSocketService {
           listener(payload);
         } catch (err) {
           console.error('❌ Error in call status listener:', err);
+        }
+      });
+    });
+
+    this.socket.off('webrtc_offer');
+    this.socket.on('webrtc_offer', (payload: any) => {
+      console.log('📡 [SocketClient] WebRTC Offer received for call:', payload?.callId);
+      this.webrtcOfferListeners.forEach((listener) => {
+        try {
+          listener(payload);
+        } catch (err) {
+          console.error('❌ Error in webrtc_offer listener:', err);
+        }
+      });
+    });
+
+    this.socket.off('webrtc_answer');
+    this.socket.on('webrtc_answer', (payload: any) => {
+      console.log('📡 [SocketClient] WebRTC Answer received for call:', payload?.callId);
+      this.webrtcAnswerListeners.forEach((listener) => {
+        try {
+          listener(payload);
+        } catch (err) {
+          console.error('❌ Error in webrtc_answer listener:', err);
+        }
+      });
+    });
+
+    this.socket.off('webrtc_ice_candidate');
+    this.socket.on('webrtc_ice_candidate', (payload: any) => {
+      this.webrtcIceCandidateListeners.forEach((listener) => {
+        try {
+          listener(payload);
+        } catch (err) {
+          console.error('❌ Error in webrtc_ice_candidate listener:', err);
+        }
+      });
+    });
+
+    this.socket.off('call_ended');
+    this.socket.on('call_ended', (payload: any) => {
+      console.log('📡 [SocketClient] Call ended event received for call:', payload?.callId);
+      this.callEndedListeners.forEach((listener) => {
+        try {
+          listener(payload);
+        } catch (err) {
+          console.error('❌ Error in call_ended listener:', err);
         }
       });
     });
@@ -130,6 +181,9 @@ class MobileSocketService {
         console.log(`   • Connected : ${this.socket?.connected}`);
         console.log(`=================================================\n`);
 
+        // Re-attach listeners upon connect/reconnect
+        this.setupSocketListeners();
+
         // Perform heartbeat / identity verification with server
         this.socket?.emit('ping_check', (response: any) => {
           console.log('📡 [SocketClient] Server Verified Identity:', response);
@@ -190,6 +244,108 @@ class MobileSocketService {
 
     return () => {
       this.callStatusListeners.delete(listener);
+    };
+  }
+
+  /**
+   * Join WebRTC call room
+   */
+  public joinCall(callId: string): void {
+    if (!this.socket || !this.socket.connected) {
+      this.connect();
+    }
+    console.log(`🎙️ [SocketClient] Joining WebRTC call room: call:${callId}`);
+    this.socket?.emit('join_call', { callId });
+  }
+
+  /**
+   * Leave WebRTC call room
+   */
+  public leaveCall(callId: string, targetUserId?: string): void {
+    console.log(`🛑 [SocketClient] Leaving WebRTC call room: call:${callId}`);
+    this.socket?.emit('leave_call', { callId, targetUserId });
+  }
+
+  /**
+   * Send WebRTC Offer to remote peer
+   */
+  public sendOffer(callId: string, targetUserId: string, sdp: any): void {
+    console.log(`📤 [SocketClient] Sending WebRTC Offer for call ${callId} to target ${targetUserId}`);
+    this.socket?.emit('webrtc_offer', { callId, targetUserId, sdp });
+  }
+
+  /**
+   * Send WebRTC Answer to remote peer
+   */
+  public sendAnswer(callId: string, targetUserId: string, sdp: any): void {
+    console.log(`📤 [SocketClient] Sending WebRTC Answer for call ${callId} to target ${targetUserId}`);
+    this.socket?.emit('webrtc_answer', { callId, targetUserId, sdp });
+  }
+
+  /**
+   * Send WebRTC ICE Candidate to remote peer
+   */
+  public sendIceCandidate(callId: string, targetUserId: string, candidate: any): void {
+    this.socket?.emit('webrtc_ice_candidate', { callId, targetUserId, candidate });
+  }
+
+  /**
+   * Register listener for incoming WebRTC offer
+   */
+  public onWebRtcOffer(listener: (payload: any) => void): () => void {
+    this.webrtcOfferListeners.add(listener);
+    if (this.socket) {
+      this.setupSocketListeners();
+    } else {
+      this.connect();
+    }
+    return () => {
+      this.webrtcOfferListeners.delete(listener);
+    };
+  }
+
+  /**
+   * Register listener for incoming WebRTC answer
+   */
+  public onWebRtcAnswer(listener: (payload: any) => void): () => void {
+    this.webrtcAnswerListeners.add(listener);
+    if (this.socket) {
+      this.setupSocketListeners();
+    } else {
+      this.connect();
+    }
+    return () => {
+      this.webrtcAnswerListeners.delete(listener);
+    };
+  }
+
+  /**
+   * Register listener for incoming WebRTC ICE candidate
+   */
+  public onWebRtcIceCandidate(listener: (payload: any) => void): () => void {
+    this.webrtcIceCandidateListeners.add(listener);
+    if (this.socket) {
+      this.setupSocketListeners();
+    } else {
+      this.connect();
+    }
+    return () => {
+      this.webrtcIceCandidateListeners.delete(listener);
+    };
+  }
+
+  /**
+   * Register listener for remote call ended
+   */
+  public onCallEnded(listener: (payload: any) => void): () => void {
+    this.callEndedListeners.add(listener);
+    if (this.socket) {
+      this.setupSocketListeners();
+    } else {
+      this.connect();
+    }
+    return () => {
+      this.callEndedListeners.delete(listener);
     };
   }
 

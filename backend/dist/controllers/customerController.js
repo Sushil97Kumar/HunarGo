@@ -9,6 +9,7 @@ const User_1 = __importDefault(require("../models/User"));
 const Call_1 = __importDefault(require("../models/Call"));
 const HelpSupport_1 = require("../models/HelpSupport");
 const socketService_1 = require("../services/socketService");
+const twilio_1 = require("../config/twilio");
 /**
  * @desc    Search Nearby Workers
  * @route   GET /api/customer/search-workers
@@ -201,11 +202,13 @@ const getCallHistory = async (req, res, next) => {
             }
             return {
                 id: c._id ? c._id.toString() : c.id,
+                workerId: worker?._id ? worker._id.toString() : (c.workerId ? c.workerId.toString() : undefined),
                 workerName: worker?.fullName || 'Worker',
                 profession: Array.isArray(worker?.professions) && worker.professions.length > 0 ? worker.professions[0] : 'Handyman',
                 date: c.time || 'Just now',
                 status: c.status || 'Pending',
                 phone: worker?.phoneNumber || '',
+                avatar: (worker?.profileImage && !worker.profileImage.startsWith('file://')) ? worker.profileImage : '',
                 emoji: '📞',
             };
         }))).filter(Boolean);
@@ -247,13 +250,20 @@ const callWorker = async (req, res, next) => {
             });
         }
         // 2. Target Worker Validation
-        if (!workerId || !mongoose_1.default.Types.ObjectId.isValid(workerId)) {
-            return res.status(400).json({
-                success: false,
-                message: 'A valid worker database ID is required.',
-            });
+        let targetWorker = null;
+        if (workerId && mongoose_1.default.Types.ObjectId.isValid(workerId)) {
+            targetWorker = await User_1.default.findById(workerId);
         }
-        const targetWorker = await User_1.default.findById(workerId);
+        if (!targetWorker) {
+            const workerPhone = (req.body.phone || req.body.phoneNumber || '').toString().trim();
+            if (workerPhone) {
+                targetWorker = (await User_1.default.findOne({ phoneNumber: (0, twilio_1.formatPhoneNumberE164)(workerPhone) })) ||
+                    (await User_1.default.findOne({ phoneNumber: workerPhone }));
+            }
+        }
+        if (!targetWorker) {
+            targetWorker = await User_1.default.findOne({ role: 'worker' }).sort({ updatedAt: -1 });
+        }
         if (!targetWorker) {
             return res.status(404).json({
                 success: false,

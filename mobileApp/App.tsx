@@ -48,6 +48,25 @@ const Screen2Illustration = require('./src/assets/screen2_illustration.png');
 const OnboardingBg = require('./src/assets/onboarding_bg.png');
 const DefaultAvatar = require('./src/assets/default_avatar.png');
 
+class CallErrorBoundary extends React.Component<any, { hasError: boolean }> {
+  constructor(props: any) {
+    super(props);
+    this.state = { hasError: false };
+  }
+  static getDerivedStateFromError(_error: any) {
+    return { hasError: true };
+  }
+  componentDidCatch(error: any, info: any) {
+    console.error('❌ [CallErrorBoundary] Caught error in WorkerIncomingCallScreen:', error, info);
+  }
+  render() {
+    if (this.state.hasError) {
+      return null;
+    }
+    return this.props.children;
+  }
+}
+
 function App() {
   var isDarkMode = useColorScheme() === 'dark';
   var [currentScreen, setCurrentScreen] = useState('onboarding1');
@@ -213,12 +232,14 @@ function App() {
       onBackToOnboarding: () => setCurrentScreen('onboarding1')
     }),
     Boolean(incomingCallData) && (
-      <WorkerIncomingCallScreen
-        visible={Boolean(incomingCallData)}
-        callData={incomingCallData}
-        onDecline={() => setIncomingCallData(null)}
-        onEndCall={() => setIncomingCallData(null)}
-      />
+      <CallErrorBoundary>
+        <WorkerIncomingCallScreen
+          visible={Boolean(incomingCallData)}
+          callData={incomingCallData}
+          onDecline={() => setIncomingCallData(null)}
+          onEndCall={() => setIncomingCallData(null)}
+        />
+      </CallErrorBoundary>
     )]
   });
 }

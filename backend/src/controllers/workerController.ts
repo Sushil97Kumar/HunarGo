@@ -582,6 +582,8 @@ export const updateCallStatus = async (req: AuthRequest, res: Response, next: Ne
       const eventPayload = {
         callId: updatedCall._id ? updatedCall._id.toString() : callId,
         status,
+        customerId: updatedCall.customerId ? updatedCall.customerId.toString() : undefined,
+        workerId: updatedCall.workerId ? updatedCall.workerId.toString() : undefined,
         updatedAt: new Date().toISOString(),
       };
       if (updatedCall.customerId) {

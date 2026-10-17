@@ -135,6 +135,80 @@ export const initSocketServer = (httpServer: HttpServer): Server => {
       }
     });
 
+    // ==========================================
+    // WebRTC Real-Time Audio Signaling Events
+    // ==========================================
+
+    // Client joins call signaling room
+    socket.on('join_call', (data: { callId: string }) => {
+      const { callId } = data || {};
+      if (callId) {
+        const callRoom = `call:${callId}`;
+        socket.join(callRoom);
+        console.log(`🎙️ [WebRTC Socket] User ${userId} (${role}) joined ${callRoom}`);
+      }
+    });
+
+    // Relay WebRTC Offer
+    socket.on('webrtc_offer', (data: { callId: string; targetUserId?: string; sdp: any }) => {
+      const { callId, targetUserId, sdp } = data || {};
+      console.log(`📡 [WebRTC Signal] Offer from ${userId} for call ${callId} (Target: ${targetUserId || 'room'})`);
+      if (callId) {
+        socket.to(`call:${callId}`).emit('webrtc_offer', { callId, senderId: userId, sdp });
+      }
+      if (targetUserId && io) {
+        const callRoom = io.sockets.adapter.rooms.get(`call:${callId}`);
+        const roomSize = callRoom ? callRoom.size : 0;
+        // Only deliver directly to private user room if call room does not have other peer yet
+        if (roomSize <= 1) {
+          io.to(`user:${targetUserId}`).emit('webrtc_offer', { callId, senderId: userId, sdp });
+        }
+      }
+    });
+
+    // Relay WebRTC Answer
+    socket.on('webrtc_answer', (data: { callId: string; targetUserId?: string; sdp: any }) => {
+      const { callId, targetUserId, sdp } = data || {};
+      console.log(`📡 [WebRTC Signal] Answer from ${userId} for call ${callId} (Target: ${targetUserId || 'room'})`);
+      if (callId) {
+        socket.to(`call:${callId}`).emit('webrtc_answer', { callId, senderId: userId, sdp });
+      }
+      if (targetUserId && io) {
+        const callRoom = io.sockets.adapter.rooms.get(`call:${callId}`);
+        const roomSize = callRoom ? callRoom.size : 0;
+        if (roomSize <= 1) {
+          io.to(`user:${targetUserId}`).emit('webrtc_answer', { callId, senderId: userId, sdp });
+        }
+      }
+    });
+
+    // Relay ICE Candidate
+    socket.on('webrtc_ice_candidate', (data: { callId: string; targetUserId?: string; candidate: any }) => {
+      const { callId, targetUserId, candidate } = data || {};
+      if (callId) {
+        socket.to(`call:${callId}`).emit('webrtc_ice_candidate', { callId, senderId: userId, candidate });
+      }
+      if (targetUserId && io) {
+        const callRoom = io.sockets.adapter.rooms.get(`call:${callId}`);
+        const roomSize = callRoom ? callRoom.size : 0;
+        if (roomSize <= 1) {
+          io.to(`user:${targetUserId}`).emit('webrtc_ice_candidate', { callId, senderId: userId, candidate });
+        }
+      }
+    });
+
+    // Leave call room
+    socket.on('leave_call', (data: { callId: string; targetUserId?: string }) => {
+      const { callId, targetUserId } = data || {};
+      if (callId) {
+        socket.leave(`call:${callId}`);
+        socket.to(`call:${callId}`).emit('call_ended', { callId, senderId: userId });
+      }
+      if (targetUserId && io) {
+        io.to(`user:${targetUserId}`).emit('call_ended', { callId, senderId: userId });
+      }
+    });
+
     // Handle Disconnection
     socket.on('disconnect', (reason) => {
       console.log(`\n=================================================`);

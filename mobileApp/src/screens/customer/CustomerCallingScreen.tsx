@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { customerApi } from '../../api/customerApi';
 import { socketService } from '../../services/socketService';
+import { webrtcService, requestAudioPermission } from '../../services/webrtcService';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const DefaultAvatar = require('../../assets/default_avatar.png');
@@ -51,7 +52,7 @@ export const CustomerCallingScreen: React.FC<Props> = ({
   const [callDuration, setCallDuration] = useState<number>(0);
   const [callId, setCallId] = useState<string>('');
   const [isMuted, setIsMuted] = useState<boolean>(false);
-  const [isSpeakerOn, setIsSpeakerOn] = useState<boolean>(false);
+  const [isSpeakerOn, setIsSpeakerOn] = useState<boolean>(true);
   const [imageError, setImageError] = useState<boolean>(false);
 
   // Animated Ripple Waves
@@ -64,6 +65,7 @@ export const CustomerCallingScreen: React.FC<Props> = ({
   // Timer Ref
   const timerRef = useRef<any>(null);
   const isEndingRef = useRef<boolean>(false);
+  const activeCallIdRef = useRef<string>('');
 
   // Reset state and initiate call when screen becomes visible
   useEffect(() => {
@@ -72,10 +74,12 @@ export const CustomerCallingScreen: React.FC<Props> = ({
       setCallDuration(0);
       setCallStatus('connecting');
       setCallId('');
+      activeCallIdRef.current = '';
       setIsMuted(false);
-      setIsSpeakerOn(false);
+      setIsSpeakerOn(true);
       setImageError(false);
       isEndingRef.current = false;
+      webrtcService.endCall();
       return;
     }
 
@@ -83,8 +87,14 @@ export const CustomerCallingScreen: React.FC<Props> = ({
     setCallStatus('connecting');
     setCallDuration(0);
     setIsMuted(false);
-    setIsSpeakerOn(false);
+    setIsSpeakerOn(true);
     setImageError(false);
+    activeCallIdRef.current = '';
+
+    // Proactively request and verify audio permissions upfront
+    requestAudioPermission().then((granted) => {
+      console.log('🎤 [CustomerCallingScreen] Upfront mic permission granted:', granted);
+    });
 
     // Start ripple animations
     const createRingAnimation = (animValue: Animated.Value, delay: number) => {
@@ -148,7 +158,10 @@ export const CustomerCallingScreen: React.FC<Props> = ({
         if (isEndingRef.current) return;
 
         if (res && res.success && res.callId) {
+          activeCallIdRef.current = res.callId;
           setCallId(res.callId);
+          // Pre-join signaling room early so all offers and ICE candidates are received seamlessly
+          socketService.joinCall(res.callId);
         }
       } catch (err) {
         console.warn('⚠️ [CustomerCallingScreen] Error placing call API:', err);
@@ -167,8 +180,19 @@ export const CustomerCallingScreen: React.FC<Props> = ({
         timerRef.current = setInterval(() => {
           setCallDuration((prev) => prev + 1);
         }, 1000);
+
+        // Initiate WebRTC two-way audio streaming to Worker (prioritize real backend workerId)
+        const targetWorkerId = payload?.workerId || worker._id || worker.id;
+        const currentCallId = payload?.callId || activeCallIdRef.current || callId;
+        if (currentCallId && targetWorkerId) {
+          console.log(`🎙️ [CustomerCallingScreen] Starting WebRTC caller audio connection to worker: ${targetWorkerId}`);
+          webrtcService.startCallAsCaller(currentCallId, targetWorkerId).catch((err) => {
+            console.warn('⚠️ [CustomerCallingScreen] WebRTC caller error:', err);
+          });
+        }
       } else if (payload?.status === 'Cancelled' || payload?.status === 'Declined') {
         setCallStatus('ended');
+        webrtcService.endCall();
         setTimeout(() => {
           onEndCall();
         }, 1200);
@@ -183,6 +207,7 @@ export const CustomerCallingScreen: React.FC<Props> = ({
       anim3.stop();
       badgePulse.stop();
       if (unsubscribeStatus) unsubscribeStatus();
+      webrtcService.endCall();
     };
   }, [visible, worker]);
 
@@ -193,6 +218,7 @@ export const CustomerCallingScreen: React.FC<Props> = ({
 
     setCallStatus('ended');
     if (timerRef.current) clearInterval(timerRef.current);
+    webrtcService.endCall();
 
     // Subtle press-down animation on End Call button
     Animated.sequence([
@@ -392,7 +418,10 @@ export const CustomerCallingScreen: React.FC<Props> = ({
             <TouchableOpacity
               style={[styles.controlBtn, isMuted && styles.controlBtnActive]}
               activeOpacity={0.75}
-              onPress={() => setIsMuted((prev) => !prev)}
+              onPress={() => {
+                const muted = webrtcService.toggleMute();
+                setIsMuted(muted);
+              }}
             >
               <View style={[styles.controlIconBox, isMuted && styles.controlIconBoxActive]}>
                 <Text style={styles.controlIcon}>{isMuted ? '🔇' : '🎙️'}</Text>
@@ -406,7 +435,10 @@ export const CustomerCallingScreen: React.FC<Props> = ({
             <TouchableOpacity
               style={[styles.controlBtn, isSpeakerOn && styles.controlBtnActive]}
               activeOpacity={0.75}
-              onPress={() => setIsSpeakerOn((prev) => !prev)}
+              onPress={() => {
+                const speaker = webrtcService.toggleSpeaker();
+                setIsSpeakerOn(speaker);
+              }}
             >
               <View style={[styles.controlIconBox, isSpeakerOn && styles.controlIconBoxActive]}>
                 <Text style={styles.controlIcon}>{isSpeakerOn ? '🔊' : '🔈'}</Text>

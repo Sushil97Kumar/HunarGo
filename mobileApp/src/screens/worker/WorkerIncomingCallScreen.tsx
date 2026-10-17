@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { workerApi } from '../../api/workerApi';
 import { socketService } from '../../services/socketService';
+import { webrtcService, requestAudioPermission } from '../../services/webrtcService';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const DefaultAvatar = require('../../assets/default_avatar.png');
@@ -60,7 +61,7 @@ export const WorkerIncomingCallScreen: React.FC<Props> = ({
   const [callStatus, setCallStatus] = useState<'ringing' | 'connected' | 'ended'>('ringing');
   const [callDuration, setCallDuration] = useState<number>(0);
   const [isMuted, setIsMuted] = useState<boolean>(false);
-  const [isSpeakerOn, setIsSpeakerOn] = useState<boolean>(false);
+  const [isSpeakerOn, setIsSpeakerOn] = useState<boolean>(true);
   const [imageError, setImageError] = useState<boolean>(false);
 
   // Animated ripple waves
@@ -78,7 +79,7 @@ export const WorkerIncomingCallScreen: React.FC<Props> = ({
       setCallDuration(0);
       setCallStatus('ringing');
       setIsMuted(false);
-      setIsSpeakerOn(false);
+      setIsSpeakerOn(true);
       setImageError(false);
       isEndingRef.current = false;
       return;
@@ -88,8 +89,18 @@ export const WorkerIncomingCallScreen: React.FC<Props> = ({
     setCallStatus('ringing');
     setCallDuration(0);
     setIsMuted(false);
-    setIsSpeakerOn(false);
+    setIsSpeakerOn(true);
     setImageError(false);
+
+    // Pre-request and verify microphone permissions
+    requestAudioPermission().then((granted) => {
+      console.log('🎤 [WorkerIncomingCallScreen] Upfront mic permission granted:', granted);
+    });
+
+    // Pre-join call room early so all signaling and ICE candidates arrive without delay
+    if (callData.callId) {
+      socketService.joinCall(callData.callId);
+    }
 
     // Ringing ripple animation
     const createRingAnimation = (animValue: Animated.Value, delay: number) => {
@@ -130,25 +141,56 @@ export const WorkerIncomingCallScreen: React.FC<Props> = ({
     badgePulse.start();
 
     // Listen for customer cancelling the call remotely via socket
-    const unsubscribeStatus = socketService.onCallStatusUpdated((payload: any) => {
-      const callId = callData?.callId;
-      if (payload?.callId === callId && (payload?.status === 'Cancelled' || payload?.status === 'Ended')) {
-        console.log('🔴 [WorkerIncomingCallScreen] Customer cancelled/ended the call.');
-        setCallStatus('ended');
-        setTimeout(() => {
-          if (onDecline) onDecline();
-          else if (onEndCall) onEndCall();
-        }, 1200);
-      }
-    });
+    let unsubscribeStatus: (() => void) | undefined;
+    if (typeof socketService.onCallStatusUpdated === 'function') {
+      unsubscribeStatus = socketService.onCallStatusUpdated((payload: any) => {
+        const callId = callData?.callId;
+        if (payload?.callId === callId && (payload?.status === 'Cancelled' || payload?.status === 'Ended')) {
+          console.log('🔴 [WorkerIncomingCallScreen] Customer cancelled/ended the call.');
+          setCallStatus('ended');
+          try {
+            webrtcService.endCall();
+          } catch (rtcErr) {
+            console.warn('⚠️ [WorkerIncomingCallScreen] WebRTC endCall error:', rtcErr);
+          }
+          setTimeout(() => {
+            if (onDecline) onDecline();
+            else if (onEndCall) onEndCall();
+          }, 1200);
+        }
+      });
+    }
+
+    // Listen for incoming offer early if caller sent it before accept
+    let unsubOffer: (() => void) | undefined;
+    if (typeof socketService.onWebRtcOffer === 'function') {
+      unsubOffer = socketService.onWebRtcOffer((offerPayload: any) => {
+        if (offerPayload?.callId === callData?.callId) {
+          console.log('📥 [WorkerIncomingCallScreen] Early WebRTC offer received, buffering...');
+          try {
+            webrtcService.receiveIncomingOffer(offerPayload.callId, offerPayload.sdp);
+          } catch (offerErr) {
+            console.warn('⚠️ [WorkerIncomingCallScreen] Error buffering offer:', offerErr);
+          }
+        }
+      });
+    }
 
     return () => {
-      anim1.stop();
-      anim2.stop();
-      anim3.stop();
-      badgePulse.stop();
+      try { anim1.stop(); } catch (e) {}
+      try { anim2.stop(); } catch (e) {}
+      try { anim3.stop(); } catch (e) {}
+      try { badgePulse.stop(); } catch (e) {}
       if (timerRef.current) clearInterval(timerRef.current);
-      if (unsubscribeStatus) unsubscribeStatus();
+      if (typeof unsubscribeStatus === 'function') {
+        try { unsubscribeStatus(); } catch (e) {}
+      }
+      if (typeof unsubOffer === 'function') {
+        try { unsubOffer(); } catch (e) {}
+      }
+      try {
+        webrtcService.endCall();
+      } catch (e) {}
     };
   }, [ring1, ring2, ring3, pulseBadge, callData?.callId]);
 
@@ -161,25 +203,38 @@ export const WorkerIncomingCallScreen: React.FC<Props> = ({
 
   // Handle Worker Answering Call
   const handleAcceptCall = async () => {
-    const callId = callData?.callId;
-    console.log('✅ [WorkerIncomingCallScreen] Worker accepted call:', callId);
-    setCallStatus('connected');
+    try {
+      const callId = callData?.callId;
+      console.log('✅ [WorkerIncomingCallScreen] Worker accepted call:', callId);
+      setCallStatus('connected');
 
-    // Start in-call duration timer
-    if (timerRef.current) clearInterval(timerRef.current);
-    timerRef.current = setInterval(() => {
-      setCallDuration((prev) => prev + 1);
-    }, 1000);
+      // Start in-call duration timer
+      if (timerRef.current) clearInterval(timerRef.current);
+      timerRef.current = setInterval(() => {
+        setCallDuration((prev) => prev + 1);
+      }, 1000);
 
-    if (callId) {
-      try {
-        await workerApi.updateCallStatus(callId, 'Accepted');
-      } catch (err) {
-        console.error('Error accepting call:', err);
+      // Initialize Real-Time WebRTC Two-Way Audio
+      const callerId = callData?.callerId || callData?.customer?.id;
+      if (callId && callerId) {
+        console.log(`🎙️ [WorkerIncomingCallScreen] Starting WebRTC callee audio connection to caller: ${callerId}`);
+        webrtcService.startCallAsCallee(callId, callerId).catch((rtcErr) => {
+          console.warn('⚠️ [WorkerIncomingCallScreen] WebRTC callee error:', rtcErr);
+        });
       }
-    }
 
-    if (onAccept) onAccept();
+      if (callId) {
+        try {
+          await workerApi.updateCallStatus(callId, 'Accepted');
+        } catch (err) {
+          console.error('Error accepting call:', err);
+        }
+      }
+
+      if (onAccept) onAccept();
+    } catch (err) {
+      console.error('❌ [WorkerIncomingCallScreen] Error in handleAcceptCall:', err);
+    }
   };
 
   // Handle Worker Declining / Cutting Call
@@ -187,37 +242,48 @@ export const WorkerIncomingCallScreen: React.FC<Props> = ({
     if (isEndingRef.current) return;
     isEndingRef.current = true;
 
-    const callId = callData?.callId;
-    console.log('🔴 [WorkerIncomingCallScreen] Worker cut/declined call:', callId);
-    setCallStatus('ended');
-    if (timerRef.current) clearInterval(timerRef.current);
+    try {
+      const callId = callData?.callId;
+      console.log('🔴 [WorkerIncomingCallScreen] Worker cut/declined call:', callId);
+      setCallStatus('ended');
+      if (timerRef.current) clearInterval(timerRef.current);
 
-    // Subtle press-down animation on Cut Call button
-    Animated.sequence([
-      Animated.timing(cutCallAnim, {
-        toValue: 0.85,
-        duration: 120,
-        useNativeDriver: true,
-      }),
-      Animated.timing(cutCallAnim, {
-        toValue: 1,
-        duration: 120,
-        useNativeDriver: true,
-      }),
-    ]).start();
-
-    if (callId) {
+      // Stop WebRTC audio streaming immediately
       try {
-        await workerApi.updateCallStatus(callId, 'Cancelled');
-      } catch (err) {
-        console.error('Error cutting call:', err);
-      }
-    }
+        webrtcService.endCall();
+      } catch (e) {}
 
-    setTimeout(() => {
+      // Subtle press-down animation on Cut Call button
+      Animated.sequence([
+        Animated.timing(cutCallAnim, {
+          toValue: 0.85,
+          duration: 120,
+          useNativeDriver: true,
+        }),
+        Animated.timing(cutCallAnim, {
+          toValue: 1,
+          duration: 120,
+          useNativeDriver: true,
+        }),
+      ]).start();
+
+      if (callId) {
+        try {
+          await workerApi.updateCallStatus(callId, 'Cancelled');
+        } catch (err) {
+          console.error('Error cutting call:', err);
+        }
+      }
+
+      setTimeout(() => {
+        if (onEndCall) onEndCall();
+        else if (onDecline) onDecline();
+      }, 450);
+    } catch (cutErr) {
+      console.error('❌ [WorkerIncomingCallScreen] Error in handleCutCall:', cutErr);
       if (onEndCall) onEndCall();
       else if (onDecline) onDecline();
-    }, 450);
+    }
   };
 
   if (!callData) {
@@ -378,7 +444,10 @@ export const WorkerIncomingCallScreen: React.FC<Props> = ({
             <TouchableOpacity
               style={styles.controlBtn}
               activeOpacity={0.75}
-              onPress={() => setIsMuted((prev) => !prev)}
+              onPress={() => {
+                const muted = webrtcService.toggleMute();
+                setIsMuted(muted);
+              }}
             >
               <View style={[styles.controlIconBox, isMuted && styles.controlIconBoxActive]}>
                 <Text style={styles.controlIcon}>{isMuted ? '🔇' : '🎙️'}</Text>
@@ -392,7 +461,10 @@ export const WorkerIncomingCallScreen: React.FC<Props> = ({
             <TouchableOpacity
               style={styles.controlBtn}
               activeOpacity={0.75}
-              onPress={() => setIsSpeakerOn((prev) => !prev)}
+              onPress={() => {
+                const speaker = webrtcService.toggleSpeaker();
+                setIsSpeakerOn(speaker);
+              }}
             >
               <View style={[styles.controlIconBox, isSpeakerOn && styles.controlIconBoxActive]}>
                 <Text style={styles.controlIcon}>{isSpeakerOn ? '🔊' : '🔈'}</Text>
@@ -456,7 +528,7 @@ export const WorkerIncomingCallScreen: React.FC<Props> = ({
               🔒 HunarGo End-to-End Direct Connection
             </Text>
             {callId ? (
-              <Text style={styles.debugCallId}>ID: {callId.slice(-6).toUpperCase()}</Text>
+              <Text style={styles.debugCallId}>ID: {String(callId).slice(-6).toUpperCase()}</Text>
             ) : null}
           </View>
         </View>

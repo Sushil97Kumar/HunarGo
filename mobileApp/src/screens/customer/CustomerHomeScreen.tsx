@@ -207,11 +207,6 @@ export const CustomerHomeScreen: React.FC<Props> = ({ onBackToOnboarding }) => {
   const handleEndCall = () => {
     console.log('🔴 [CustomerHomeScreen] Call ended.');
     setShowCallingScreen(false);
-    const targetWorkerId = callingWorker?._id || callingWorker?.id;
-    if (targetWorkerId) {
-      setAllWorkersList((prev) => prev.filter((w) => (w._id || w.id) !== targetWorkerId));
-      setNearbyWorkers((prev) => prev.filter((w) => (w._id || w.id) !== targetWorkerId));
-    }
     setCallingWorker(null);
     setSelectedWorkerForCall(null);
     fetchNearbyWorkers();
