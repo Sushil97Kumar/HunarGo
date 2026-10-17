@@ -17,7 +17,23 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { HunarGoLogo, DefaultAvatar, Screen2Illustration, HeroIllustration, OnboardingBg } from '../../utils/assets';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import {
+
+  HunarGoLogo,
+  DefaultAvatar,
+  Screen2Illustration,
+  HeroIllustration,
+  OnboardingBg,
+  TabDashboardActive,
+  TabDashboardInactive,
+  TabCallsActive,
+  TabCallsInactive,
+  TabProfileActive,
+  TabProfileInactive,
+  TabSettingsActive,
+  TabSettingsInactive,
+} from '../../utils/assets';
 import { CustomerCallsScreen } from './CustomerCallsScreen';
 import { CustomerCallingScreen } from './CustomerCallingScreen';
 import { styles } from '../../styles/styles';
@@ -37,6 +53,10 @@ export const CustomerHomeScreen: React.FC<Props> = ({
   onNavigateToLogin,
   onRedirectToOnboarding,
 }) => {
+  const insets = useSafeAreaInsets();
+  const tabBottomPadding = insets.bottom > 0 ? insets.bottom + 8 : (Platform.OS === 'ios' ? 24 : 12);
+  const homeContentPaddingBottom = 68 + tabBottomPadding;
+
   const isCustomerLoggedIn = Boolean(
     (userPhone && userPhone.trim().length > 0) ||
     getActiveUserPhone() ||
@@ -542,7 +562,7 @@ export const CustomerHomeScreen: React.FC<Props> = ({
         </View>
 
         {activeTab === 'dashboard' && (
-          <View style={localStyles.homeFixedContent}>
+          <View style={[localStyles.homeFixedContent, { paddingBottom: homeContentPaddingBottom }]}>
             {/* Search Bar */}
           <View style={localStyles.searchRow}>
             <View style={localStyles.searchInputBox}>
@@ -985,7 +1005,7 @@ export const CustomerHomeScreen: React.FC<Props> = ({
             )}
 
             {/* Customer Dashboard Footer Navigation Bar */}
-            <View style={styles.bottomTabBarContainer}>
+            <View style={[styles.bottomTabBarContainer, { paddingBottom: tabBottomPadding }]}>
               <TouchableOpacity
                 style={styles.tabItem}
                 onPress={() => {
@@ -994,9 +1014,13 @@ export const CustomerHomeScreen: React.FC<Props> = ({
                 }}
                 activeOpacity={0.75}
               >
-                <Text style={[styles.tabIcon, styles.tabIconActive]}>🏠</Text>
-                <Text style={[styles.tabLabel, styles.tabLabelActive]}>Dashboard</Text>
-                <View style={styles.activeTabIndicator} />
+                <Image
+                  source={activeTab === 'dashboard' ? TabDashboardActive : TabDashboardInactive}
+                  style={styles.tabIconImg}
+                  resizeMode="contain"
+                />
+                <Text style={[styles.tabLabel, activeTab === 'dashboard' && styles.tabLabelActive]}>Dashboard</Text>
+                <View style={[styles.activeTabIndicator, activeTab !== 'dashboard' && styles.inactiveTabIndicator]} />
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -1007,8 +1031,13 @@ export const CustomerHomeScreen: React.FC<Props> = ({
                 }}
                 activeOpacity={0.75}
               >
-                <Text style={styles.tabIcon}>📞</Text>
-                <Text style={styles.tabLabel}>Calls</Text>
+                <Image
+                  source={activeTab === 'calls' ? TabCallsActive : TabCallsInactive}
+                  style={styles.tabIconImg}
+                  resizeMode="contain"
+                />
+                <Text style={[styles.tabLabel, activeTab === 'calls' && styles.tabLabelActive]}>Calls</Text>
+                <View style={[styles.activeTabIndicator, activeTab !== 'calls' && styles.inactiveTabIndicator]} />
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -1028,8 +1057,13 @@ export const CustomerHomeScreen: React.FC<Props> = ({
                 }}
                 activeOpacity={0.75}
               >
-                <Text style={styles.tabIcon}>👤</Text>
-                <Text style={styles.tabLabel}>Profile</Text>
+                <Image
+                  source={activeTab === 'profile' ? TabProfileActive : TabProfileInactive}
+                  style={styles.tabIconImg}
+                  resizeMode="contain"
+                />
+                <Text style={[styles.tabLabel, activeTab === 'profile' && styles.tabLabelActive]}>Profile</Text>
+                <View style={[styles.activeTabIndicator, activeTab !== 'profile' && styles.inactiveTabIndicator]} />
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -1049,8 +1083,13 @@ export const CustomerHomeScreen: React.FC<Props> = ({
                 }}
                 activeOpacity={0.75}
               >
-                <Text style={styles.tabIcon}>⚙️</Text>
-                <Text style={styles.tabLabel}>Settings</Text>
+                <Image
+                  source={activeTab === 'settings' ? TabSettingsActive : TabSettingsInactive}
+                  style={styles.tabIconImg}
+                  resizeMode="contain"
+                />
+                <Text style={[styles.tabLabel, activeTab === 'settings' && styles.tabLabelActive]}>Settings</Text>
+                <View style={[styles.activeTabIndicator, activeTab !== 'settings' && styles.inactiveTabIndicator]} />
               </TouchableOpacity>
             </View>
           </SafeAreaView>
@@ -1062,7 +1101,7 @@ export const CustomerHomeScreen: React.FC<Props> = ({
 
       {/* Profile Tab */}
       {activeTab === 'profile' && (
-        <View style={{ paddingHorizontal: 16, paddingTop: 4, paddingBottom: 72 }}>
+        <View style={{ paddingHorizontal: 16, paddingTop: 4, paddingBottom: homeContentPaddingBottom }}>
           {/* Main Profile Header Card */}
           <View style={localStyles.profileHeaderCard}>
             <View style={localStyles.profileAvatarWrapper}>
@@ -1376,30 +1415,46 @@ export const CustomerHomeScreen: React.FC<Props> = ({
         </ScrollView>
       )}
 
-      {/* Bottom Floating Navigation Tab Bar (Identical to Worker Dashboard) */}
-      <View style={styles.bottomTabBarContainer}>
+      {/* Bottom Floating Navigation Tab Bar */}
+      <View style={[styles.bottomTabBarContainer, { paddingBottom: tabBottomPadding }]}>
         <TouchableOpacity style={styles.tabItem} onPress={() => handleTabPress('dashboard')} activeOpacity={0.75}>
-          <Text style={[styles.tabIcon, activeTab === 'dashboard' && styles.tabIconActive]}>🏠</Text>
+          <Image
+            source={activeTab === 'dashboard' ? TabDashboardActive : TabDashboardInactive}
+            style={styles.tabIconImg}
+            resizeMode="contain"
+          />
           <Text style={[styles.tabLabel, activeTab === 'dashboard' && styles.tabLabelActive]}>Dashboard</Text>
-          {activeTab === 'dashboard' && <View style={styles.activeTabIndicator} />}
+          <View style={[styles.activeTabIndicator, activeTab !== 'dashboard' && styles.inactiveTabIndicator]} />
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.tabItem} onPress={() => handleTabPress('calls')} activeOpacity={0.75}>
-          <Text style={[styles.tabIcon, activeTab === 'calls' && styles.tabIconActive]}>📞</Text>
+          <Image
+            source={activeTab === 'calls' ? TabCallsActive : TabCallsInactive}
+            style={styles.tabIconImg}
+            resizeMode="contain"
+          />
           <Text style={[styles.tabLabel, activeTab === 'calls' && styles.tabLabelActive]}>Calls</Text>
-          {activeTab === 'calls' && <View style={styles.activeTabIndicator} />}
+          <View style={[styles.activeTabIndicator, activeTab !== 'calls' && styles.inactiveTabIndicator]} />
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.tabItem} onPress={() => handleTabPress('profile')} activeOpacity={0.75}>
-          <Text style={[styles.tabIcon, activeTab === 'profile' && styles.tabIconActive]}>👤</Text>
+          <Image
+            source={activeTab === 'profile' ? TabProfileActive : TabProfileInactive}
+            style={styles.tabIconImg}
+            resizeMode="contain"
+          />
           <Text style={[styles.tabLabel, activeTab === 'profile' && styles.tabLabelActive]}>Profile</Text>
-          {activeTab === 'profile' && <View style={styles.activeTabIndicator} />}
+          <View style={[styles.activeTabIndicator, activeTab !== 'profile' && styles.inactiveTabIndicator]} />
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.tabItem} onPress={() => handleTabPress('settings')} activeOpacity={0.75}>
-          <Text style={[styles.tabIcon, activeTab === 'settings' && styles.tabIconActive]}>⚙️</Text>
+          <Image
+            source={activeTab === 'settings' ? TabSettingsActive : TabSettingsInactive}
+            style={styles.tabIconImg}
+            resizeMode="contain"
+          />
           <Text style={[styles.tabLabel, activeTab === 'settings' && styles.tabLabelActive]}>Settings</Text>
-          {activeTab === 'settings' && <View style={styles.activeTabIndicator} />}
+          <View style={[styles.activeTabIndicator, activeTab !== 'settings' && styles.inactiveTabIndicator]} />
         </TouchableOpacity>
       </View>
 

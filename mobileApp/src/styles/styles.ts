@@ -1,4 +1,4 @@
-import { StyleSheet, Dimensions } from 'react-native';
+import { StyleSheet, Dimensions, Platform } from 'react-native';
 import { scale, verticalScale, moderateScale, wp, hp, SCREEN_WIDTH, SCREEN_HEIGHT } from '../utils/responsive';
 
 export const styles = StyleSheet.create({
@@ -1915,56 +1915,68 @@ export const styles = StyleSheet.create({
   },
   bottomTabBarContainer: {
     position: 'absolute',
-    bottom: 52,
-    left: 36,
-    right: 36,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: '#FFF7F2',
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    borderBottomLeftRadius: 0,
+    borderBottomRightRadius: 0,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-around',
-    paddingVertical: 5,
-    paddingHorizontal: 6,
-    shadowColor: '#000',
+    paddingTop: 10,
+    paddingBottom: Platform.OS === 'ios' ? 24 : 10,
+    paddingHorizontal: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#FEE8DC',
+    shadowColor: '#D97757',
     shadowOffset: {
       width: 0,
-      height: 5
+      height: -4,
     },
     shadowOpacity: 0.08,
     shadowRadius: 10,
-    elevation: 6,
-    borderWidth: 1,
-    borderColor: '#F1F5F9'
+    elevation: 8,
   },
   tabItem: {
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 4,
-    position: 'relative'
+    paddingVertical: 2,
+    position: 'relative',
+  },
+  tabIconImg: {
+    width: 23,
+    height: 23,
   },
   tabIcon: {
-    fontSize: 15,
-    color: '#94A3B8'
+    fontSize: 16,
+    color: '#8A94A6',
   },
   tabIconActive: {
-    color: '#FF5436'
+    color: '#FF5436',
   },
   tabLabel: {
-    fontSize: 9,
+    fontSize: 12,
     fontWeight: '600',
-    color: '#94A3B8',
-    marginTop: 0
+    color: '#8A94A6',
+    marginTop: 3,
   },
   tabLabelActive: {
     color: '#FF5436',
-    fontWeight: '800'
+    fontWeight: '700',
   },
   activeTabIndicator: {
-    height: 2,
-    width: 12,
+    height: 3.5,
+    width: 24,
     backgroundColor: '#FF5436',
-    borderRadius: 1,
-    marginTop: 1
+    borderRadius: 2,
+    marginTop: 4,
+  },
+  inactiveTabIndicator: {
+    backgroundColor: 'transparent',
   },
   // Customer Calls Tab Styles
   callsTabScrollContent: {
