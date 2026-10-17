@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Animated,
   Image,
   ImageBackground,
   Modal,
@@ -21,12 +22,40 @@ import { CustomerCallsScreen } from './CustomerCallsScreen';
 import { CustomerCallingScreen } from './CustomerCallingScreen';
 import { styles } from '../../styles/styles';
 import { customerApi } from '../../api/customerApi';
+import { getAuthToken, getActiveUserPhone, getLoggedInUser } from '../../api/apiConfig';
 
 interface Props {
   onBackToOnboarding: () => void;
+  userPhone?: string;
+  onNavigateToLogin?: () => void;
+  onRedirectToOnboarding?: () => void;
 }
 
-export const CustomerHomeScreen: React.FC<Props> = ({ onBackToOnboarding }) => {
+export const CustomerHomeScreen: React.FC<Props> = ({
+  onBackToOnboarding,
+  userPhone,
+  onNavigateToLogin,
+  onRedirectToOnboarding,
+}) => {
+  const isCustomerLoggedIn = Boolean(
+    (userPhone && userPhone.trim().length > 0) ||
+    getActiveUserPhone() ||
+    getAuthToken() ||
+    getLoggedInUser()
+  );
+
+  const handleTabPress = (tab: 'dashboard' | 'calls' | 'profile' | 'settings') => {
+    if ((tab === 'profile' || tab === 'settings') && !isCustomerLoggedIn) {
+      if (onRedirectToOnboarding) {
+        onRedirectToOnboarding();
+      } else {
+        onBackToOnboarding();
+      }
+      return;
+    }
+    setActiveTab(tab);
+  };
+
   const [activeTab, setActiveTab] = useState<'dashboard' | 'calls' | 'profile' | 'settings' | 'edit_profile'>('dashboard');
   const [searchQuery, setSearchQuery] = useState('');
   const [userLocation, setUserLocation] = useState('Zirakpur, Punjab');
@@ -985,6 +1014,15 @@ export const CustomerHomeScreen: React.FC<Props> = ({ onBackToOnboarding }) => {
               <TouchableOpacity
                 style={styles.tabItem}
                 onPress={() => {
+                  if (!isCustomerLoggedIn) {
+                    setShowAllWorkersModal(false);
+                    if (onRedirectToOnboarding) {
+                      onRedirectToOnboarding();
+                    } else {
+                      onBackToOnboarding();
+                    }
+                    return;
+                  }
                   setShowAllWorkersModal(false);
                   setActiveTab('profile');
                 }}
@@ -997,6 +1035,15 @@ export const CustomerHomeScreen: React.FC<Props> = ({ onBackToOnboarding }) => {
               <TouchableOpacity
                 style={styles.tabItem}
                 onPress={() => {
+                  if (!isCustomerLoggedIn) {
+                    setShowAllWorkersModal(false);
+                    if (onRedirectToOnboarding) {
+                      onRedirectToOnboarding();
+                    } else {
+                      onBackToOnboarding();
+                    }
+                    return;
+                  }
                   setShowAllWorkersModal(false);
                   setActiveTab('settings');
                 }}
@@ -1331,25 +1378,25 @@ export const CustomerHomeScreen: React.FC<Props> = ({ onBackToOnboarding }) => {
 
       {/* Bottom Floating Navigation Tab Bar (Identical to Worker Dashboard) */}
       <View style={styles.bottomTabBarContainer}>
-        <TouchableOpacity style={styles.tabItem} onPress={() => setActiveTab('dashboard')} activeOpacity={0.75}>
+        <TouchableOpacity style={styles.tabItem} onPress={() => handleTabPress('dashboard')} activeOpacity={0.75}>
           <Text style={[styles.tabIcon, activeTab === 'dashboard' && styles.tabIconActive]}>🏠</Text>
           <Text style={[styles.tabLabel, activeTab === 'dashboard' && styles.tabLabelActive]}>Dashboard</Text>
           {activeTab === 'dashboard' && <View style={styles.activeTabIndicator} />}
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.tabItem} onPress={() => setActiveTab('calls')} activeOpacity={0.75}>
+        <TouchableOpacity style={styles.tabItem} onPress={() => handleTabPress('calls')} activeOpacity={0.75}>
           <Text style={[styles.tabIcon, activeTab === 'calls' && styles.tabIconActive]}>📞</Text>
           <Text style={[styles.tabLabel, activeTab === 'calls' && styles.tabLabelActive]}>Calls</Text>
           {activeTab === 'calls' && <View style={styles.activeTabIndicator} />}
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.tabItem} onPress={() => setActiveTab('profile')} activeOpacity={0.75}>
+        <TouchableOpacity style={styles.tabItem} onPress={() => handleTabPress('profile')} activeOpacity={0.75}>
           <Text style={[styles.tabIcon, activeTab === 'profile' && styles.tabIconActive]}>👤</Text>
           <Text style={[styles.tabLabel, activeTab === 'profile' && styles.tabLabelActive]}>Profile</Text>
           {activeTab === 'profile' && <View style={styles.activeTabIndicator} />}
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.tabItem} onPress={() => setActiveTab('settings')} activeOpacity={0.75}>
+        <TouchableOpacity style={styles.tabItem} onPress={() => handleTabPress('settings')} activeOpacity={0.75}>
           <Text style={[styles.tabIcon, activeTab === 'settings' && styles.tabIconActive]}>⚙️</Text>
           <Text style={[styles.tabLabel, activeTab === 'settings' && styles.tabLabelActive]}>Settings</Text>
           {activeTab === 'settings' && <View style={styles.activeTabIndicator} />}

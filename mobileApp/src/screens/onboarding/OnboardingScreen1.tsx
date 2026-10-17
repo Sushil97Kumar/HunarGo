@@ -65,13 +65,8 @@ export const OnboardingScreen1: React.FC<Props> = ({ onNext, onSkip }) => {
             </Text>
           </View>
 
-          <View style={styles.paginationContainer}>
-            <View style={[styles.dot, styles.activeDot]} />
-            <View style={styles.dot} />
-          </View>
-
           <TouchableOpacity
-            style={[styles.nextButton, { marginTop: scale(2), marginBottom: scale(24) }]}
+            style={[styles.nextButton, { marginTop: scale(14), marginBottom: scale(24) }]}
             onPress={onNext}
             activeOpacity={0.85}
           >

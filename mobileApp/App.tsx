@@ -198,14 +198,12 @@ function App() {
       onNext: () => setCurrentScreen('onboarding2'),
       onSkip: () => {
         setUserRole('customer');
-        setIsLoginFlow(true);
-        setCurrentScreen('workerLogin');
+        setCurrentScreen('home');
       }
     }), currentScreen === 'onboarding2' && /*#__PURE__*/(0, _jsxRuntime.jsx)(OnboardingScreen2, {
       onSkip: () => {
         setUserRole('customer');
-        setIsLoginFlow(true);
-        setCurrentScreen('workerLogin');
+        setCurrentScreen('home');
       },
       onFinish: () => {
         setUserRole('customer');
@@ -269,7 +267,16 @@ function App() {
     }), currentScreen === 'workerDashboard' && /*#__PURE__*/(0, _jsxRuntime.jsx)(WorkerDashboardScreen, {
       onBackToOnboarding: handleLogout
     }), currentScreen === 'home' && /*#__PURE__*/(0, _jsxRuntime.jsx)(HomeScreen, {
-      onBackToOnboarding: handleLogout
+      onBackToOnboarding: handleLogout,
+      userPhone: userPhone,
+      onNavigateToLogin: () => {
+        setUserRole('customer');
+        setIsLoginFlow(false);
+        setCurrentScreen('workerLogin');
+      },
+      onRedirectToOnboarding: () => {
+        setCurrentScreen('onboarding2');
+      }
     }),
     Boolean(incomingCallData) && (
       <CallErrorBoundary>
@@ -381,15 +388,8 @@ function OnboardingScreen1({
               children: "trusted & verified"
             }), " workers near your location instantly."]
           })]
-        }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
-          style: styles.paginationContainer,
-          children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.View, {
-            style: [styles.dot, styles.activeDot]
-          }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.View, {
-            style: styles.dot
-          })]
         }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
-          style: [styles.nextButton, { marginTop: scale(2), marginBottom: scale(24) }],
+          style: [styles.nextButton, { marginTop: scale(14), marginBottom: scale(24) }],
           onPress: onNext,
           activeOpacity: 0.85,
           children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
@@ -5095,9 +5095,24 @@ function WorkerDashboardScreen({
   });
 }
 function HomeScreen({
-  onBackToOnboarding
-}: { onBackToOnboarding: () => void }) {
-  return <CustomerHomeScreen onBackToOnboarding={onBackToOnboarding} />;
+  onBackToOnboarding,
+  userPhone,
+  onNavigateToLogin,
+  onRedirectToOnboarding,
+}: {
+  onBackToOnboarding: () => void;
+  userPhone?: string;
+  onNavigateToLogin?: () => void;
+  onRedirectToOnboarding?: () => void;
+}) {
+  return (
+    <CustomerHomeScreen
+      onBackToOnboarding={onBackToOnboarding}
+      userPhone={userPhone}
+      onNavigateToLogin={onNavigateToLogin}
+      onRedirectToOnboarding={onRedirectToOnboarding}
+    />
+  );
 }
 
 /* Old HomeScreen code removed */
