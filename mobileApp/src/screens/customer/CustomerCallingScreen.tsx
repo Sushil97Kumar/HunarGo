@@ -299,7 +299,7 @@ export const CustomerCallingScreen: React.FC<Props> = ({
       ? worker.professions[0]
       : 'Service Specialist');
 
-  const distanceText = worker.distance || worker.distanceText || '1.2 km away';
+  const distanceText = worker.distance || worker.distanceText || 'Nearby';
   const ratingText = worker.rating ? String(worker.rating) : '4.8';
 
   // Helper to resolve worker profile photo

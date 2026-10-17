@@ -21,17 +21,21 @@ export const customerApi = {
       if (data && data.success && Array.isArray(data.workers)) {
         return data;
       }
+      return {
+        success: data?.success || false,
+        workers: [],
+        pagination: data?.pagination || { page, limit, total: 0, totalPages: 1, hasMore: false },
+        message: data?.message || 'No workers found'
+      };
     } catch (error) {
       console.error('⚠️ Error in searchWorkers:', error);
+      return {
+        success: false,
+        workers: [],
+        pagination: { page, limit, total: 0, totalPages: 1, hasMore: false },
+        message: 'Network error: Unable to connect to server'
+      };
     }
-
-    return {
-      success: true,
-      workers: [
-        { id: 'w1', name: 'Rajesh Kumar', fullName: 'Rajesh Kumar', profession: category || 'Plumber', rating: '4.8', reviews: '124', distance: '1.2 km away', phone: '+919876543210' },
-        { id: 'w2', name: 'Sushil Kumar', fullName: 'Sushil Kumar', profession: category || 'Electrician', rating: '4.9', reviews: '98', distance: '2.1 km away', phone: '+919876543211' },
-      ],
-    };
   },
 
   /**
@@ -122,19 +126,19 @@ export const customerApi = {
     const activePhone = getActiveUserPhone();
 
     return {
-      success: true,
+      success: !!(loggedInUser || activePhone),
       profile: {
-        id: loggedInUser?.id || loggedInUser?._id || 'c1',
-        fullName: loggedInUser?.fullName || 'Sushil Kumar',
-        phoneNumber: loggedInUser?.phoneNumber || activePhone || '+91 98765 43210',
-        email: loggedInUser?.email || 'sushil.kumar@hunargo.com',
+        id: loggedInUser?.id || loggedInUser?._id || '',
+        fullName: loggedInUser?.fullName || '',
+        phoneNumber: loggedInUser?.phoneNumber || activePhone || '',
+        email: loggedInUser?.email || '',
         gender: loggedInUser?.gender || 'Male',
-        dob: loggedInUser?.dob || '15 Aug 1995',
+        dob: loggedInUser?.dob || '',
         profileImage: loggedInUser?.profileImage || '',
         location: loggedInUser?.location || {
-          address: 'Zirakpur, Punjab',
-          city: 'Zirakpur',
-          pincode: '140603',
+          address: '',
+          city: '',
+          pincode: '',
         },
       },
     };

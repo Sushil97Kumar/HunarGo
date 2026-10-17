@@ -159,25 +159,28 @@ export const CustomerHomeScreen: React.FC<Props> = ({
   const totalContentWidth = useRef(2400);
   const modalSearchInputRef = useRef<TextInput>(null);
 
-  const [customerProfile, setCustomerProfile] = useState({
-    fullName: 'Sushil Kumar',
-    phoneNumber: '+91 98765 43210',
-    email: 'sushil.kumar@hunargo.com',
+  const [customerProfile, setCustomerProfile] = useState<any>({
+    fullName: '',
+    phoneNumber: getActiveUserPhone() || userPhone || '',
+    email: '',
     gender: 'Male',
-    dob: '15 Aug 1995',
+    dob: '',
     profileImage: '',
     location: {
-      address: 'Zirakpur, Punjab',
-      city: 'Zirakpur',
-      pincode: '140603',
+      address: '',
+      city: '',
+      pincode: '',
     },
   });
+  const [isProfileLoading, setIsProfileLoading] = useState(false);
+  const [callsCount, setCallsCount] = useState<number>(0);
 
   useEffect(() => {
     loadCustomerProfile();
   }, [activeTab]);
 
   const loadCustomerProfile = async () => {
+    setIsProfileLoading(true);
     try {
       const res = await customerApi.getCustomerProfile();
       if (res && res.profile) {
@@ -186,8 +189,14 @@ export const CustomerHomeScreen: React.FC<Props> = ({
           setUserLocation(res.profile.location.address);
         }
       }
+      const callsRes = await customerApi.getCallHistory();
+      if (callsRes && Array.isArray(callsRes.calls)) {
+        setCallsCount(callsRes.calls.length);
+      }
     } catch (err) {
       console.error('Error fetching customer profile:', err);
+    } finally {
+      setIsProfileLoading(false);
     }
   };
 
@@ -203,31 +212,27 @@ export const CustomerHomeScreen: React.FC<Props> = ({
     return () => clearInterval(timer);
   }, []);
 
-  const [nearbyWorkers, setNearbyWorkers] = useState<any[]>([
-    {
-      id: '1',
-      name: 'Rajesh Kumar',
-      profession: 'Plumber',
-      rating: '4.8',
-      reviews: '124',
-      distance: '1.2 km away',
-      phone: '+919876543210',
-      avatar: DefaultAvatar,
-    },
-  ]);
+  const [nearbyWorkers, setNearbyWorkers] = useState<any[]>([]);
+  const [isNearbyWorkersLoading, setIsNearbyWorkersLoading] = useState(true);
 
   useEffect(() => {
     fetchNearbyWorkers();
   }, [searchQuery, userLocation]);
 
   const fetchNearbyWorkers = async () => {
+    setIsNearbyWorkersLoading(true);
     try {
-      const res = await customerApi.searchWorkers(undefined, searchQuery, 30.6425, 76.8173);
-      if (res && Array.isArray(res.workers) && res.workers.length > 0) {
+      const res = await customerApi.searchWorkers(undefined, searchQuery, 30.6425, 76.8173, 1, 5);
+      if (res && res.success && Array.isArray(res.workers)) {
         setNearbyWorkers(res.workers);
+      } else {
+        setNearbyWorkers([]);
       }
     } catch (err) {
       console.error('Error fetching nearby workers:', err);
+      setNearbyWorkers([]);
+    } finally {
+      setIsNearbyWorkersLoading(false);
     }
   };
 
@@ -243,7 +248,7 @@ export const CustomerHomeScreen: React.FC<Props> = ({
       avatar: worker.avatar || worker.profileImage || '',
       profileImage: worker.profileImage || worker.avatar || '',
       rating: worker.rating || '4.8',
-      distance: worker.distance || worker.distanceText || '1.2 km away',
+      distance: worker.distance || worker.distanceText || 'Nearby',
       phone: worker.phone || worker.phoneNumber || '',
     };
     setCallingWorker(normalizedWorker);
@@ -777,41 +782,67 @@ export const CustomerHomeScreen: React.FC<Props> = ({
           </View>
 
           <View style={localStyles.workersListContainer}>
-            {nearbyWorkers.slice(0, 1).map((worker) => (
-              <View key={worker.id} style={localStyles.workerCard}>
-                <View style={localStyles.workerAvatarWrapper}>
-                  <Image
-                    source={
-                      worker.avatar && typeof worker.avatar === 'string' && worker.avatar.startsWith('http')
-                        ? { uri: worker.avatar }
-                        : DefaultAvatar
-                    }
-                    style={localStyles.workerAvatar}
-                  />
-                  <View style={localStyles.onlineDot} />
-                </View>
-                <View style={localStyles.workerInfo}>
-                  <Text style={localStyles.workerName}>{worker.name || worker.fullName || 'Rajesh Kumar'}</Text>
-                  <Text style={localStyles.workerProfession}>
-                    {worker.profession || (Array.isArray(worker.professions) ? worker.professions[0] : 'Handyman')}
-                  </Text>
-                  <View style={localStyles.workerMetaRow}>
-                    <Text style={localStyles.workerRating}>
-                      ⭐ {worker.rating || '4.8'}{' '}
-                      <Text style={localStyles.reviewsText}>({worker.reviews || '124'} reviews)</Text>
-                    </Text>
-                    <Text style={localStyles.workerDistance}>📍 {worker.distance || worker.distanceText || '1.2 km away'}</Text>
-                  </View>
+            {isNearbyWorkersLoading ? (
+              <View style={localStyles.workerCardLoading}>
+                <ActivityIndicator size="small" color="#FF5436" />
+                <Text style={localStyles.workerLoadingText}>Finding workers near you...</Text>
+              </View>
+            ) : nearbyWorkers.length === 0 ? (
+              <View style={localStyles.workerCardEmpty}>
+                <Text style={localStyles.workerEmptyIcon}>📍</Text>
+                <View style={{ flex: 1, marginLeft: 10 }}>
+                  <Text style={localStyles.workerEmptyTitle}>No Workers Found Nearby</Text>
+                  <Text style={localStyles.workerEmptySub}>Tap View All to browse all available services</Text>
                 </View>
                 <TouchableOpacity
-                  style={localStyles.callPillBtn}
-                  activeOpacity={0.85}
-                  onPress={() => handleStartCall(worker)}
+                  style={localStyles.workerEmptyBrowseBtn}
+                  onPress={() => handleOpenAllWorkersModal('All')}
+                  activeOpacity={0.8}
                 >
-                  <Text style={localStyles.callPillText}>📞 Call</Text>
+                  <Text style={localStyles.workerEmptyBrowseText}>Browse</Text>
                 </TouchableOpacity>
               </View>
-            ))}
+            ) : (
+              nearbyWorkers.slice(0, 1).map((worker) => {
+                const workerName = worker.fullName || worker.name || 'Worker';
+                const profession = worker.profession || (Array.isArray(worker.professions) && worker.professions.length > 0 ? worker.professions[0] : 'Handyman');
+                const rating = worker.rating || '4.8';
+                const reviews = worker.reviews || worker.reviewCount || '0';
+                const distance = worker.distance || worker.distanceText || (worker.location?.city ? `Near ${worker.location.city}` : 'Nearby');
+                const hasAvatar = worker.avatar && typeof worker.avatar === 'string' && (worker.avatar.startsWith('http') || worker.avatar.startsWith('data:image'));
+                const avatarUri = hasAvatar ? worker.avatar : (worker.profileImage && typeof worker.profileImage === 'string' && worker.profileImage.startsWith('http') ? worker.profileImage : null);
+
+                return (
+                  <View key={worker.id || worker._id} style={localStyles.workerCard}>
+                    <View style={localStyles.workerAvatarWrapper}>
+                      <Image
+                        source={avatarUri ? { uri: avatarUri } : DefaultAvatar}
+                        style={localStyles.workerAvatar}
+                      />
+                      <View style={localStyles.onlineDot} />
+                    </View>
+                    <View style={localStyles.workerInfo}>
+                      <Text style={localStyles.workerName} numberOfLines={1}>{workerName}</Text>
+                      <Text style={localStyles.workerProfession} numberOfLines={1}>{profession}</Text>
+                      <View style={localStyles.workerMetaRow}>
+                        <Text style={localStyles.workerRating}>
+                          ⭐ {rating}{' '}
+                          <Text style={localStyles.reviewsText}>({reviews} reviews)</Text>
+                        </Text>
+                        <Text style={localStyles.workerDistance} numberOfLines={1}>📍 {distance}</Text>
+                      </View>
+                    </View>
+                    <TouchableOpacity
+                      style={localStyles.callPillBtn}
+                      activeOpacity={0.85}
+                      onPress={() => handleStartCall(worker)}
+                    >
+                      <Text style={localStyles.callPillText}>📞 Call</Text>
+                    </TouchableOpacity>
+                  </View>
+                );
+              })
+            )}
           </View>
         </View>
       )}
@@ -930,37 +961,44 @@ export const CustomerHomeScreen: React.FC<Props> = ({
               </View>
             ) : (
               <View style={localStyles.modalListScrollContent}>
-                {allWorkersList.map((worker) => (
-                  <View key={worker.id} style={localStyles.modalWorkerCard}>
-                    <View style={localStyles.modalWorkerLeft}>
-                      <View style={localStyles.modalAvatarBox}>
-                        <Image
-                          source={
-                            worker.avatar && typeof worker.avatar === 'string' && worker.avatar.startsWith('http')
-                              ? { uri: worker.avatar }
-                              : DefaultAvatar
-                          }
-                          style={localStyles.modalAvatarImg}
-                        />
-                      </View>
-                      <View style={localStyles.modalWorkerInfo}>
-                        <Text style={localStyles.modalWorkerName}>{worker.name || worker.fullName || 'Worker'}</Text>
-                        <View style={localStyles.modalDistanceRow}>
-                          <Text style={localStyles.modalPinEmoji}>📍</Text>
-                          <Text style={localStyles.modalDistanceText}>{worker.distance || worker.distanceText || '1.2 km away'}</Text>
+                {allWorkersList.map((worker) => {
+                  const workerName = worker.fullName || worker.name || 'Worker';
+                  const profession = worker.profession || (Array.isArray(worker.professions) && worker.professions.length > 0 ? worker.professions[0] : 'Handyman');
+                  const distance = worker.distance || worker.distanceText || (worker.location?.city ? `Near ${worker.location.city}` : 'Nearby');
+                  const hasAvatar = worker.avatar && typeof worker.avatar === 'string' && (worker.avatar.startsWith('http') || worker.avatar.startsWith('data:image'));
+                  const avatarUri = hasAvatar ? worker.avatar : (worker.profileImage && typeof worker.profileImage === 'string' && worker.profileImage.startsWith('http') ? worker.profileImage : null);
+
+                  return (
+                    <View key={worker.id || worker._id} style={localStyles.modalWorkerCard}>
+                      <View style={localStyles.modalWorkerLeft}>
+                        <View style={localStyles.modalAvatarBox}>
+                          <Image
+                            source={avatarUri ? { uri: avatarUri } : DefaultAvatar}
+                            style={localStyles.modalAvatarImg}
+                          />
+                        </View>
+                        <View style={localStyles.modalWorkerInfo}>
+                          <Text style={localStyles.modalWorkerName} numberOfLines={1}>{workerName}</Text>
+                          <Text style={{ fontSize: 11, color: '#FF5436', fontWeight: '700', marginTop: 1 }} numberOfLines={1}>
+                            {profession}
+                          </Text>
+                          <View style={localStyles.modalDistanceRow}>
+                            <Text style={localStyles.modalPinEmoji}>📍</Text>
+                            <Text style={localStyles.modalDistanceText} numberOfLines={1}>{distance}</Text>
+                          </View>
                         </View>
                       </View>
-                    </View>
 
-                    <TouchableOpacity
-                      style={localStyles.modalCallBtn}
-                      activeOpacity={0.85}
-                      onPress={() => handleStartCall(worker)}
-                    >
-                      <Text style={localStyles.modalCallBtnText}>📞 Call</Text>
-                    </TouchableOpacity>
-                  </View>
-                ))}
+                      <TouchableOpacity
+                        style={localStyles.modalCallBtn}
+                        activeOpacity={0.85}
+                        onPress={() => handleStartCall(worker)}
+                      >
+                        <Text style={localStyles.modalCallBtnText}>📞 Call</Text>
+                      </TouchableOpacity>
+                    </View>
+                  );
+                })}
 
                 {/* Bottom Pagination Controller Bar matching screenshot */}
                 <View style={localStyles.paginationInlineRow}>
@@ -1109,19 +1147,25 @@ export const CustomerHomeScreen: React.FC<Props> = ({
                 source={customerProfile.profileImage ? { uri: customerProfile.profileImage } : DefaultAvatar}
                 style={localStyles.profileAvatarImage}
               />
-              <TouchableOpacity style={localStyles.avatarCameraBadge} activeOpacity={0.8}>
+              <TouchableOpacity style={localStyles.avatarCameraBadge} activeOpacity={0.8} onPress={handleOpenEditProfile}>
                 <Text style={{ fontSize: 9 }}>📷</Text>
               </TouchableOpacity>
             </View>
             <View style={localStyles.profileHeaderInfo}>
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <Text style={localStyles.profileHeaderName}>{customerProfile.fullName || 'Sushil Kumar'}</Text>
+                <Text style={localStyles.profileHeaderName}>
+                  {customerProfile.fullName || (customerProfile.phoneNumber ? `Customer (${customerProfile.phoneNumber.slice(-4)})` : 'Customer')}
+                </Text>
                 <View style={localStyles.verifiedBadgeCircle}>
                   <Text style={{ fontSize: 9, color: '#FFFFFF', fontWeight: '800' }}>✓</Text>
                 </View>
               </View>
-              <Text style={localStyles.profileHeaderSub}>{customerProfile.phoneNumber || '+91 98765 43210'}</Text>
-              <Text style={localStyles.profileHeaderEmail}>{customerProfile.email || 'sushil.kumar@hunargo.com'}</Text>
+              <Text style={localStyles.profileHeaderSub}>
+                {customerProfile.phoneNumber || getActiveUserPhone() || userPhone || 'No phone number'}
+              </Text>
+              <Text style={localStyles.profileHeaderEmail}>
+                {customerProfile.email || 'No email added'}
+              </Text>
               <View style={localStyles.customerRoleTag}>
                 <Text style={localStyles.customerRoleTagText}>👤 Verified Customer</Text>
               </View>
@@ -1131,17 +1175,17 @@ export const CustomerHomeScreen: React.FC<Props> = ({
           {/* Quick Stats Summary Bar */}
           <View style={localStyles.profileStatsRow}>
             <View style={localStyles.profileStatBox}>
-              <Text style={localStyles.profileStatValue}>12</Text>
+              <Text style={localStyles.profileStatValue}>{callsCount}</Text>
               <Text style={localStyles.profileStatLabel}>Calls Made</Text>
             </View>
             <View style={localStyles.statDivider} />
             <View style={localStyles.profileStatBox}>
-              <Text style={localStyles.profileStatValue}>8</Text>
+              <Text style={localStyles.profileStatValue}>{callsCount > 0 ? callsCount : 0}</Text>
               <Text style={localStyles.profileStatLabel}>Jobs Done</Text>
             </View>
             <View style={localStyles.statDivider} />
             <View style={localStyles.profileStatBox}>
-              <Text style={localStyles.profileStatValue}>4.9 ⭐</Text>
+              <Text style={localStyles.profileStatValue}>5.0 ⭐</Text>
               <Text style={localStyles.profileStatLabel}>Rating</Text>
             </View>
           </View>
@@ -1154,7 +1198,7 @@ export const CustomerHomeScreen: React.FC<Props> = ({
               <View style={localStyles.detailTextGroup}>
                 <Text style={localStyles.detailLabel}>Location / Address</Text>
                 <Text style={localStyles.detailValue}>
-                  {customerProfile.location?.address || userLocation} (Pincode: {customerProfile.location?.pincode || '140603'})
+                  {customerProfile.location?.address || userLocation || 'Location not specified'}{customerProfile.location?.pincode ? ` (Pincode: ${customerProfile.location.pincode})` : ''}
                 </Text>
               </View>
             </View>
@@ -1227,7 +1271,7 @@ export const CustomerHomeScreen: React.FC<Props> = ({
               <View style={{ marginLeft: 10, flex: 1 }}>
                 <Text style={localStyles.userWelcomeText}>Welcome,</Text>
                 <Text style={localStyles.userNameText}>
-                  {customerProfile.fullName || 'Sushil Kumar'} 👋
+                  {customerProfile.fullName || (customerProfile.phoneNumber ? `Customer (${customerProfile.phoneNumber.slice(-4)})` : 'Customer')} 👋
                 </Text>
                 <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 1 }}>
                   <View style={localStyles.verifiedBadge}>
@@ -1235,7 +1279,7 @@ export const CustomerHomeScreen: React.FC<Props> = ({
                   </View>
                 </View>
                 <Text style={localStyles.userLocationText}>
-                  📍 {userLocation || 'Zirakpur, Punjab'}
+                  📍 {userLocation || customerProfile.location?.address || 'Location not set'}
                 </Text>
               </View>
             </View>
@@ -1383,7 +1427,7 @@ export const CustomerHomeScreen: React.FC<Props> = ({
 
             <Text style={[localStyles.fieldLabel, { marginTop: 9 }]}>Phone Number (Verified)</Text>
             <View style={localStyles.readOnlyPhoneInput}>
-              <Text style={localStyles.readOnlyPhoneText}>{customerProfile.phoneNumber || '+91 98765 43210'}</Text>
+              <Text style={localStyles.readOnlyPhoneText}>{customerProfile.phoneNumber || getActiveUserPhone() || userPhone || ''}</Text>
               <Text style={{ fontSize: 12, color: '#16A34A', fontWeight: '800' }}>✓ Verified</Text>
             </View>
 
@@ -1580,7 +1624,7 @@ export const CustomerHomeScreen: React.FC<Props> = ({
                   </Text>
                   <View style={localStyles.callWorkerMetaRow}>
                     <Text style={localStyles.callWorkerRating}>⭐ {selectedWorkerForCall.rating || '4.8'}</Text>
-                    <Text style={localStyles.callWorkerDistance}>📍 {selectedWorkerForCall.distance || selectedWorkerForCall.distanceText || '1.2 km away'}</Text>
+                    <Text style={localStyles.callWorkerDistance}>📍 {selectedWorkerForCall.distance || selectedWorkerForCall.distanceText || 'Nearby'}</Text>
                   </View>
                 </View>
               </View>
@@ -2028,6 +2072,60 @@ const localStyles = StyleSheet.create({
   workersListContainer: {
     paddingHorizontal: 18,
     marginBottom: 6,
+  },
+  workerCardLoading: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 2,
+    borderWidth: 1,
+    borderColor: '#F1F5F9',
+  },
+  workerLoadingText: {
+    fontSize: 10.5,
+    fontWeight: '600',
+    color: '#64748B',
+    marginLeft: 8,
+  },
+  workerCardEmpty: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 2,
+    borderWidth: 1,
+    borderColor: '#F1F5F9',
+  },
+  workerEmptyIcon: {
+    fontSize: 18,
+  },
+  workerEmptyTitle: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#1E293B',
+  },
+  workerEmptySub: {
+    fontSize: 9,
+    color: '#64748B',
+  },
+  workerEmptyBrowseBtn: {
+    backgroundColor: '#FFF7ED',
+    borderWidth: 1,
+    borderColor: '#FFD8A8',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+  },
+  workerEmptyBrowseText: {
+    color: '#FF5436',
+    fontSize: 10,
+    fontWeight: '700',
   },
   workerCard: {
     backgroundColor: '#FFFFFF',

@@ -55,8 +55,17 @@ export const searchWorkers = async (req: AuthRequest, res: Response, next: NextF
       if (pendingWorkerIds.length > 0) {
         filter._id = { $nin: pendingWorkerIds.map((id) => new mongoose.Types.ObjectId(id)) };
       }
-      if (category && category !== 'All') filter.professions = category;
-      if (query) filter.fullName = new RegExp(query, 'i');
+      if (category && category !== 'All') {
+        const normalizedCategory = category.replace(/_/g, ' ').trim();
+        filter.professions = { $regex: new RegExp(`^${normalizedCategory}$`, 'i') };
+      }
+      if (query && query.trim()) {
+        const q = query.trim();
+        filter.$or = [
+          { fullName: new RegExp(q, 'i') },
+          { professions: new RegExp(q, 'i') },
+        ];
+      }
 
       if (lat && lng) {
         const latitude = parseFloat(lat);
@@ -81,75 +90,43 @@ export const searchWorkers = async (req: AuthRequest, res: Response, next: NextF
       if (pendingWorkerIds.length > 0) {
         filter._id = { $nin: pendingWorkerIds.map((id) => new mongoose.Types.ObjectId(id)) };
       }
-      if (category && category !== 'All') filter.professions = category;
-      if (query) filter.fullName = new RegExp(query, 'i');
+      if (category && category !== 'All') {
+        const normalizedCategory = category.replace(/_/g, ' ').trim();
+        filter.professions = { $regex: new RegExp(`^${normalizedCategory}$`, 'i') };
+      }
+      if (query && query.trim()) {
+        const q = query.trim();
+        filter.$or = [
+          { fullName: new RegExp(q, 'i') },
+          { professions: new RegExp(q, 'i') },
+        ];
+      }
       workers = await User.find(filter).skip(skip).limit(limitNum);
       totalWorkers = await User.countDocuments(filter);
     }
 
-    if (!workers || workers.length === 0) {
-      let allSampleWorkers = [
-        // Page 1
-        { id: 'w1', name: 'Amit Sharma', fullName: 'Amit Sharma', profession: 'Carpenter', rating: '4.8', reviews: '124', distance: '1.2 km away', phone: '+919876543210' },
-        { id: 'w2', name: 'Priya Singh', fullName: 'Priya Singh', profession: 'Beautician', rating: '4.9', reviews: '98', distance: '2.8 km away', phone: '+919876543211' },
-        { id: 'w3', name: 'Rohit Verma', fullName: 'Rohit Verma', profession: 'Electrician', rating: '4.7', reviews: '65', distance: '4.5 km away', phone: '+919876543212' },
-        { id: 'w4', name: 'Neha Gupta', fullName: 'Neha Gupta', profession: 'Painter', rating: '4.6', reviews: '42', distance: '5.1 km away', phone: '+919876543213' },
-        { id: 'w5', name: 'Vikas Malhotra', fullName: 'Vikas Malhotra', profession: 'Plumber', rating: '4.8', reviews: '88', distance: '6.0 km away', phone: '+919876543214' },
-        { id: 'w6', name: 'Sunita Devi', fullName: 'Sunita Devi', profession: 'Cleaner', rating: '4.9', reviews: '110', distance: '3.1 km away', phone: '+919876543215' },
-
-        // Page 2
-        { id: 'w7', name: 'Rajesh Kumar', fullName: 'Rajesh Kumar', profession: 'Plumber', rating: '4.8', reviews: '120', distance: '1.5 km away', phone: '+919876543216' },
-        { id: 'w8', name: 'Sushil Kumar', fullName: 'Sushil Kumar', profession: 'Electrician', rating: '4.9', reviews: '95', distance: '2.1 km away', phone: '+919876543217' },
-        { id: 'w9', name: 'Ramesh Singh', fullName: 'Ramesh Singh', profession: 'Painter', rating: '4.6', reviews: '54', distance: '3.8 km away', phone: '+919876543218' },
-        { id: 'w10', name: 'Vikram Patel', fullName: 'Vikram Patel', profession: 'Mason', rating: '4.7', reviews: '76', distance: '4.2 km away', phone: '+919876543219' },
-        { id: 'w11', name: 'Deepak Verma', fullName: 'Deepak Verma', profession: 'Technician', rating: '4.8', reviews: '102', distance: '5.2 km away', phone: '+919876543220' },
-        { id: 'w12', name: 'Aarti Sharma', fullName: 'Aarti Sharma', profession: 'Home Help', rating: '4.9', reviews: '89', distance: '5.8 km away', phone: '+919876543221' },
-
-        // Page 3
-        { id: 'w13', name: 'Manish Tyagi', fullName: 'Manish Tyagi', profession: 'AC Repair', rating: '4.7', reviews: '43', distance: '2.4 km away', phone: '+919876543222' },
-        { id: 'w14', name: 'Pooja Sharma', fullName: 'Pooja Sharma', profession: 'Cleaner', rating: '4.8', reviews: '67', distance: '3.6 km away', phone: '+919876543223' },
-        { id: 'w15', name: 'Karan Mehra', fullName: 'Karan Mehra', profession: 'Carpenter', rating: '4.6', reviews: '32', distance: '4.1 km away', phone: '+919876543224' },
-        { id: 'w16', name: 'Sanjay Yadav', fullName: 'Sanjay Yadav', profession: 'Daily Labour', rating: '4.5', reviews: '29', distance: '5.3 km away', phone: '+919876543225' },
-        { id: 'w17', name: 'Anjali Rao', fullName: 'Anjali Rao', profession: 'Beautician', rating: '4.9', reviews: '115', distance: '6.2 km away', phone: '+919876543226' },
-        { id: 'w18', name: 'Vijay Deshmukh', fullName: 'Vijay Deshmukh', profession: 'Mechanic', rating: '4.7', reviews: '81', distance: '7.0 km away', phone: '+919876543227' },
-
-        // Page 4
-        { id: 'w19', name: 'Ravi Shastri', fullName: 'Ravi Shastri', profession: 'Gardener', rating: '4.6', reviews: '49', distance: '3.5 km away', phone: '+919876543228' },
-        { id: 'w20', name: 'Kiran Bedi', fullName: 'Kiran Bedi', profession: 'Home Help', rating: '4.9', reviews: '130', distance: '4.8 km away', phone: '+919876543229' },
-        { id: 'w21', name: 'Mohan Joshi', fullName: 'Mohan Joshi', profession: 'Mason', rating: '4.8', reviews: '77', distance: '5.9 km away', phone: '+919876543230' },
-        { id: 'w22', name: 'Geeta Phogat', fullName: 'Geeta Phogat', profession: 'Fitness Trainer', rating: '4.9', reviews: '142', distance: '6.5 km away', phone: '+919876543231' },
-        { id: 'w23', name: 'Sunil Chhetri', fullName: 'Sunil Chhetri', profession: 'Technician', rating: '4.8', reviews: '94', distance: '7.2 km away', phone: '+919876543232' },
-        { id: 'w24', name: 'Hardik Pandya', fullName: 'Hardik Pandya', profession: 'Electrician', rating: '4.7', reviews: '58', distance: '8.1 km away', phone: '+919876543233' },
-      ];
-
-      // Exclude any pending call workers from sample list
-      if (pendingWorkerIds.length > 0) {
-        allSampleWorkers = allSampleWorkers.filter((w) => !pendingWorkerIds.includes(w.id));
-      }
-
-      totalWorkers = allSampleWorkers.length;
-      const startIndex = (pageNum - 1) * limitNum;
-      workers = allSampleWorkers.slice(startIndex, startIndex + limitNum);
-    } else {
-      workers = workers.map((w: any) => ({
-        id: w._id ? w._id.toString() : w.id,
-        name: w.fullName || 'Worker',
-        fullName: w.fullName || 'Worker',
-        profession: Array.isArray(w.professions) && w.professions.length > 0 ? w.professions[0] : 'Handyman',
-        professions: w.professions || [],
-        rating: w.rating ? w.rating.toString() : '4.8',
-        reviews: w.reviewCount ? w.reviewCount.toString() : '50',
-        distance: w.location?.city ? `Near ${w.location.city}` : '1.5 km away',
-        phone: w.phoneNumber || '+919876543210',
-        avatar: (w.profileImage && !w.profileImage.startsWith('file://') && !w.profileImage.startsWith('content://')) ? w.profileImage : '',
-        experience: `${w.experienceYears || 5}+ Yrs`,
-        hourlyRate: w.hourlyRate || 350,
-      }));
-    }
+    const formattedWorkers = (workers || []).map((w: any) => ({
+      id: w._id ? w._id.toString() : w.id,
+      _id: w._id ? w._id.toString() : w.id,
+      name: w.fullName || 'Worker',
+      fullName: w.fullName || 'Worker',
+      profession: Array.isArray(w.professions) && w.professions.length > 0 ? w.professions[0] : 'Handyman',
+      professions: w.professions || [],
+      rating: w.rating ? w.rating.toString() : '4.8',
+      reviews: w.reviewCount ? w.reviewCount.toString() : '0',
+      distance: w.location?.city ? `Near ${w.location.city}` : (w.location?.address ? w.location.address : 'Nearby'),
+      distanceText: w.location?.city ? `Near ${w.location.city}` : (w.location?.address ? w.location.address : 'Nearby'),
+      phone: w.phoneNumber || '',
+      phoneNumber: w.phoneNumber || '',
+      avatar: (w.profileImage && !w.profileImage.startsWith('file://') && !w.profileImage.startsWith('content://')) ? w.profileImage : '',
+      profileImage: (w.profileImage && !w.profileImage.startsWith('file://') && !w.profileImage.startsWith('content://')) ? w.profileImage : '',
+      experience: `${w.experienceYears || 1}+ Yrs`,
+      hourlyRate: w.hourlyRate || 300,
+    }));
 
     return res.status(200).json({
       success: true,
-      workers,
+      workers: formattedWorkers,
       pagination: {
         page: pageNum,
         limit: limitNum,
@@ -412,22 +389,22 @@ export const getCustomerProfile = async (req: AuthRequest, res: Response, next: 
       } catch (err) {}
     }
 
-    const defaultPhone = phoneHeader || '+91 98765 43210';
+    const defaultPhone = phoneHeader || '';
 
     return res.status(200).json({
       success: true,
       profile: {
-        id: customer?._id || 'mock-id',
-        fullName: customer?.fullName || 'Sushil Kumar',
+        id: customer?._id ? customer._id.toString() : '',
+        fullName: customer?.fullName || '',
         phoneNumber: customer?.phoneNumber || defaultPhone,
-        email: customer?.email || 'sushil.kumar@hunargo.com',
+        email: customer?.email || '',
         gender: customer?.gender || 'Male',
-        dob: customer?.dob || '15 Aug 1995',
+        dob: customer?.dob || '',
         profileImage: customer?.profileImage || '',
         location: customer?.location || {
-          address: 'Zirakpur, Punjab',
-          city: 'Zirakpur',
-          pincode: '140603',
+          address: '',
+          city: '',
+          pincode: '',
         },
       },
     });
@@ -530,17 +507,17 @@ export const updateCustomerProfile = async (req: AuthRequest, res: Response, nex
       success: true,
       message: 'Customer profile updated successfully!',
       profile: {
-        id: customer?._id || 'mock-id',
-        fullName: customer?.fullName || fullName || 'Sushil Kumar',
-        phoneNumber: customer?.phoneNumber || phoneHeader || '+91 98765 43210',
-        email: customer?.email || email || 'sushil.kumar@hunargo.com',
+        id: customer?._id ? customer._id.toString() : '',
+        fullName: customer?.fullName || fullName || '',
+        phoneNumber: customer?.phoneNumber || phoneHeader || '',
+        email: customer?.email || email || '',
         gender: customer?.gender || gender || 'Male',
-        dob: customer?.dob || dob || '15 Aug 1995',
+        dob: customer?.dob || dob || '',
         profileImage: customer?.profileImage || profileImage || '',
         location: customer?.location || {
-          address: 'Zirakpur, Punjab',
-          city: 'Zirakpur',
-          pincode: '140603',
+          address: '',
+          city: '',
+          pincode: '',
         },
       },
     });

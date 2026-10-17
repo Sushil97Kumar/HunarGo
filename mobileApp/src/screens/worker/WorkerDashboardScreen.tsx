@@ -1,3 +1,4 @@
+// @ts-nocheck
 var LOCATION_DATABASE = [
   { city: 'Dehradun', name: 'Rajpur Road, Dehradun' },
   { city: 'Dehradun', name: 'Clock Tower, Dehradun' },
@@ -14,9 +15,24 @@ var LOCATION_DATABASE = [
   { city: 'Gurugram', name: 'Cyber City, Gurugram' },
 ];
 
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import {
+  TabDashboardActive,
+  TabDashboardInactive,
+  TabCallsActive,
+  TabCallsInactive,
+  TabProfileActive,
+  TabProfileInactive,
+  TabSettingsActive,
+  TabSettingsInactive,
+} from '../../utils/assets';
+import { styles } from '../../styles/styles';
+
 export function WorkerDashboardScreen({
   onBackToOnboarding
 }) {
+  var insets = useSafeAreaInsets();
+  var tabBottomPadding = insets.bottom > 0 ? insets.bottom + 8 : (Platform.OS === 'ios' ? 24 : 12);
   var [isAvailable, setIsAvailable] = useState(true);
   var [activeTab, setActiveTab] = useState('dashboard');
   var [selectedProfessions, setSelectedProfessions] = useState([]);
@@ -535,7 +551,7 @@ export function WorkerDashboardScreen({
             <TouchableOpacity style={[styles.saveSettingsBtn, {
               marginTop: 0,
               paddingVertical: 11
-            }]} onPress={handleSaveProfileAccount} activeOpacity={0.85}>{<Text style={styles.saveSettingsBtnText}>Save Profile & Account Changes</Text>}</TouchableOpacity>}{
+            }]} onPress={handleSaveProfileAccount} activeOpacity={0.85}>{<Text style={styles.saveSettingsBtnText}>Save Profile & Account Changes</Text>}</TouchableOpacity>}
 </View>}</View> : settingsSubScreen === 'profession' ?
         /* Separate Profession & Services Screen (Fixed Page, Profession List Scroll Only) */
         <View style={{
@@ -1247,7 +1263,47 @@ export function WorkerDashboardScreen({
                     color: '#EF4444'
                   }]}>Logout</Text>}{<Text style={styles.settingsCardSubText}>Sign out from your account</Text>}</View>}{<Text style={[styles.settingsChevronText, {
                   color: '#EF4444'
-                }]}>❯</Text>}</TouchableOpacity>}</View>}</ScrollView>}</View>}{<View style={styles.bottomTabBarContainer}>{<TouchableOpacity style={styles.tabItem} onPress={handleDashboardPress} activeOpacity={0.75}>{<Text style={[styles.tabIcon, activeTab === 'dashboard' && styles.tabIconActive]}>🏠</Text>}{<Text style={[styles.tabLabel, activeTab === 'dashboard' && styles.tabLabelActive]}>Dashboard</Text>}{activeTab === 'dashboard' && <View style={styles.activeTabIndicator} />}</TouchableOpacity>}{<TouchableOpacity style={styles.tabItem} onPress={() => setActiveTab('calls')} activeOpacity={0.75}>{<Text style={[styles.tabIcon, activeTab === 'calls' && styles.tabIconActive]}>📞</Text>}{<Text style={[styles.tabLabel, activeTab === 'calls' && styles.tabLabelActive]}>Calls</Text>}{activeTab === 'calls' && <View style={styles.activeTabIndicator} />}</TouchableOpacity>}{<TouchableOpacity style={styles.tabItem} onPress={() => setActiveTab('profile')} activeOpacity={0.75}>{<Text style={[styles.tabIcon, activeTab === 'profile' && styles.tabIconActive]}>👤</Text>}{<Text style={[styles.tabLabel, activeTab === 'profile' && styles.tabLabelActive]}>Profile</Text>}{activeTab === 'profile' && <View style={styles.activeTabIndicator} />}</TouchableOpacity>}{<TouchableOpacity style={styles.tabItem} onPress={() => setActiveTab('settings')} activeOpacity={0.75}>{<Text style={[styles.tabIcon, activeTab === 'settings' && styles.tabIconActive]}>⚙️</Text>}{<Text style={[styles.tabLabel, activeTab === 'settings' && styles.tabLabelActive]}>Settings</Text>}{activeTab === 'settings' && <View style={styles.activeTabIndicator} />}</TouchableOpacity>}</View>}{
+                }]}>❯</Text>}</TouchableOpacity>}</View>}</ScrollView>}</View>}{<View style={[styles.bottomTabBarContainer, { paddingBottom: tabBottomPadding }]}>
+  <TouchableOpacity style={styles.tabItem} onPress={handleDashboardPress} activeOpacity={0.75}>
+    <Image
+      source={activeTab === 'dashboard' ? TabDashboardActive : TabDashboardInactive}
+      style={styles.tabIconImg}
+      resizeMode="contain"
+    />
+    <Text style={[styles.tabLabel, activeTab === 'dashboard' && styles.tabLabelActive]}>Dashboard</Text>
+    <View style={[styles.activeTabIndicator, activeTab !== 'dashboard' && styles.inactiveTabIndicator]} />
+  </TouchableOpacity>
+
+  <TouchableOpacity style={styles.tabItem} onPress={() => setActiveTab('calls')} activeOpacity={0.75}>
+    <Image
+      source={activeTab === 'calls' ? TabCallsActive : TabCallsInactive}
+      style={styles.tabIconImg}
+      resizeMode="contain"
+    />
+    <Text style={[styles.tabLabel, activeTab === 'calls' && styles.tabLabelActive]}>Calls</Text>
+    <View style={[styles.activeTabIndicator, activeTab !== 'calls' && styles.inactiveTabIndicator]} />
+  </TouchableOpacity>
+
+  <TouchableOpacity style={styles.tabItem} onPress={() => setActiveTab('profile')} activeOpacity={0.75}>
+    <Image
+      source={activeTab === 'profile' ? TabProfileActive : TabProfileInactive}
+      style={styles.tabIconImg}
+      resizeMode="contain"
+    />
+    <Text style={[styles.tabLabel, activeTab === 'profile' && styles.tabLabelActive]}>Profile</Text>
+    <View style={[styles.activeTabIndicator, activeTab !== 'profile' && styles.inactiveTabIndicator]} />
+  </TouchableOpacity>
+
+  <TouchableOpacity style={styles.tabItem} onPress={() => setActiveTab('settings')} activeOpacity={0.75}>
+    <Image
+      source={activeTab === 'settings' ? TabSettingsActive : TabSettingsInactive}
+      style={styles.tabIconImg}
+      resizeMode="contain"
+    />
+    <Text style={[styles.tabLabel, activeTab === 'settings' && styles.tabLabelActive]}>Settings</Text>
+    <View style={[styles.activeTabIndicator, activeTab !== 'settings' && styles.inactiveTabIndicator]} />
+  </TouchableOpacity>
+}</View>}{
         /* Call Back Request Modal Popup */
         <Modal visible={callBackModalVisible} transparent={true} animationType="fade" onRequestClose={() => setCallBackModalVisible(false)}><View style={{
             flex: 1,

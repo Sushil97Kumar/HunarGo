@@ -24,7 +24,17 @@ import {
   View,
 } from 'react-native';
 import { launchImageLibrary } from 'react-native-image-picker';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
+import {
+  TabDashboardActive,
+  TabDashboardInactive,
+  TabCallsActive,
+  TabCallsInactive,
+  TabProfileActive,
+  TabProfileInactive,
+  TabSettingsActive,
+  TabSettingsInactive,
+} from './src/utils/assets';
 import { authApi } from './src/api/authApi';
 import { workerApi } from './src/api/workerApi';
 import { CustomerHomeScreen } from './src/screens/customer/CustomerHomeScreen';
@@ -128,8 +138,9 @@ function App() {
 
       // 1. STRICT ROLE CHECK: Only an actively logged-in WORKER can receive incoming calls
       const loggedInUser = getLoggedInUser();
-      const currentRole = loggedInUser?.role || userRole;
-      if (currentRole !== 'worker') {
+      const currentRole = (loggedInUser?.role || userRole || '').toLowerCase();
+      const isWorkerRole = currentRole === 'worker' || currentScreen === 'workerDashboard';
+      if (!isWorkerRole) {
         console.log(`🛑 [IncomingCall Blocked]: Active role is "${currentRole}". Incoming call is only shown on worker devices.`);
         return;
       }
@@ -142,7 +153,7 @@ function App() {
       const idMatches = Boolean(
         currentWorkerId &&
         targetWorkerId &&
-        String(currentWorkerId).trim() === String(targetWorkerId).trim()
+        String(currentWorkerId).trim().toLowerCase() === String(targetWorkerId).trim().toLowerCase()
       );
 
       const cleanCurrentPhone = currentWorkerPhone ? String(currentWorkerPhone).replace(/[^\d]/g, '') : '';
@@ -190,7 +201,7 @@ function App() {
       console.log('🧹 [Worker Incoming Call Listener] Cleaned up in App.tsx');
       unsubscribe();
     };
-  }, [userPhone, userRole]);
+  }, [userPhone, userRole, currentScreen]);
   return /*#__PURE__*/(0, _jsxRuntime.jsxs)(require("react-native-safe-area-context").SafeAreaProvider, {
     children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.StatusBar, {
       barStyle: isDarkMode ? 'light-content' : 'dark-content'
@@ -2211,6 +2222,8 @@ function SelectLocationDistanceScreen({
 function WorkerDashboardScreen({
   onBackToOnboarding
 }) {
+  var insets = useSafeAreaInsets();
+  var tabBottomPadding = insets.bottom > 0 ? insets.bottom + 8 : (Platform.OS === 'ios' ? 24 : 12);
   var [isAvailable, setIsAvailable] = useState(true);
   var [activeTab, setActiveTab] = useState('dashboard');
   var [selectedProfessions, setSelectedProfessions] = useState([]);
@@ -4787,58 +4800,62 @@ function WorkerDashboardScreen({
       )
     })
   ), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
-        style: styles.bottomTabBarContainer,
+        style: [styles.bottomTabBarContainer, { paddingBottom: tabBottomPadding }],
         children: [/*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.TouchableOpacity, {
           style: styles.tabItem,
           onPress: handleDashboardPress,
           activeOpacity: 0.75,
-          children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-            style: [styles.tabIcon, activeTab === 'dashboard' && styles.tabIconActive],
-            children: "\uD83C\uDFE0"
+          children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Image, {
+            source: activeTab === 'dashboard' ? TabDashboardActive : TabDashboardInactive,
+            style: styles.tabIconImg,
+            resizeMode: "contain"
           }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
             style: [styles.tabLabel, activeTab === 'dashboard' && styles.tabLabelActive],
             children: "Dashboard"
-          }), activeTab === 'dashboard' && /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.View, {
-            style: styles.activeTabIndicator
+          }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.View, {
+            style: [styles.activeTabIndicator, activeTab !== 'dashboard' && styles.inactiveTabIndicator]
           })]
         }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.TouchableOpacity, {
           style: styles.tabItem,
           onPress: () => setActiveTab('calls'),
           activeOpacity: 0.75,
-          children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-            style: [styles.tabIcon, activeTab === 'calls' && styles.tabIconActive],
-            children: "\uD83D\uDCDE"
+          children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Image, {
+            source: activeTab === 'calls' ? TabCallsActive : TabCallsInactive,
+            style: styles.tabIconImg,
+            resizeMode: "contain"
           }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
             style: [styles.tabLabel, activeTab === 'calls' && styles.tabLabelActive],
             children: "Calls"
-          }), activeTab === 'calls' && /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.View, {
-            style: styles.activeTabIndicator
+          }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.View, {
+            style: [styles.activeTabIndicator, activeTab !== 'calls' && styles.inactiveTabIndicator]
           })]
         }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.TouchableOpacity, {
           style: styles.tabItem,
           onPress: () => setActiveTab('profile'),
           activeOpacity: 0.75,
-          children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-            style: [styles.tabIcon, activeTab === 'profile' && styles.tabIconActive],
-            children: "\uD83D\uDC64"
+          children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Image, {
+            source: activeTab === 'profile' ? TabProfileActive : TabProfileInactive,
+            style: styles.tabIconImg,
+            resizeMode: "contain"
           }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
             style: [styles.tabLabel, activeTab === 'profile' && styles.tabLabelActive],
             children: "Profile"
-          }), activeTab === 'profile' && /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.View, {
-            style: styles.activeTabIndicator
+          }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.View, {
+            style: [styles.activeTabIndicator, activeTab !== 'profile' && styles.inactiveTabIndicator]
           })]
         }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.TouchableOpacity, {
           style: styles.tabItem,
           onPress: () => setActiveTab('settings'),
           activeOpacity: 0.75,
-          children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-            style: [styles.tabIcon, activeTab === 'settings' && styles.tabIconActive],
-            children: "\u2699\uFE0F"
+          children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Image, {
+            source: activeTab === 'settings' ? TabSettingsActive : TabSettingsInactive,
+            style: styles.tabIconImg,
+            resizeMode: "contain"
           }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
             style: [styles.tabLabel, activeTab === 'settings' && styles.tabLabelActive],
             children: "Settings"
-          }), activeTab === 'settings' && /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.View, {
-            style: styles.activeTabIndicator
+          }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.View, {
+            style: [styles.activeTabIndicator, activeTab !== 'settings' && styles.inactiveTabIndicator]
           })]
         })]
       }),
