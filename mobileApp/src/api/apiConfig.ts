@@ -44,6 +44,12 @@ export const setLoggedInUser = (user: any) => {
   currentLoggedInUser = user;
 };
 
+export const clearAuthSession = () => {
+  currentAuthToken = null;
+  currentActiveUserPhone = null;
+  currentLoggedInUser = null;
+};
+
 export const getAuthToken = () => currentAuthToken;
 export const getActiveUserPhone = () => currentActiveUserPhone;
 export const getLoggedInUser = () => currentLoggedInUser;

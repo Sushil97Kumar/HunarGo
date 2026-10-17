@@ -61,13 +61,13 @@ export const customerApi = {
   /**
    * Place call request to worker with validated database ID and authentication
    */
-  async callWorker(workerId: string, workerName?: string) {
+  async callWorker(workerId: string, workerName?: string, phone?: string) {
     try {
-      console.log('🚀 API [callWorker] Requesting call to worker:', workerId);
+      console.log('🚀 API [callWorker] Requesting call to worker:', workerId, phone || '');
       const response = await fetch(`${API_BASE_URL}/customer/call-worker`, {
         method: 'POST',
         headers: getAuthHeaders(),
-        body: JSON.stringify({ workerId, workerName }),
+        body: JSON.stringify({ workerId, workerName, phone }),
       });
       const data = await response.json();
       console.log('✅ API [callWorker] Response from server:', data);

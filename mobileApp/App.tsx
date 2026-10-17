@@ -28,7 +28,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { authApi } from './src/api/authApi';
 import { workerApi } from './src/api/workerApi';
 import { CustomerHomeScreen } from './src/screens/customer/CustomerHomeScreen';
-import { getLoggedInUser, getActiveUserPhone } from './src/api/apiConfig';
+import { getLoggedInUser, getActiveUserPhone, clearAuthSession } from './src/api/apiConfig';
 import { socketService } from './src/services/socketService';
 import { WorkerIncomingCallScreen } from './src/screens/worker/WorkerIncomingCallScreen';
 
@@ -74,6 +74,19 @@ function App() {
   var [userRole, setUserRole] = useState('customer');
   var [isLoginFlow, setIsLoginFlow] = useState(false);
 
+  // Clean logout handler
+  const handleLogout = () => {
+    console.log('🚪 [App.tsx] Logging out user and clearing active socket session');
+    clearAuthSession();
+    try {
+      socketService.disconnect();
+    } catch (e) {}
+    setUserPhone('');
+    setUserRole('customer');
+    setIncomingCallData(null);
+    setCurrentScreen('onboarding1');
+  };
+
   // Step 5: Incoming Call State (accessible app-wide across all screens)
   var [incomingCallData, setIncomingCallData] = useState<any>(null);
   var processedCallIdsRef = useRef<Set<string>>(new Set());
@@ -113,16 +126,43 @@ function App() {
         return;
       }
 
-      // Verify that the event belongs to the currently authenticated worker
+      // 1. STRICT ROLE CHECK: Only an actively logged-in WORKER can receive incoming calls
       const loggedInUser = getLoggedInUser();
-      const currentWorkerId = loggedInUser?.id || loggedInUser?._id;
-
-      if (currentWorkerId && targetWorkerId && String(currentWorkerId) !== String(targetWorkerId)) {
-        console.warn(`⚠️ [IncomingCall] Event ignored: Target worker ID (${targetWorkerId}) does not match authenticated worker (${currentWorkerId}).`);
+      const currentRole = loggedInUser?.role || userRole;
+      if (currentRole !== 'worker') {
+        console.log(`🛑 [IncomingCall Blocked]: Active role is "${currentRole}". Incoming call is only shown on worker devices.`);
         return;
       }
 
-      // Handle duplicate events for the same call ID safely
+      // 2. STRICT TARGET WORKER CHECK: Must match the authenticated worker's ID or Phone
+      const currentWorkerId = loggedInUser?.id || loggedInUser?._id;
+      const currentWorkerPhone = getActiveUserPhone() || loggedInUser?.phoneNumber || userPhone;
+      const targetWorkerPhone = payload?.targetWorkerPhone || payload?.worker?.phone || payload?.worker?.phoneNumber;
+
+      const idMatches = Boolean(
+        currentWorkerId &&
+        targetWorkerId &&
+        String(currentWorkerId).trim() === String(targetWorkerId).trim()
+      );
+
+      const cleanCurrentPhone = currentWorkerPhone ? String(currentWorkerPhone).replace(/[^\d]/g, '') : '';
+      const cleanTargetPhone = targetWorkerPhone ? String(targetWorkerPhone).replace(/[^\d]/g, '') : '';
+      const phoneMatches = Boolean(
+        cleanCurrentPhone &&
+        cleanTargetPhone &&
+        cleanCurrentPhone.length >= 10 &&
+        (cleanCurrentPhone === cleanTargetPhone || cleanCurrentPhone.endsWith(cleanTargetPhone) || cleanTargetPhone.endsWith(cleanCurrentPhone))
+      );
+
+      if (!idMatches && !phoneMatches) {
+        console.warn(
+          `🛑 [IncomingCall Blocked]: Call ${callId} is targeted to worker ${targetWorkerId} (${targetWorkerPhone}), ` +
+          `but current worker is ${currentWorkerId} (${currentWorkerPhone}). NOT displaying incoming call screen.`
+        );
+        return;
+      }
+
+      // 3. Handle duplicate events for the same call ID safely
       if (processedCallIdsRef.current.has(callId)) {
         console.log(`ℹ️ [IncomingCall] Duplicate event ignored for Call ID: ${callId}`);
         return;
@@ -137,7 +177,7 @@ function App() {
       }, 60000);
 
       console.log(`\n=================================================`);
-      console.log(`🔔 [Incoming Call Triggered on Worker App]:`);
+      console.log(`🔔 [Incoming Call Triggered Exclusively on Target Worker]:`);
       console.log(`   • Call ID       : ${callId}`);
       console.log(`   • Caller Name   : ${payload?.callerName || payload?.customer?.name}`);
       console.log(`   • Target Worker : ${targetWorkerId}`);
@@ -227,9 +267,9 @@ function App() {
       onBack: () => setCurrentScreen('selectLocationDistance'),
       onNext: () => setCurrentScreen('workerDashboard')
     }), currentScreen === 'workerDashboard' && /*#__PURE__*/(0, _jsxRuntime.jsx)(WorkerDashboardScreen, {
-      onBackToOnboarding: () => setCurrentScreen('onboarding1')
+      onBackToOnboarding: handleLogout
     }), currentScreen === 'home' && /*#__PURE__*/(0, _jsxRuntime.jsx)(HomeScreen, {
-      onBackToOnboarding: () => setCurrentScreen('onboarding1')
+      onBackToOnboarding: handleLogout
     }),
     Boolean(incomingCallData) && (
       <CallErrorBoundary>

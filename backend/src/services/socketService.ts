@@ -295,20 +295,25 @@ export const emitToUser = (
   console.log(`   • Connected Sockets: ${totalSockets} ${totalSockets > 0 ? '🟢 (Online)' : '🔴 (Offline/Disconnected)'}`);
   console.log(`=================================================\n`);
 
-  if (totalSockets > 0) {
+  if (socketsCount > 0) {
+    // Deliver strictly and exclusively to the target user's private room: user:<userId>
     io.to(targetRoom).emit(event, data);
-    if (phone) {
+    return { delivered: true, socketsCount, room: targetRoom };
+  } else if (phone && phoneSocketsCount > 0) {
+    // Fallback only if no socket is connected under user:<userId>
+    if (io.sockets.adapter.rooms.get(`phone:${phone}`)?.size) {
       io.to(`phone:${phone}`).emit(event, data);
-      if (formattedPhone && formattedPhone !== phone) {
-        io.to(`phone:${formattedPhone}`).emit(event, data);
-      }
-      if (cleanDigitsPhone && cleanDigitsPhone !== phone) {
-        io.to(`phone:${cleanDigitsPhone}`).emit(event, data);
-      }
+      return { delivered: true, socketsCount: phoneSocketsCount, room: `phone:${phone}` };
+    } else if (formattedPhone && io.sockets.adapter.rooms.get(`phone:${formattedPhone}`)?.size) {
+      io.to(`phone:${formattedPhone}`).emit(event, data);
+      return { delivered: true, socketsCount: phoneSocketsCount, room: `phone:${formattedPhone}` };
+    } else if (cleanDigitsPhone && io.sockets.adapter.rooms.get(`phone:${cleanDigitsPhone}`)?.size) {
+      io.to(`phone:${cleanDigitsPhone}`).emit(event, data);
+      return { delivered: true, socketsCount: phoneSocketsCount, room: `phone:${cleanDigitsPhone}` };
     }
-    return { delivered: true, socketsCount: totalSockets, room: targetRoom };
+    return { delivered: false, socketsCount: 0, room: targetRoom };
   } else {
-    console.log(`ℹ️ [Socket.IO Notice] Target user ${userId} has 0 connected sockets in room ${targetRoom}. Call recorded in DB.`);
+    console.log(`ℹ️ [Socket.IO Notice] Target worker ${userId} has 0 connected sockets. Call logged in DB.`);
     return { delivered: false, socketsCount: 0, room: targetRoom };
   }
 };

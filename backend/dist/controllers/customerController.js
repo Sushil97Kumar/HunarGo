@@ -249,7 +249,7 @@ const callWorker = async (req, res, next) => {
                 message: 'Unauthorized: Caller identity is missing or unverified. Please log in as a customer.',
             });
         }
-        // 2. Target Worker Validation
+        // 2. Target Worker Validation - Strictly target the requested worker only
         let targetWorker = null;
         if (workerId && mongoose_1.default.Types.ObjectId.isValid(workerId)) {
             targetWorker = await User_1.default.findById(workerId);
@@ -261,13 +261,11 @@ const callWorker = async (req, res, next) => {
                     (await User_1.default.findOne({ phoneNumber: workerPhone }));
             }
         }
-        if (!targetWorker) {
-            targetWorker = await User_1.default.findOne({ role: 'worker' }).sort({ updatedAt: -1 });
-        }
+        // Do NOT fall back to arbitrary workers - call must strictly target the specific requested worker
         if (!targetWorker) {
             return res.status(404).json({
                 success: false,
-                message: 'Target worker does not exist in database.',
+                message: 'The requested worker could not be found or is not registered.',
             });
         }
         if (targetWorker.role && targetWorker.role !== 'worker') {
@@ -305,6 +303,7 @@ const callWorker = async (req, res, next) => {
             callerPhone: customerUser.phoneNumber || phoneHeader || '',
             callerImage: customerUser.profileImage || '',
             targetWorkerId: targetWorker._id.toString(),
+            targetWorkerPhone: targetWorker.phoneNumber || '',
             customer: {
                 id: customerObjectId.toString(),
                 name: customerUser.fullName || 'Customer',
@@ -314,13 +313,15 @@ const callWorker = async (req, res, next) => {
             worker: {
                 id: targetWorker._id.toString(),
                 name: targetWorker.fullName || workerName || 'Worker',
+                phone: targetWorker.phoneNumber || '',
+                phoneNumber: targetWorker.phoneNumber || '',
                 profession: Array.isArray(targetWorker.professions) && targetWorker.professions.length > 0 ? targetWorker.professions[0] : 'Handyman',
             },
             time: newCall.time || 'Just now',
             status: newCall.status || 'Pending',
             timestamp: new Date().toISOString(),
         };
-        // Emit strictly to the target worker's private room: user:<workerId> and phone:<phoneNumber>
+        // Emit strictly to the target worker's private room: user:<workerId>
         const deliveryResult = (0, socketService_1.emitToUser)(targetWorker._id.toString(), 'incoming_call', incomingCallPayload, targetWorker.phoneNumber);
         console.log(`📡 [Call Delivery Summary]:`);
         console.log(`   • Requested Worker ID : ${targetWorker._id.toString()}`);

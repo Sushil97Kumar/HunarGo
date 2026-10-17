@@ -152,8 +152,9 @@ export const CustomerCallingScreen: React.FC<Props> = ({
       }
 
       try {
-        console.log(`📞 [CustomerCallingScreen] Placing call to Worker ID: ${targetWorkerId}`);
-        const res = await customerApi.callWorker(targetWorkerId, workerName);
+        const workerPhone = worker.phone || worker.phoneNumber || '';
+        console.log(`📞 [CustomerCallingScreen] Placing call to Worker ID: ${targetWorkerId}, Phone: ${workerPhone}`);
+        const res = await customerApi.callWorker(targetWorkerId, workerName, workerPhone);
 
         if (isEndingRef.current) return;
 
@@ -162,6 +163,12 @@ export const CustomerCallingScreen: React.FC<Props> = ({
           setCallId(res.callId);
           // Pre-join signaling room early so all offers and ICE candidates are received seamlessly
           socketService.joinCall(res.callId);
+        } else if (res && !res.success) {
+          console.warn('⚠️ [CustomerCallingScreen] Worker unreachable or not found:', res.message);
+          setCallStatus('ended');
+          setTimeout(() => {
+            onEndCall();
+          }, 1500);
         }
       } catch (err) {
         console.warn('⚠️ [CustomerCallingScreen] Error placing call API:', err);

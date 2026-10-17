@@ -270,7 +270,7 @@ export const callWorker = async (req: AuthRequest, res: Response, next: NextFunc
       });
     }
 
-    // 2. Target Worker Validation
+    // 2. Target Worker Validation - Strictly target the requested worker only
     let targetWorker: any = null;
     if (workerId && mongoose.Types.ObjectId.isValid(workerId)) {
       targetWorker = await User.findById(workerId);
@@ -282,14 +282,12 @@ export const callWorker = async (req: AuthRequest, res: Response, next: NextFunc
                        (await User.findOne({ phoneNumber: workerPhone }));
       }
     }
-    if (!targetWorker) {
-      targetWorker = await User.findOne({ role: 'worker' }).sort({ updatedAt: -1 });
-    }
 
+    // Do NOT fall back to arbitrary workers - call must strictly target the specific requested worker
     if (!targetWorker) {
       return res.status(404).json({
         success: false,
-        message: 'Target worker does not exist in database.',
+        message: 'The requested worker could not be found or is not registered.',
       });
     }
 
@@ -333,6 +331,7 @@ export const callWorker = async (req: AuthRequest, res: Response, next: NextFunc
       callerPhone: customerUser.phoneNumber || phoneHeader || '',
       callerImage: customerUser.profileImage || '',
       targetWorkerId: targetWorker._id.toString(),
+      targetWorkerPhone: targetWorker.phoneNumber || '',
       customer: {
         id: customerObjectId.toString(),
         name: customerUser.fullName || 'Customer',
@@ -342,6 +341,8 @@ export const callWorker = async (req: AuthRequest, res: Response, next: NextFunc
       worker: {
         id: targetWorker._id.toString(),
         name: targetWorker.fullName || workerName || 'Worker',
+        phone: targetWorker.phoneNumber || '',
+        phoneNumber: targetWorker.phoneNumber || '',
         profession: Array.isArray(targetWorker.professions) && targetWorker.professions.length > 0 ? targetWorker.professions[0] : 'Handyman',
       },
       time: newCall.time || 'Just now',
@@ -349,7 +350,7 @@ export const callWorker = async (req: AuthRequest, res: Response, next: NextFunc
       timestamp: new Date().toISOString(),
     };
 
-    // Emit strictly to the target worker's private room: user:<workerId> and phone:<phoneNumber>
+    // Emit strictly to the target worker's private room: user:<workerId>
     const deliveryResult = emitToUser(
       targetWorker._id.toString(),
       'incoming_call',
