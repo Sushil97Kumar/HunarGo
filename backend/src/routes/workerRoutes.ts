@@ -8,6 +8,7 @@ import {
   getLocation,
   updateProfessions,
   getProfessions,
+  getMasterProfessions,
   toggleAvailability,
   getDashboardStats,
   getCustomerCalls,
@@ -17,6 +18,7 @@ import {
 
 const router = Router();
 
+router.get('/master-professions', getMasterProfessions);
 router.get('/profile', authMiddleware, getProfile);
 router.post('/profile', authMiddleware, updateProfile);
 router.post('/upload-profile-image', authMiddleware, upload.single('profileImage'), uploadProfileImage);

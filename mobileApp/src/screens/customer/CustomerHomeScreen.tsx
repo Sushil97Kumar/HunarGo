@@ -39,6 +39,7 @@ import { CustomerCallingScreen } from './CustomerCallingScreen';
 import { styles } from '../../styles/styles';
 import { customerApi } from '../../api/customerApi';
 import { getAuthToken, getActiveUserPhone, getLoggedInUser } from '../../api/apiConfig';
+import { formatWorkerProfessions } from '../../utils/professionUtils';
 
 interface Props {
   onBackToOnboarding: () => void;
@@ -244,7 +245,7 @@ export const CustomerHomeScreen: React.FC<Props> = ({
       _id: worker._id || worker.id,
       name: worker.name || worker.fullName || 'Worker',
       fullName: worker.fullName || worker.name || 'Worker',
-      profession: worker.profession || (Array.isArray(worker.professions) ? worker.professions[0] : 'Handyman'),
+      profession: formatWorkerProfessions(worker.profession || worker.professions || 'Handyman'),
       avatar: worker.avatar || worker.profileImage || '',
       profileImage: worker.profileImage || worker.avatar || '',
       rating: worker.rating || '4.8',
@@ -805,7 +806,7 @@ export const CustomerHomeScreen: React.FC<Props> = ({
             ) : (
               nearbyWorkers.slice(0, 1).map((worker) => {
                 const workerName = worker.fullName || worker.name || 'Worker';
-                const profession = worker.profession || (Array.isArray(worker.professions) && worker.professions.length > 0 ? worker.professions[0] : 'Handyman');
+                const profession = formatWorkerProfessions(worker.profession || (Array.isArray(worker.professions) && worker.professions.length > 0 ? worker.professions : 'Handyman'));
                 const rating = worker.rating || '4.8';
                 const reviews = worker.reviews || worker.reviewCount || '0';
                 const distance = worker.distance || worker.distanceText || (worker.location?.city ? `Near ${worker.location.city}` : 'Nearby');
@@ -963,7 +964,7 @@ export const CustomerHomeScreen: React.FC<Props> = ({
               <View style={localStyles.modalListScrollContent}>
                 {allWorkersList.map((worker) => {
                   const workerName = worker.fullName || worker.name || 'Worker';
-                  const profession = worker.profession || (Array.isArray(worker.professions) && worker.professions.length > 0 ? worker.professions[0] : 'Handyman');
+                  const profession = formatWorkerProfessions(worker.profession || (Array.isArray(worker.professions) && worker.professions.length > 0 ? worker.professions : 'Handyman'));
                   const distance = worker.distance || worker.distanceText || (worker.location?.city ? `Near ${worker.location.city}` : 'Nearby');
                   const hasAvatar = worker.avatar && typeof worker.avatar === 'string' && (worker.avatar.startsWith('http') || worker.avatar.startsWith('data:image'));
                   const avatarUri = hasAvatar ? worker.avatar : (worker.profileImage && typeof worker.profileImage === 'string' && worker.profileImage.startsWith('http') ? worker.profileImage : null);

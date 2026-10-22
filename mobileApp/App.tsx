@@ -38,9 +38,10 @@ import {
 import { authApi } from './src/api/authApi';
 import { workerApi } from './src/api/workerApi';
 import { CustomerHomeScreen } from './src/screens/customer/CustomerHomeScreen';
-import { getLoggedInUser, getActiveUserPhone, clearAuthSession } from './src/api/apiConfig';
+import { getLoggedInUser, getActiveUserPhone, clearAuthSession, setLoggedInUser } from './src/api/apiConfig';
 import { socketService } from './src/services/socketService';
 import { WorkerIncomingCallScreen } from './src/screens/worker/WorkerIncomingCallScreen';
+import { formatWorkerProfessions, DEFAULT_MASTER_CATEGORIES, DEFAULT_MASTER_PROFESSIONS } from './src/utils/professionUtils';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const BASE_WIDTH = 390;
@@ -1500,13 +1501,23 @@ function SelectProfessionsScreen({
   onNext
 }) {
   var [selectedProfessions, setSelectedProfessions] = useState(['plumber']);
+  var [categories, setCategories] = useState(DEFAULT_MASTER_CATEGORIES);
   var [toastMessage, setToastMessage] = useState(null);
   var slideAnim = useRef(new _reactNative.Animated.Value(200)).current;
   var opacityAnim = useRef(new _reactNative.Animated.Value(0)).current;
   var timeoutRef = useRef(null);
 
   useEffect(() => {
-    var fetchSavedProfessions = async () => {
+    var loadProfessionsData = async () => {
+      try {
+        var masterRes = await workerApi.getMasterProfessions();
+        if (masterRes && masterRes.success && Array.isArray(masterRes.categories) && masterRes.categories.length > 0) {
+          setCategories(masterRes.categories);
+        }
+      } catch (err) {
+        console.warn('Could not fetch master professions:', err);
+      }
+
       try {
         var res = await workerApi.getProfessions();
         if (res && res.success && Array.isArray(res.professions) && res.professions.length > 0) {
@@ -1516,7 +1527,7 @@ function SelectProfessionsScreen({
         console.warn('Could not fetch saved professions:', err);
       }
     };
-    fetchSavedProfessions();
+    loadProfessionsData();
   }, []);
 
   var triggerToast = message => {
@@ -1570,139 +1581,17 @@ function SelectProfessionsScreen({
   };
 
   var isAnySelected = selectedProfessions.length > 0;
-  var categories = [{
-    id: 'home_repair',
-    title: 'Home Repair',
-    icon: '🏠',
-    items: [{
-      id: 'plumber',
-      title: 'Plumber',
-      icon: '🔧',
-      color: '#EBF3FF'
-    }, {
-      id: 'electrician',
-      title: 'Electrician',
-      icon: '⚡',
-      color: '#FEF9C3'
-    }, {
-      id: 'carpenter',
-      title: 'Carpenter',
-      icon: '🔨',
-      color: '#FFEDD5'
-    }, {
-      id: 'painter',
-      title: 'Painter',
-      icon: '🎨',
-      color: '#FCE7F3'
-    }, {
-      id: 'mason',
-      title: 'Mason',
-      icon: '🧱',
-      color: '#F3E8FF'
-    }, {
-      id: 'technician',
-      title: 'Technician',
-      icon: '🧰',
-      color: '#DCFCE7'
-    }]
-  }, {
-    id: 'vehicle_services',
-    title: 'Vehicle Services',
-    icon: '🚗',
-    items: [{
-      id: 'car_mechanic',
-      title: 'Car Mechanic',
-      icon: '🚗',
-      color: '#E0F2FE'
-    }, {
-      id: 'bike_mechanic',
-      title: 'Bike Mechanic',
-      icon: '🏍️',
-      color: '#F3E8FF'
-    }]
-  }, {
-    id: 'personal_beauty',
-    title: 'Personal & Beauty',
-    icon: '👩',
-    items: [{
-      id: 'barber',
-      title: 'Barber',
-      icon: '✂️',
-      color: '#FCE7F3'
-    }, {
-      id: 'hair_stylist',
-      title: 'Hair Stylist',
-      icon: '💇',
-      color: '#F3E8FF'
-    }, {
-      id: 'makeup_artist',
-      title: 'Makeup Artist',
-      icon: '💄',
-      color: '#FFE4E6'
-    }, {
-      id: 'beautician',
-      title: 'Beautician',
-      icon: '💆',
-      color: '#DCFCE7'
-    }, {
-      id: 'massage',
-      title: 'Massage',
-      icon: '👐',
-      color: '#FFEDD5'
-    }]
-  }, {
-    id: 'cleaning',
-    title: 'Cleaning',
-    icon: '🧹',
-    items: [{
-      id: 'bathroom_cleaning',
-      title: 'Bathroom\nCleaning',
-      icon: '🚽',
-      color: '#E0F2FE'
-    }, {
-      id: 'home_cleaning',
-      title: 'Home Cleaning',
-      icon: '🧹',
-      color: '#DCFCE7'
-    }, {
-      id: 'home_help',
-      title: 'Home Help / Maid',
-      icon: '👩‍🍳',
-      color: '#FEF9C3'
-    }]
-  }, {
-    id: 'outdoor_labour',
-    title: 'Outdoor & Labour',
-    icon: '🍂',
-    items: [{
-      id: 'gardener',
-      title: 'Gardener',
-      icon: '🌱',
-      color: '#DCFCE7'
-    }, {
-      id: 'farm_labour',
-      title: 'Farm Labour',
-      icon: '🧑‍🌾',
-      color: '#FEF9C3'
-    }, {
-      id: 'construction_labour',
-      title: 'Construction\nLabour',
-      icon: '👷',
-      color: '#F3E8FF'
-    }, {
-      id: 'loading_unloading',
-      title: 'Loading /\nUnloading',
-      icon: '📦',
-      color: '#E0F2FE'
-    }, {
-      id: 'daily_labour',
-      title: 'Daily Labour',
-      icon: '🧑‍🔧',
-      color: '#FFE4E6'
-    }]
-  }];
   var toggleProfession = id => {
-    setSelectedProfessions(prev => prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]);
+    setSelectedProfessions(prev => {
+      if (prev.includes(id)) {
+        return prev.filter(item => item !== id);
+      }
+      if (prev.length >= 3) {
+        triggerToast('You can select a maximum of 3 professions.');
+        return prev;
+      }
+      return [...prev, id];
+    });
   };
   return /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.ImageBackground, {
     source: require("./src/assets/onboarding_bg.png"),
@@ -1771,7 +1660,7 @@ function SelectProfessionsScreen({
           children: "Select Your Professions"
         }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.Text, {
           style: styles.descriptionText2,
-          children: ["Select at least 1 profession to continue.", '\n', "You can select multiple."]
+          children: ["Select 1 to 3 professions to continue.", '\n', `(${selectedProfessions.length}/3 selected)`]
         })]
       }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.ScrollView, {
         style: {
@@ -1807,10 +1696,11 @@ function SelectProfessionsScreen({
               style: styles.professionsGrid,
               children: category.items.map(item => {
                 var isSelected = selectedProfessions.includes(item.id);
+                var isLimitReached = !isSelected && selectedProfessions.length >= 3;
                 return /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.TouchableOpacity, {
                   style: [styles.professionCard, {
                     backgroundColor: item.color
-                  }, isSelected && styles.professionCardSelected],
+                  }, isSelected && styles.professionCardSelected, isLimitReached && { opacity: 0.55 }],
                   onPress: () => toggleProfession(item.id),
                   activeOpacity: 0.75,
                   children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.View, {
@@ -2226,16 +2116,37 @@ function WorkerDashboardScreen({
   var tabBottomPadding = insets.bottom > 0 ? insets.bottom + 8 : (Platform.OS === 'ios' ? 24 : 12);
   var [isAvailable, setIsAvailable] = useState(true);
   var [activeTab, setActiveTab] = useState('dashboard');
+  var [workerId, setWorkerId] = useState('');
   var [selectedProfessions, setSelectedProfessions] = useState([]);
-  var workerProfession = selectedProfessions.join(', ');
+  var [availableProfessions, setAvailableProfessions] = useState(DEFAULT_MASTER_PROFESSIONS);
+  var workerProfession = formatWorkerProfessions(selectedProfessions);
+
+  var isProfessionMatch = (p, idOrTitle) => {
+    if (typeof p !== 'string' || typeof idOrTitle !== 'string') return false;
+    var a = p.trim().toLowerCase();
+    var b = idOrTitle.trim().toLowerCase();
+    if (a === b) return true;
+    if (a.replace(/[\s\-_]/g, '') === b.replace(/[\s\-_]/g, '')) return true;
+    if (a.includes('hair') && b.includes('hair')) return true;
+    return false;
+  };
 
   var toggleProfessionSelection = (title) => {
-    var exists = selectedProfessions.some(p => typeof p === 'string' && p.toLowerCase() === title.toLowerCase());
+    var exists = selectedProfessions.some(p => isProfessionMatch(p, title));
     if (exists) {
       if (selectedProfessions.length > 1) {
-        setSelectedProfessions(selectedProfessions.filter(p => typeof p === 'string' && p.toLowerCase() !== title.toLowerCase()));
+        setSelectedProfessions(selectedProfessions.filter(p => !isProfessionMatch(p, title)));
+      } else {
+        _reactNative.Alert.alert('Required', 'You must keep at least 1 profession selected.');
       }
     } else {
+      if (selectedProfessions.length >= 3) {
+        _reactNative.Alert.alert(
+          'Maximum Limit Reached',
+          'You can select a maximum of 3 professions. Please unselect one before adding another.'
+        );
+        return;
+      }
       setSelectedProfessions([...selectedProfessions, title]);
     }
   };
@@ -2352,6 +2263,11 @@ function WorkerDashboardScreen({
         console.log('✅ [WorkerDashboard] getProfile response:', res);
         if (res && res.success && res.worker) {
           var w = res.worker;
+          var resolvedId = w._id || w.id;
+          if (resolvedId) {
+            setWorkerId(String(resolvedId));
+            setLoggedInUser(w);
+          }
           if (w.fullName) setWorkerName(w.fullName);
           if (w.phoneNumber) setWorkerMobile(w.phoneNumber);
           if (w.email) setWorkerEmail(w.email);
@@ -2384,8 +2300,13 @@ function WorkerDashboardScreen({
         }
         try {
           var profRes = await workerApi.getProfessions();
-          if (profRes && profRes.success && Array.isArray(profRes.professions) && profRes.professions.length > 0) {
-            setSelectedProfessions(profRes.professions);
+          if (profRes && profRes.success) {
+            if (Array.isArray(profRes.professions) && profRes.professions.length > 0) {
+              setSelectedProfessions(profRes.professions);
+            }
+            if (Array.isArray(profRes.allProfessions) && profRes.allProfessions.length > 0) {
+              setAvailableProfessions(profRes.allProfessions);
+            }
           }
         } catch (pErr) {
           console.warn('Could not fetch professions directly:', pErr);
@@ -2402,8 +2323,17 @@ function WorkerDashboardScreen({
       var fetchProfessionsOnOpen = async () => {
         try {
           var profRes = await workerApi.getProfessions();
-          if (profRes && profRes.success && Array.isArray(profRes.professions) && profRes.professions.length > 0) {
-            setSelectedProfessions(profRes.professions);
+          if (profRes && profRes.success) {
+            if (Array.isArray(profRes.professions) && profRes.professions.length > 0) {
+              setSelectedProfessions(profRes.professions);
+            }
+            if (Array.isArray(profRes.allProfessions) && profRes.allProfessions.length > 0) {
+              setAvailableProfessions(profRes.allProfessions);
+            }
+          }
+          var masterRes = await workerApi.getMasterProfessions();
+          if (masterRes && masterRes.success && Array.isArray(masterRes.professions) && masterRes.professions.length > 0) {
+            setAvailableProfessions(masterRes.professions);
           }
         } catch (err) {
           console.error('Error fetching professions on subscreen open:', err);
@@ -2491,7 +2421,14 @@ function WorkerDashboardScreen({
 
   var handleAddWorkImage = () => {
     if (!newWorkImageTitle.trim()) return;
-    var iconEmoji = workerProfession === 'Plumber' ? '🔧' : workerProfession === 'Carpenter' ? '🪚' : workerProfession === 'Painter' ? '🎨' : workerProfession === 'AC Repair' ? '❄️' : workerProfession === 'Mechanic' ? '🚗' : '⚡';
+    var iconEmoji = workerProfession.includes('Plumber') ? '🔧' :
+      workerProfession.includes('Carpenter') ? '🪚' :
+      workerProfession.includes('Barber') ? '✂️' :
+      workerProfession.includes('Hair') ? '💇' :
+      workerProfession.includes('Painter') ? '🎨' :
+      workerProfession.includes('AC Repair') ? '❄️' :
+      (workerProfession.includes('Mechanic') || workerProfession.includes('Car')) ? '🚗' :
+      workerProfession.includes('Electrician') ? '⚡' : '⚡';
     var newImg = {
       id: Date.now().toString(),
       title: newWorkImageTitle.trim(),
@@ -2521,7 +2458,7 @@ function WorkerDashboardScreen({
   useEffect(() => {
     var fetchWorkerCustomerCalls = async () => {
       try {
-        var res = await workerApi.getCustomerCalls();
+        var res = await workerApi.getCustomerCalls(workerId);
         if (res && res.success && Array.isArray(res.calls)) {
           setAllCustomerCalls(res.calls.map((c, i) => ({
             id: c.id || String(i + 1),
@@ -2541,7 +2478,7 @@ function WorkerDashboardScreen({
       }
     };
     fetchWorkerCustomerCalls();
-  }, [activeTab]);
+  }, [activeTab, workerId]);
 
   var [confirmCallModalVisible, setConfirmCallModalVisible] = useState(false);
   var [pendingCallAction, setPendingCallAction] = useState({ callId: null, status: '', customerName: '' });
@@ -2795,7 +2732,46 @@ function WorkerDashboardScreen({
           })]
         }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.View, {
           style: styles.callsListCard,
-          children: recentCalls.slice(0, 3).map((item, index) => /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
+          children: recentCalls.length === 0 ? /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
+            style: {
+              paddingVertical: 22,
+              paddingHorizontal: 16,
+              alignItems: 'center',
+              justifyContent: 'center'
+            },
+            children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.View, {
+              style: {
+                width: 44,
+                height: 44,
+                borderRadius: 22,
+                backgroundColor: '#F8FAFC',
+                borderWidth: 1,
+                borderColor: '#E2E8F0',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginBottom: 8
+              },
+              children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                style: { fontSize: 20 },
+                children: "\uD83D\uDCDE"
+              })
+            }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+              style: {
+                fontSize: 14,
+                fontWeight: '700',
+                color: '#1E293B',
+                marginBottom: 3
+              },
+              children: "No Recent Calls"
+            }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+              style: {
+                fontSize: 12,
+                color: '#94A3B8',
+                textAlign: 'center'
+              },
+              children: "When customers call you, their requests will appear here"
+            })]
+          }) : recentCalls.slice(0, 3).map((item, index) => /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
             children: [index > 0 && /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.View, {
               style: styles.callDivider
             }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.TouchableOpacity, {
@@ -3502,8 +3478,8 @@ function WorkerDashboardScreen({
                       /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.View, {
                   style: styles.verifiedBadgeSettingsRow,
                   children: /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.Text, {
-                    style: { fontSize: 12, fontWeight: '800', color: '#15803D' },
-                    children: [selectedProfessions.length, " Selected"]
+                    style: { fontSize: 12, fontWeight: '800', color: selectedProfessions.length >= 3 ? '#EA580C' : '#15803D' },
+                    children: [selectedProfessions.length, " / 3 Selected"]
                   })
                 })
                 ]
@@ -3514,42 +3490,17 @@ function WorkerDashboardScreen({
                 style: { flex: 1, marginVertical: 4 },
                 showsVerticalScrollIndicator: true,
                 contentContainerStyle: { gap: 8, paddingRight: 4 },
-                children: [
-                  { id: 'plumber', title: 'Plumber', icon: '🔧', color: '#EBF3FF', category: 'Home Repair' },
-                  { id: 'electrician', title: 'Electrician', icon: '⚡', color: '#FEF9C3', category: 'Home Repair' },
-                  { id: 'carpenter', title: 'Carpenter', icon: '🔨', color: '#FFEDD5', category: 'Home Repair' },
-                  { id: 'painter', title: 'Painter', icon: '🎨', color: '#FCE7F3', category: 'Home Repair' },
-                  { id: 'mason', title: 'Mason', icon: '🧱', color: '#F3E8FF', category: 'Home Repair' },
-                  { id: 'technician', title: 'Technician', icon: '🧰', color: '#DCFCE7', category: 'Home Repair' },
-                  { id: 'ac_repair', title: 'AC Repair', icon: '❄️', color: '#CCFBF1', category: 'Appliances' },
-                  { id: 'car_mechanic', title: 'Car Mechanic', icon: '🚗', color: '#E0F2FE', category: 'Vehicle Services' },
-                  { id: 'bike_mechanic', title: 'Bike Mechanic', icon: '🏍️', color: '#F3E8FF', category: 'Vehicle Services' },
-                  { id: 'barber', title: 'Barber', icon: '✂️', color: '#FCE7F3', category: 'Personal Care' },
-                  { id: 'hair_stylist', title: 'Hair Stylist', icon: '💇', color: '#F3E8FF', category: 'Personal Care' },
-                  { id: 'beautician', title: 'Beautician', icon: '💆', color: '#DCFCE7', category: 'Personal Care' },
-                  { id: 'home_cleaning', title: 'Home Cleaning', icon: '🧹', color: '#DCFCE7', category: 'Cleaning' },
-                  { id: 'home_help', title: 'Home Help / Maid', icon: '👩‍🍳', color: '#FEF9C3', category: 'Cleaning' },
-                  { id: 'gardener', title: 'Gardener', icon: '🌱', color: '#DCFCE7', category: 'Outdoor' },
-                  { id: 'farm_labour', title: 'Farm Labour', icon: '🧑‍🌾', color: '#FEF9C3', category: 'Labour' },
-                  { id: 'construction_labour', title: 'Construction Labour', icon: '👷', color: '#F3E8FF', category: 'Labour' },
-                  { id: 'daily_labour', title: 'Daily Labour', icon: '🧑‍🔧', color: '#FFE4E6', category: 'Labour' }
-                ].map(item => {
+                children: availableProfessions.map(item => {
                   var isSelected = selectedProfessions.some(p => {
                     if (typeof p !== 'string') return false;
-                    var normP = p.trim().toLowerCase();
-                    var normId = item.id.trim().toLowerCase();
-                    var normTitle = item.title.trim().toLowerCase();
-                    return (
-                      normP === normId ||
-                      normP === normTitle ||
-                      normP.replace(/[\s\-_]/g, '') === normId.replace(/[\s\-_]/g, '') ||
-                      normP.replace(/[\s\-_]/g, '') === normTitle.replace(/[\s\-_]/g, '')
-                    );
+                    return isProfessionMatch(p, item.id) || isProfessionMatch(p, item.title);
                   });
+                  var isLimitReached = !isSelected && selectedProfessions.length >= 3;
                   return /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.TouchableOpacity, {
                     style: [
                       styles.professionCardSelectRow,
-                      isSelected && styles.professionCardSelectRowActive
+                      isSelected && styles.professionCardSelectRowActive,
+                      isLimitReached && { opacity: 0.55 }
                     ],
                     onPress: () => toggleProfessionSelection(item.id),
                     activeOpacity: 0.8,

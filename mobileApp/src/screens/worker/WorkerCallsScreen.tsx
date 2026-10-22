@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { styles } from '../../styles/styles';
 import { workerApi } from '../../api/workerApi';
+import { getLoggedInUserId } from '../../api/apiConfig';
 
 const DEFAULT_CUSTOMER_CALLS = [
   { id: '1', name: 'Rajesh Kumar', avatar: '👨‍💼', service: 'AC Service', distance: '1.2 km away', time: '10 mins ago', status: 'Missed' },
@@ -33,7 +34,8 @@ export const WorkerCallsScreen: React.FC = () => {
   const fetchCalls = async () => {
     try {
       setIsLoading(true);
-      const res = await workerApi.getCustomerCalls();
+      const currentWorkerId = getLoggedInUserId();
+      const res = await workerApi.getCustomerCalls(currentWorkerId || undefined);
       if (res && res.success && Array.isArray(res.calls)) {
         setCallsList(
           res.calls.map((c: any, i: number) => ({

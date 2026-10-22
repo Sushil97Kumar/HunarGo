@@ -179,6 +179,27 @@ export const workerApi = {
   },
 
   /**
+   * Get Master List of Professions and Categories from backend
+   */
+  async getMasterProfessions() {
+    try {
+      console.log('🚀 API [getMasterProfessions]');
+      const response = await fetch(`${API_BASE_URL}/worker/master-professions`, {
+        method: 'GET',
+        headers: getAuthHeaders(),
+      });
+      const data = await response.json();
+      console.log('✅ [workerApi.getMasterProfessions] Response:', data);
+      if (data && data.success && Array.isArray(data.categories)) {
+        return data;
+      }
+    } catch (error) {
+      console.error('❌ Error in getMasterProfessions:', error);
+    }
+    return { success: false, categories: [], professions: [] };
+  },
+
+  /**
    * Toggle worker Online/Offline status
    */
   async toggleAvailability(isAvailable: boolean) {
@@ -222,12 +243,19 @@ export const workerApi = {
   /**
    * Fetch Customer Calls list for Worker from backend
    */
-  async getCustomerCalls() {
+  async getCustomerCalls(workerId?: string) {
     try {
-      console.log('🚀 API [getCustomerCalls] Fetching worker calls from backend...');
-      const response = await fetch(`${API_BASE_URL}/worker/customer-calls`, {
+      console.log('🚀 API [getCustomerCalls] Fetching worker calls from backend, workerId:', workerId);
+      const url = workerId
+        ? `${API_BASE_URL}/worker/customer-calls?workerId=${encodeURIComponent(workerId)}`
+        : `${API_BASE_URL}/worker/customer-calls`;
+      const headers = getAuthHeaders();
+      if (workerId) {
+        headers['x-worker-id'] = workerId;
+      }
+      const response = await fetch(url, {
         method: 'GET',
-        headers: getAuthHeaders(),
+        headers,
       });
       const data = await response.json();
       console.log('✅ API [getCustomerCalls] Server Response:', data);

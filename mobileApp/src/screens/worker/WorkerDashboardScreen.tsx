@@ -15,6 +15,7 @@ var LOCATION_DATABASE = [
   { city: 'Gurugram', name: 'Cyber City, Gurugram' },
 ];
 
+import { Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   TabDashboardActive,
@@ -27,6 +28,8 @@ import {
   TabSettingsInactive,
 } from '../../utils/assets';
 import { styles } from '../../styles/styles';
+import { formatWorkerProfessions, DEFAULT_MASTER_PROFESSIONS } from '../../utils/professionUtils';
+import { setLoggedInUser } from '../../api/apiConfig';
 
 export function WorkerDashboardScreen({
   onBackToOnboarding
@@ -35,15 +38,37 @@ export function WorkerDashboardScreen({
   var tabBottomPadding = insets.bottom > 0 ? insets.bottom + 8 : (Platform.OS === 'ios' ? 24 : 12);
   var [isAvailable, setIsAvailable] = useState(true);
   var [activeTab, setActiveTab] = useState('dashboard');
+  var [workerId, setWorkerId] = useState('');
   var [selectedProfessions, setSelectedProfessions] = useState([]);
-  var workerProfession = selectedProfessions.join(', ');
+  var [availableProfessions, setAvailableProfessions] = useState(DEFAULT_MASTER_PROFESSIONS);
+  var workerProfession = formatWorkerProfessions(selectedProfessions);
+
+  var isProfessionMatch = (p, idOrTitle) => {
+    if (typeof p !== 'string' || typeof idOrTitle !== 'string') return false;
+    var a = p.trim().toLowerCase();
+    var b = idOrTitle.trim().toLowerCase();
+    if (a === b) return true;
+    if (a.replace(/[\s\-_]/g, '') === b.replace(/[\s\-_]/g, '')) return true;
+    if (a.includes('hair') && b.includes('hair')) return true;
+    return false;
+  };
+
   var toggleProfessionSelection = title => {
-    var exists = selectedProfessions.some(p => typeof p === 'string' && p.toLowerCase() === title.toLowerCase());
+    var exists = selectedProfessions.some(p => isProfessionMatch(p, title));
     if (exists) {
       if (selectedProfessions.length > 1) {
-        setSelectedProfessions(selectedProfessions.filter(p => typeof p === 'string' && p.toLowerCase() !== title.toLowerCase()));
+        setSelectedProfessions(selectedProfessions.filter(p => !isProfessionMatch(p, title)));
+      } else {
+        Alert.alert('Required', 'You must keep at least 1 profession selected.');
       }
     } else {
+      if (selectedProfessions.length >= 3) {
+        Alert.alert(
+          'Maximum Limit Reached',
+          'You can select a maximum of 3 professions. Please unselect one before adding another.'
+        );
+        return;
+      }
       setSelectedProfessions([...selectedProfessions, title]);
     }
   };
@@ -160,6 +185,11 @@ export function WorkerDashboardScreen({
         console.log('✅ [WorkerDashboardScreen] Profile received:', res);
         if (res && res.success && res.worker) {
           var w = res.worker;
+          var resolvedId = w._id || w.id;
+          if (resolvedId) {
+            setWorkerId(String(resolvedId));
+            setLoggedInUser(w);
+          }
           if (w.fullName) setWorkerName(w.fullName);
           if (w.phoneNumber) setWorkerMobile(w.phoneNumber);
           if (w.email) setWorkerEmail(w.email);
@@ -197,8 +227,13 @@ export function WorkerDashboardScreen({
         }
         try {
           var profRes = await workerApi.getProfessions();
-          if (profRes && profRes.success && Array.isArray(profRes.professions) && profRes.professions.length > 0) {
-            setSelectedProfessions(profRes.professions);
+          if (profRes && profRes.success) {
+            if (Array.isArray(profRes.professions) && profRes.professions.length > 0) {
+              setSelectedProfessions(profRes.professions);
+            }
+            if (Array.isArray(profRes.allProfessions) && profRes.allProfessions.length > 0) {
+              setAvailableProfessions(profRes.allProfessions);
+            }
           }
         } catch (pErr) {
           console.warn('Could not fetch professions directly:', pErr);
@@ -215,8 +250,17 @@ export function WorkerDashboardScreen({
       var fetchProfessionsOnOpen = async () => {
         try {
           var profRes = await workerApi.getProfessions();
-          if (profRes && profRes.success && Array.isArray(profRes.professions) && profRes.professions.length > 0) {
-            setSelectedProfessions(profRes.professions);
+          if (profRes && profRes.success) {
+            if (Array.isArray(profRes.professions) && profRes.professions.length > 0) {
+              setSelectedProfessions(profRes.professions);
+            }
+            if (Array.isArray(profRes.allProfessions) && profRes.allProfessions.length > 0) {
+              setAvailableProfessions(profRes.allProfessions);
+            }
+          }
+          var masterRes = await workerApi.getMasterProfessions();
+          if (masterRes && masterRes.success && Array.isArray(masterRes.professions) && masterRes.professions.length > 0) {
+            setAvailableProfessions(masterRes.professions);
           }
         } catch (err) {
           console.error('Error fetching professions on subscreen open:', err);
@@ -303,7 +347,14 @@ export function WorkerDashboardScreen({
   var [newWorkImageTitle, setNewWorkImageTitle] = useState('');
   var handleAddWorkImage = () => {
     if (!newWorkImageTitle.trim()) return;
-    var iconEmoji = workerProfession === 'Plumber' ? '🔧' : workerProfession === 'Carpenter' ? '🪚' : workerProfession === 'Painter' ? '🎨' : workerProfession === 'AC Repair' ? '❄️' : workerProfession === 'Mechanic' ? '🚗' : '⚡';
+    var iconEmoji = workerProfession.includes('Plumber') ? '🔧' :
+      workerProfession.includes('Carpenter') ? '🪚' :
+      workerProfession.includes('Barber') ? '✂️' :
+      workerProfession.includes('Hair') ? '💇' :
+      workerProfession.includes('Painter') ? '🎨' :
+      workerProfession.includes('AC Repair') ? '❄️' :
+      (workerProfession.includes('Mechanic') || workerProfession.includes('Car')) ? '🚗' :
+      workerProfession.includes('Electrician') ? '⚡' : '⚡';
     var newImg = {
       id: Date.now().toString(),
       title: newWorkImageTitle.trim(),
@@ -331,7 +382,7 @@ export function WorkerDashboardScreen({
   useEffect(() => {
     var fetchWorkerCustomerCalls = async () => {
       try {
-        var res = await workerApi.getCustomerCalls();
+        var res = await workerApi.getCustomerCalls(workerId);
         if (res && res.success && Array.isArray(res.calls)) {
           setAllCustomerCalls(res.calls.map((c, i) => ({
             id: c.id || String(i + 1),
@@ -349,7 +400,7 @@ export function WorkerDashboardScreen({
       }
     };
     fetchWorkerCustomerCalls();
-  }, [activeTab]);
+  }, [activeTab, workerId]);
 
   var filteredCalls = allCustomerCalls.filter(call => {
     return call.name.toLowerCase().includes(callSearch.toLowerCase()) || call.distance.toLowerCase().includes(callSearch.toLowerCase());
@@ -372,7 +423,41 @@ export function WorkerDashboardScreen({
               backgroundColor: '#E0F2FE'
             }]}>{<Text style={styles.statEmoji}>👥</Text>}</View>}{<Text style={styles.statValue}>{customersServedCount}</Text>}{<Text style={styles.statLabel}>Customers Served</Text>}</View>}{<View style={styles.statCardItem}>{<View style={[styles.statIconBox, {
               backgroundColor: '#FEF9C3'
-            }]}>{<Text style={styles.statEmoji}>⭐</Text>}</View>}{<Text style={styles.statValue}>{rating}</Text>}{<Text style={styles.statLabel}>Rating</Text>}</View>}</View>}{<View style={styles.availabilityBannerCard}>{<View style={styles.greenPulseDot} />}{<View style={styles.availabilityTextGroup}>{<Text style={styles.availabilityTitle}>Available Now</Text>}{<Text style={styles.availabilitySubtitle}>You are visible to customers</Text>}</View>}{<TouchableOpacity style={[styles.toggleSwitchTrack, isAvailable && styles.toggleSwitchTrackActive]} onPress={handleToggleAvailability} activeOpacity={0.8}>{<View style={[styles.toggleSwitchThumb, isAvailable && styles.toggleSwitchThumbActive]} />}</TouchableOpacity>}{<Text style={styles.chevronIconGrey} />}</View>}{<View style={styles.dashboardSectionHeader}>{<Text style={styles.dashboardSectionTitle}>Recent Calls</Text>}{<TouchableOpacity onPress={() => setActiveTab('calls')}>{<Text style={styles.dashboardLinkText}>View All ❯</Text>}</TouchableOpacity>}</View>}{<View style={styles.callsListCard}>{recentCalls.slice(0, 3).map((item, index) => <View>{index > 0 && <View style={styles.callDivider} />}{<TouchableOpacity style={styles.callItemRow} onPress={() => setActiveTab('calls')} activeOpacity={0.7}>{<View style={styles.customerAvatarBox}>{<Text style={styles.customerAvatarEmoji}>{item.avatar}</Text>}</View>}{<View style={styles.callInfoGroup}>{<View style={styles.customerNameRow}>{<Text style={styles.customerNameText}>{item.name}</Text>}{item.verified && <Text style={styles.miniVerifiedCheck}> ✔</Text>}</View>}{<Text style={styles.callServiceText}>{item.service}</Text>}</View>}{<View style={styles.callRightGroup}>{<View style={styles.callTimeRow}>{<Text style={styles.calendarMiniIcon}>📅 </Text>}{<Text style={styles.callTimeText}>{item.time}</Text>}</View>}{<View style={styles.callStatusBadge}>{<Text style={styles.callPhoneIcon}>📞 </Text>}{<Text style={styles.callStatusText}>{item.status}</Text>}{<Text style={styles.chevronIconMini}> ❯</Text>}</View>}</View>}</TouchableOpacity>}</View>)}</View>}</ScrollView>}{activeTab === 'calls' && <ScrollView contentContainerStyle={styles.callsTabScrollContent} showsVerticalScrollIndicator={false}>{<View style={styles.callsTabHeader}>{<View>{<Text style={styles.callsTabTitle}>Customer Calls</Text>}{<Text style={styles.callsTabSubtitle}>Manage direct customer inquiries & requests</Text>}</View>}{<View style={styles.totalCallsBadge}>{<Text style={styles.totalCallsBadgeText}>{allCustomerCalls.length} Total Calls</Text>}</View>}</View>}{<View style={styles.callSearchBox}>{<Text style={styles.callSearchIcon}>🔍</Text>}{<TextInput style={styles.callSearchInput} placeholder="Search customer name or location..." placeholderTextColor="#94A3B8" value={callSearch} onChangeText={text => {
+            }]}>{<Text style={styles.statEmoji}>⭐</Text>}</View>}{<Text style={styles.statValue}>{rating}</Text>}{<Text style={styles.statLabel}>Rating</Text>}</View>}</View>}{<View style={styles.availabilityBannerCard}>{<View style={styles.greenPulseDot} />}{<View style={styles.availabilityTextGroup}>{<Text style={styles.availabilityTitle}>Available Now</Text>}{<Text style={styles.availabilitySubtitle}>You are visible to customers</Text>}</View>}{<TouchableOpacity style={[styles.toggleSwitchTrack, isAvailable && styles.toggleSwitchTrackActive]} onPress={handleToggleAvailability} activeOpacity={0.8}>{<View style={[styles.toggleSwitchThumb, isAvailable && styles.toggleSwitchThumbActive]} />}</TouchableOpacity>}{<Text style={styles.chevronIconGrey} />}</View>}{<View style={styles.dashboardSectionHeader}>{<Text style={styles.dashboardSectionTitle}>Recent Calls</Text>}{<TouchableOpacity onPress={() => setActiveTab('calls')}>{<Text style={styles.dashboardLinkText}>View All ❯</Text>}</TouchableOpacity>}</View>}{<View style={styles.callsListCard}>{recentCalls.length === 0 ? (
+          <View style={{
+            paddingVertical: 22,
+            paddingHorizontal: 16,
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}>
+            <View style={{
+              width: 44,
+              height: 44,
+              borderRadius: 22,
+              backgroundColor: '#F8FAFC',
+              borderWidth: 1,
+              borderColor: '#E2E8F0',
+              alignItems: 'center',
+              justifyContent: 'center',
+              marginBottom: 8
+            }}>
+              <Text style={{ fontSize: 20 }}>📞</Text>
+            </View>
+            <Text style={{
+              fontSize: 14,
+              fontWeight: '700',
+              color: '#1E293B',
+              marginBottom: 3
+            }}>No Recent Calls</Text>
+            <Text style={{
+              fontSize: 12,
+              color: '#94A3B8',
+              textAlign: 'center'
+            }}>When customers call you, their requests will appear here</Text>
+          </View>
+        ) : (
+          recentCalls.slice(0, 3).map((item, index) => <View key={item.id || index}>{index > 0 && <View style={styles.callDivider} />}{<TouchableOpacity style={styles.callItemRow} onPress={() => setActiveTab('calls')} activeOpacity={0.7}>{<View style={styles.customerAvatarBox}>{<Text style={styles.customerAvatarEmoji}>{item.avatar}</Text>}</View>}{<View style={styles.callInfoGroup}>{<View style={styles.customerNameRow}>{<Text style={styles.customerNameText}>{item.name}</Text>}{item.verified && <Text style={styles.miniVerifiedCheck}> ✔</Text>}</View>}{<Text style={styles.callServiceText}>{item.service}</Text>}</View>}{<View style={styles.callRightGroup}>{<View style={styles.callTimeRow}>{<Text style={styles.calendarMiniIcon}>📅 </Text>}{<Text style={styles.callTimeText}>{item.time}</Text>}</View>}{<View style={styles.callStatusBadge}>{<Text style={styles.callPhoneIcon}>📞 </Text>}{<Text style={styles.callStatusText}>{item.status}</Text>}{<Text style={styles.chevronIconMini}> ❯</Text>}</View>}</View>}</TouchableOpacity>}</View>)
+        )}</View>}</ScrollView>}{activeTab === 'calls' && <ScrollView contentContainerStyle={styles.callsTabScrollContent} showsVerticalScrollIndicator={false}>{<View style={styles.callsTabHeader}>{<View>{<Text style={styles.callsTabTitle}>Customer Calls</Text>}{<Text style={styles.callsTabSubtitle}>Manage direct customer inquiries & requests</Text>}</View>}{<View style={styles.totalCallsBadge}>{<Text style={styles.totalCallsBadgeText}>{allCustomerCalls.length} Total Calls</Text>}</View>}</View>}{<View style={styles.callSearchBox}>{<Text style={styles.callSearchIcon}>🔍</Text>}{<TextInput style={styles.callSearchInput} placeholder="Search customer name or location..." placeholderTextColor="#94A3B8" value={callSearch} onChangeText={text => {
             setCallSearch(text);
             setCurrentPage(1);
           }} />}{callSearch.length > 0 && <TouchableOpacity onPress={() => {
@@ -613,7 +698,7 @@ export function WorkerDashboardScreen({
                   fontSize: 12,
                   fontWeight: '800',
                   color: '#15803D'
-                }}>{selectedProfessions.length} Selected</Text>}</View>}</View>}{
+                }}>{selectedProfessions.length} / 3 Selected</Text>}</View>}</View>}{
             /* ONLY Profession List is Scrollable */
             <ScrollView style={{
               flex: 1,
@@ -621,128 +706,13 @@ export function WorkerDashboardScreen({
             }} showsVerticalScrollIndicator={true} contentContainerStyle={{
               gap: 8,
               paddingRight: 4
-            }}>{[{
-                id: 'plumber',
-                title: 'Plumber',
-                icon: '🔧',
-                color: '#EBF3FF',
-                category: 'Home Repair'
-              }, {
-                id: 'electrician',
-                title: 'Electrician',
-                icon: '⚡',
-                color: '#FEF9C3',
-                category: 'Home Repair'
-              }, {
-                id: 'carpenter',
-                title: 'Carpenter',
-                icon: '🔨',
-                color: '#FFEDD5',
-                category: 'Home Repair'
-              }, {
-                id: 'painter',
-                title: 'Painter',
-                icon: '🎨',
-                color: '#FCE7F3',
-                category: 'Home Repair'
-              }, {
-                id: 'mason',
-                title: 'Mason',
-                icon: '🧱',
-                color: '#F3E8FF',
-                category: 'Home Repair'
-              }, {
-                id: 'technician',
-                title: 'Technician',
-                icon: '🧰',
-                color: '#DCFCE7',
-                category: 'Home Repair'
-              }, {
-                id: 'ac_repair',
-                title: 'AC Repair',
-                icon: '❄️',
-                color: '#CCFBF1',
-                category: 'Appliances'
-              }, {
-                id: 'car_mechanic',
-                title: 'Car Mechanic',
-                icon: '🚗',
-                color: '#E0F2FE',
-                category: 'Vehicle Services'
-              }, {
-                id: 'bike_mechanic',
-                title: 'Bike Mechanic',
-                icon: '🏍️',
-                color: '#F3E8FF',
-                category: 'Vehicle Services'
-              }, {
-                id: 'barber',
-                title: 'Barber',
-                icon: '✂️',
-                color: '#FCE7F3',
-                category: 'Personal Care'
-              }, {
-                id: 'hair_stylist',
-                title: 'Hair Stylist',
-                icon: '💇',
-                color: '#F3E8FF',
-                category: 'Personal Care'
-              }, {
-                id: 'beautician',
-                title: 'Beautician',
-                icon: '💆',
-                color: '#DCFCE7',
-                category: 'Personal Care'
-              }, {
-                id: 'home_cleaning',
-                title: 'Home Cleaning',
-                icon: '🧹',
-                color: '#DCFCE7',
-                category: 'Cleaning'
-              }, {
-                id: 'home_help',
-                title: 'Home Help / Maid',
-                icon: '👩‍🍳',
-                color: '#FEF9C3',
-                category: 'Cleaning'
-              }, {
-                id: 'gardener',
-                title: 'Gardener',
-                icon: '🌱',
-                color: '#DCFCE7',
-                category: 'Outdoor'
-              }, {
-                id: 'farm_labour',
-                title: 'Farm Labour',
-                icon: '🧑‍🌾',
-                color: '#FEF9C3',
-                category: 'Labour'
-              }, {
-                id: 'construction_labour',
-                title: 'Construction Labour',
-                icon: '👷',
-                color: '#F3E8FF',
-                category: 'Labour'
-              }, {
-                id: 'daily_labour',
-                title: 'Daily Labour',
-                icon: '🧑‍🔧',
-                color: '#FFE4E6',
-                category: 'Labour'
-              }].map(item => {
+            }}>{availableProfessions.map(item => {
                 var isSelected = selectedProfessions.some(p => {
                   if (typeof p !== 'string') return false;
-                  var normP = p.trim().toLowerCase();
-                  var normId = item.id.trim().toLowerCase();
-                  var normTitle = item.title.trim().toLowerCase();
-                  return (
-                    normP === normId ||
-                    normP === normTitle ||
-                    normP.replace(/[\s\-_]/g, '') === normId.replace(/[\s\-_]/g, '') ||
-                    normP.replace(/[\s\-_]/g, '') === normTitle.replace(/[\s\-_]/g, '')
-                  );
+                  return isProfessionMatch(p, item.id) || isProfessionMatch(p, item.title);
                 });
-                return <TouchableOpacity style={[styles.professionCardSelectRow, isSelected && styles.professionCardSelectRowActive]} onPress={() => toggleProfessionSelection(item.id)} activeOpacity={0.8}>{
+                var isLimitReached = !isSelected && selectedProfessions.length >= 3;
+                return <TouchableOpacity style={[styles.professionCardSelectRow, isSelected && styles.professionCardSelectRowActive, isLimitReached && { opacity: 0.55 }]} onPress={() => toggleProfessionSelection(item.id)} activeOpacity={0.8}>{
                   /* Logo Circle */
                   <View style={[styles.professionLogoCircle, {
                     backgroundColor: item.color
@@ -1263,7 +1233,7 @@ export function WorkerDashboardScreen({
                     color: '#EF4444'
                   }]}>Logout</Text>}{<Text style={styles.settingsCardSubText}>Sign out from your account</Text>}</View>}{<Text style={[styles.settingsChevronText, {
                   color: '#EF4444'
-                }]}>❯</Text>}</TouchableOpacity>}</View>}</ScrollView>}</View>}{<View style={[styles.bottomTabBarContainer, { paddingBottom: tabBottomPadding }]}>
+                }]}>❯</Text>}</TouchableOpacity>}</View>}</ScrollView>}</View>}</View>}{<View style={[styles.bottomTabBarContainer, { paddingBottom: tabBottomPadding }]}>
   <TouchableOpacity style={styles.tabItem} onPress={handleDashboardPress} activeOpacity={0.75}>
     <Image
       source={activeTab === 'dashboard' ? TabDashboardActive : TabDashboardInactive}

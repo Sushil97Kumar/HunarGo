@@ -53,6 +53,7 @@ export const clearAuthSession = () => {
 export const getAuthToken = () => currentAuthToken;
 export const getActiveUserPhone = () => currentActiveUserPhone;
 export const getLoggedInUser = () => currentLoggedInUser;
+export const getLoggedInUserId = () => currentLoggedInUser?._id || currentLoggedInUser?.id || null;
 
 export const getAuthHeaders = () => {
   const headers: Record<string, string> = {
@@ -64,6 +65,10 @@ export const getAuthHeaders = () => {
   }
   if (currentActiveUserPhone) {
     headers['x-user-phone'] = currentActiveUserPhone;
+  }
+  const workerId = currentLoggedInUser?._id || currentLoggedInUser?.id;
+  if (workerId) {
+    headers['x-worker-id'] = String(workerId);
   }
   return headers;
 };

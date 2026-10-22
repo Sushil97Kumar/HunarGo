@@ -1,4 +1,4 @@
-import { Response, NextFunction } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import mongoose from 'mongoose';
 import { AuthRequest } from '../middleware/authMiddleware';
 import User from '../models/User';
@@ -6,6 +6,7 @@ import Call from '../models/Call';
 import { PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
 import { s3 } from '../config/s3';
 import { emitToUser } from '../services/socketService';
+import { MASTER_PROFESSION_CATEGORIES, ALL_MASTER_PROFESSIONS } from '../constants/professionsData';
 
 /**
  * @desc    Get Worker Profile
@@ -223,6 +224,7 @@ export const updateProfessions = async (req: AuthRequest, res: Response, next: N
 
     const rawList: string[] = Array.isArray(professions) ? professions : (professions ? [professions] : []);
     const uniqueProfessions = Array.from(new Set(rawList.map((p) => (typeof p === 'string' ? p.trim().toLowerCase() : p)).filter(Boolean)));
+    const limitedProfessions = uniqueProfessions.slice(0, 3);
 
     const query: any = {};
     if (req.user?.id && req.user.id !== 'mock-user-id') {
@@ -237,7 +239,7 @@ export const updateProfessions = async (req: AuthRequest, res: Response, next: N
 
     const user = await User.findOneAndUpdate(
       query,
-      { $set: { professions: uniqueProfessions } },
+      { $set: { professions: limitedProfessions } },
       { new: true, upsert: true }
     );
 
@@ -246,11 +248,23 @@ export const updateProfessions = async (req: AuthRequest, res: Response, next: N
     return res.status(200).json({
       success: true,
       message: 'Professions updated successfully in DB',
-      professions: user?.professions || uniqueProfessions,
+      professions: user?.professions || limitedProfessions,
     });
   } catch (error) {
     next(error);
   }
+};
+
+/**
+ * @desc    Get Master List of Professions and Categories (Public for Signup & Settings)
+ * @route   GET /api/worker/master-professions
+ */
+export const getMasterProfessions = async (req: Request, res: Response): Promise<Response> => {
+  return res.status(200).json({
+    success: true,
+    categories: MASTER_PROFESSION_CATEGORIES,
+    professions: ALL_MASTER_PROFESSIONS,
+  });
 };
 
 /**
@@ -269,6 +283,8 @@ export const getProfessions = async (req: AuthRequest, res: Response, next: Next
     return res.status(200).json({
       success: true,
       professions: user?.professions || [],
+      categories: MASTER_PROFESSION_CATEGORIES,
+      allProfessions: ALL_MASTER_PROFESSIONS,
     });
   } catch (error) {
     next(error);
@@ -365,38 +381,58 @@ export const getDashboardStats = async (req: AuthRequest, res: Response, next: N
 export const getCustomerCalls = async (req: AuthRequest, res: Response, next: NextFunction): Promise<Response | void> => {
   try {
     let workerObjectId: mongoose.Types.ObjectId | undefined = undefined;
+    const queryWorkerId = (req.query.workerId as string) || '';
+    const headerWorkerId = (req.headers['x-worker-id'] as string) || '';
     const phoneHeader = (req.headers['x-user-phone'] as string) || '';
+    const userPhone = req.user?.phoneNumber || '';
 
-    if (req.user?.id && mongoose.Types.ObjectId.isValid(req.user.id)) {
+    // 1. Check if explicit workerId was provided in query or header
+    const explicitId = queryWorkerId || headerWorkerId;
+    if (explicitId && mongoose.Types.ObjectId.isValid(explicitId)) {
+      workerObjectId = new mongoose.Types.ObjectId(explicitId);
+    }
+
+    // 2. Check JWT authenticated user id
+    if (!workerObjectId && req.user?.id && req.user.id !== 'mock-user-id' && mongoose.Types.ObjectId.isValid(req.user.id)) {
       workerObjectId = new mongoose.Types.ObjectId(req.user.id);
-    } else if (phoneHeader) {
-      const workerUser = await User.findOne({ phoneNumber: phoneHeader });
-      if (workerUser) workerObjectId = workerUser._id as mongoose.Types.ObjectId;
     }
 
+    // 3. Match by phone number (last 10 digits matching)
     if (!workerObjectId) {
-      const workerUser = await User.findOne({ role: 'worker' });
-      if (workerUser) workerObjectId = workerUser._id as mongoose.Types.ObjectId;
+      const phoneCandidates = [userPhone, phoneHeader].filter(Boolean) as string[];
+      for (const rawP of phoneCandidates) {
+        if (workerObjectId) break;
+        const digits = rawP.replace(/\D/g, '');
+        const last10 = digits.slice(-10);
+        if (last10) {
+          try {
+            const workerUser = await User.findOne({
+              $or: [
+                { phoneNumber: rawP },
+                { phoneNumber: `+91${last10}` },
+                { phoneNumber: last10 },
+              ],
+            });
+            if (workerUser) workerObjectId = workerUser._id as mongoose.Types.ObjectId;
+          } catch (err) { }
+        }
+      }
     }
 
-    let callsFromDb: any = [];
-    if (workerObjectId) {
-      callsFromDb = await Call.find({
-        $or: [
-          { workerId: workerObjectId },
-          { workerId: { $exists: false } },
-          { workerId: null }
-        ]
-      })
-        .populate('customerId', 'fullName phoneNumber email profileImage location')
-        .sort({ createdAt: -1 });
+    // If no worker resolved, return empty list (never expose other workers' calls!)
+    if (!workerObjectId) {
+      console.log('⚠️ [getCustomerCalls] No workerId could be identified for logged-in worker. Returning empty calls list.');
+      return res.status(200).json({
+        success: true,
+        calls: [],
+      });
     }
 
-    if (!callsFromDb || callsFromDb.length === 0) {
-      callsFromDb = await Call.find()
-        .populate('customerId', 'fullName phoneNumber email profileImage location')
-        .sort({ createdAt: -1 });
-    }
+    // 4. Query ONLY calls where workerId matches this logged-in worker
+    console.log(`🔍 [getCustomerCalls] Fetching calls strictly for workerId: ${workerObjectId.toString()}`);
+    const callsFromDb = await Call.find({ workerId: workerObjectId })
+      .populate('customerId', 'fullName phoneNumber email profileImage location')
+      .sort({ createdAt: -1 });
 
     const formattedCalls = await Promise.all(
       callsFromDb.map(async (c: any) => {
@@ -420,7 +456,7 @@ export const getCustomerCalls = async (req: AuthRequest, res: Response, next: Ne
       })
     );
 
-    console.log(`📞 [getCustomerCalls] Returning ${formattedCalls.length} call requests for worker`);
+    console.log(`📞 [getCustomerCalls] Returning ${formattedCalls.length} call requests for worker: ${workerObjectId.toString()}`);
 
     return res.status(200).json({
       success: true,

@@ -15,6 +15,7 @@ import {
 import { workerApi } from '../../api/workerApi';
 import { socketService } from '../../services/socketService';
 import { webrtcService, requestAudioPermission } from '../../services/webrtcService';
+import { formatWorkerProfessions } from '../../utils/professionUtils';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const DefaultAvatar = require('../../assets/default_avatar.png');
@@ -300,9 +301,10 @@ export const WorkerIncomingCallScreen: React.FC<Props> = ({
     callData?.customer?.profileImage ||
     '';
 
-  const professionRequested =
-    callData?.worker?.profession ||
-    'Service Direct Request';
+  const rawProfession = callData?.worker?.profession || '';
+  const professionRequested = rawProfession
+    ? formatWorkerProfessions(rawProfession)
+    : 'Service Direct Request';
 
   const callId = callData?.callId || '';
 
